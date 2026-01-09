@@ -1,6 +1,6 @@
 import Stripe from 'stripe'
 import { buffer } from 'node:stream/consumers'
-import { supabase } from '../lib/supabase'
+import { supabaseAdmin } from '../lib/supabaseAdmin'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -28,11 +28,11 @@ export default defineEventHandler(async (event) => {
     const order_id = session.metadata?.order_id
 
     if (order_id) {
-      await supabase.from('order')
+      await supabaseAdmin.from('order')
         .update({ status: 'paid' })
         .eq('id', order_id)
 
-      await supabase
+      await supabaseAdmin
         .from('seat_reservation')
         .update({ status: 'paid', expires_at: null })
         .eq('order_id', order_id)

@@ -1,10 +1,12 @@
-import { supabase } from '../lib/supabase'
+import { supabaseAdmin } from '../lib/supabaseAdmin'
 
 export default defineEventHandler(async () => {
   const EVENT_ID = 'eb53c5be-ac8a-4bdc-8dca-73ceff948e49'
 
+  console.log('USING CLIENT:', supabaseAdmin)
+
   // 1️⃣ Récupérer les sièges
-  const { data: seats, error: seatError } = await supabase
+  const { data: seats, error: seatError } = await supabaseAdmin
     .from('seat')
     .select('id, label')
 
@@ -16,7 +18,7 @@ export default defineEventHandler(async () => {
   }
 
   // 2️⃣ Récupérer les réservations actives
-  const { data: reservations, error: resError } = await supabase
+  const { data: reservations, error: resError } = await supabaseAdmin
     .from('seat_reservation')
     .select('seat_id, status, expires_at')
     .eq('event_id', EVENT_ID)

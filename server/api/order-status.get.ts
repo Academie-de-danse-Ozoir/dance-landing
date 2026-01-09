@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabaseAdmin } from '../lib/supabaseAdmin'
 
 export default defineEventHandler(async (event) => {
   const orderId = getQuery(event).orderId as string
@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   /* =====================
      1️⃣ Charger la commande
   ===================== */
-  const { data: order, error: orderError } = await supabase
+  const { data: order, error: orderError } = await supabaseAdmin
     .from('order')
     .select('id, status')
     .eq('id', orderId)
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
   /* =====================
      3️⃣ Charger le hold actif
   ===================== */
-  const { data: reservation } = await supabase
+  const { data: reservation } = await supabaseAdmin
     .from('seat_reservation')
     .select('expires_at')
     .eq('order_id', orderId)

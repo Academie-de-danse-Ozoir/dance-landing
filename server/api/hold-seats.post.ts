@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabaseAdmin } from '../lib/supabaseAdmin'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
   const EVENT_ID = 'eb53c5be-ac8a-4bdc-8dca-73ceff948e49'
 
-  const { data, error } = await supabase.rpc('hold_seats', {
+  const { data, error } = await supabaseAdmin.rpc('hold_seats', {
     p_seat_ids: seatIds,
     p_event_id: EVENT_ID,
     p_first_name: firstName,

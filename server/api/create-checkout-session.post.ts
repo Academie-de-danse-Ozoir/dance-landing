@@ -1,5 +1,5 @@
 import { stripe } from '../lib/stripe'
-import { supabase } from '../lib/supabase'
+import { supabaseAdmin } from '../lib/supabaseAdmin'
 
 export default defineEventHandler(async (event) => {
   const { orderId } = await readBody(event)
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   /* =====================
      1) Vérifier la commande
   ===================== */
-  const { data: order, error: orderError } = await supabase
+  const { data: order, error: orderError } = await supabaseAdmin
     .from('order')
     .select('id, email, status')
     .eq('id', orderId)
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   /* =====================
      2) Charger les réservations hold
   ===================== */
-  const { data: reservations, error: resError } = await supabase
+  const { data: reservations, error: resError } = await supabaseAdmin
     .from('seat_reservation')
     .select('id, expires_at')
     .eq('order_id', orderId)
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
 
   if (hasExpired) {
     // Nettoyage sécurité
-    await supabase
+    await supabaseAdmin
       .from('seat_reservation')
       .delete()
       .eq('order_id', orderId)
@@ -99,7 +99,7 @@ export default defineEventHandler(async (event) => {
   /* =====================
      5) Sauver l’ID Stripe
   ===================== */
-  await supabase
+  await supabaseAdmin
     .from('order')
     .update({ stripe_session_id: session.id })
     .eq('id', orderId)
