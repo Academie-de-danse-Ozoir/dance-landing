@@ -1,0 +1,65 @@
+{
+  "home": {
+    "title": "Sélection des sièges",
+    "activeOrder": {
+      "title": "🟡 Réservation en cours",
+      "timeRemaining": "⏱ Temps restant :",
+      "resumePayment": "Reprendre le paiement",
+      "cancelReservation": "Annuler la réservation"
+    },
+    "seats": {
+      "tooltip": {
+        "reservationInProgress": "Une réservation est déjà en cours",
+        "seatUnavailable": "Siège indisponible"
+      }
+    },
+    "selection": {
+      "none": "Aucun siège sélectionné",
+      "one": "siège sélectionné",
+      "multiple": "sièges sélectionnés"
+    },
+    "actions": {
+      "reserve": "Réserver"
+    },
+    "modal": {
+      "title": "Informations de réservation",
+      "close": "Fermer",
+      "cancel": "Annuler",
+      "submit": "Payer",
+      "submitting": "Traitement...",
+      "fields": {
+        "firstName": {
+          "label": "Prénom",
+          "placeholder": "Entrez votre prénom"
+        },
+        "lastName": {
+          "label": "Nom",
+          "placeholder": "Entrez votre nom"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "exemple@email.com"
+        },
+        "phone": {
+          "label": "Téléphone",
+          "placeholder": "06 12 34 56 78"
+        }
+      },
+      "validation": {
+        "required": "Champ requis",
+        "emailInvalid": "Email invalide",
+        "phoneInvalid": "Téléphone invalide"
+      }
+    },
+    "errors": {
+      "reservationExpired": "Réservation expirée, libération en cours…"
+    }
+  },
+  "success": {
+    "title": "Paiement confirmé",
+    "message": "Merci pour votre achat !\nVos billets ont été réservés avec succès.",
+    "info": "Vous recevrez un email de confirmation avec tous les détails de votre réservation.",
+    "backToSeats": "Retour à la sélection des sièges"
+  }
+}
+

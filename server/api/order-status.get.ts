@@ -36,25 +36,22 @@ export default defineEventHandler(async (event) => {
   }
 
   /* =====================
-     3️⃣ Charger le hold actif
+     3️⃣ Charger les réservations hold
   ===================== */
-  const { data: reservation } = await supabaseAdmin
+  const { data: reservations, error: resError } = await supabaseAdmin
     .from('seat_reservation')
     .select('expires_at')
     .eq('order_id', orderId)
     .eq('status', 'hold')
-    .order('expires_at', { ascending: true })
-    .limit(1)
-    .single()
 
-  if (!reservation) {
+  if (resError || !reservations || reservations.length === 0) {
     return { status: 'expired' }
   }
 
   /* =====================
      4️⃣ Vérifier expiration
   ===================== */
-  const expiresAt = reservation.expires_at
+  const expiresAt = reservations[0].expires_at
 
   if (new Date(expiresAt).getTime() <= Date.now()) {
     return { status: 'expired' }
@@ -65,6 +62,7 @@ export default defineEventHandler(async (event) => {
   ===================== */
   return {
     status: 'pending',
-    expiresAt
+    expiresAt,
+    seatCount: reservations.length
   }
 })

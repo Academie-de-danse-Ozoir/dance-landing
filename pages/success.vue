@@ -3,11 +3,10 @@
     <div class="card">
       <div class="success-icon">
         <svg
-          width="64"
-          height="64"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
+          class="success-icon__svg"
         >
           <circle cx="12" cy="12" r="10" fill="#198754" />
           <path
@@ -20,26 +19,32 @@
         </svg>
       </div>
 
-      <h1>Paiement confirmé</h1>
+      <h1>{{ content.success.title }}</h1>
 
-      <p class="success-message">
-        Merci pour votre achat !<br />
-        Vos billets ont été réservés avec succès.
+      <p class="success-message" v-html="formattedMessage">
       </p>
 
       <p class="info-text">
-        Vous recevrez un email de confirmation avec tous les détails de votre réservation.
+        {{ content.success.info }}
       </p>
 
-      <NuxtLink to="/" class="btn btn-primary">
-        Retour à la sélection des sièges
-      </NuxtLink>
+      <LinkButton
+        to="/"
+        variant="primary"
+        :label="content.success.backToSeats"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
+import content from '../locales/fr.json'
+import LinkButton from '../components/buttons/LinkButton.vue'
+
+const formattedMessage = computed(() => {
+  return content.success.message.replace(/\n/g, '<br />')
+})
 
 onMounted(() => {
   localStorage.removeItem('order_id')
@@ -85,15 +90,26 @@ onMounted(() => {
   margin-bottom: 24px;
   display: flex;
   justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.success-icon__svg {
+  width: 64px;
+  height: 64px;
+  display: block;
   animation: scaleIn 0.5s ease-out 0.2s both;
+  flex-shrink: 0;
 }
 
 @keyframes scaleIn {
   from {
     transform: scale(0);
+    opacity: 0;
   }
   to {
     transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -119,50 +135,6 @@ h1 {
   line-height: 1.6;
 }
 
-.btn {
-  display: inline-block;
-  font-weight: 500;
-  line-height: 1.5;
-  text-align: center;
-  text-decoration: none;
-  vertical-align: middle;
-  cursor: pointer;
-  user-select: none;
-  background-color: #0d6efd;
-  border: 1px solid #0d6efd;
-  padding: 12px 24px;
-  font-size: 16px;
-  border-radius: 8px;
-  color: white;
-  transition: all 0.15s ease-in-out;
-}
-
-.btn:hover {
-  background-color: #0b5ed7;
-  border-color: #0a58ca;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-}
-
-.btn:active {
-  transform: translateY(0);
-}
-
-.btn-primary {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #0b5ed7;
-  border-color: #0a58ca;
-}
-
-a.btn {
-  text-decoration: none;
-  display: inline-block;
-}
 
 /* =====================
    RESPONSIVE - Bootstrap breakpoints
@@ -190,12 +162,8 @@ a.btn {
     font-size: 13px;
   }
 
-  .btn {
-    width: 100%;
-    padding: 14px 24px;
-  }
 
-  .success-icon svg {
+  .success-icon__svg {
     width: 56px;
     height: 56px;
   }
