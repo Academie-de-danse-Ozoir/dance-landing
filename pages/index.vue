@@ -46,6 +46,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import type { Seat, SeatStatus, ActiveOrder } from '../types'
+import { STORAGE_ORDER_KEY } from '../constants'
 import content from '../locales/fr.json'
 import ActiveOrderAlert from '../components/alerts/ActiveOrderAlert.vue'
 import SeatMap from '../components/seats/SeatMap.vue'
@@ -56,18 +58,8 @@ import DefaultButton from '../components/buttons/DefaultButton.vue'
 /* =====================
    TYPES
 ===================== */
-type SeatStatus = 'free' | 'hold' | 'paid'
-
-type Seat = {
-  id: string
-  label: string
-  status: SeatStatus
-  x: number
-  y: number
-}
-
 type OrderStatusResponse = {
-  status: 'pending' | 'paid' | 'expired' | 'not_found'
+  status: 'pending' | 'paid' | 'expired' | 'canceled' | 'refunded' | 'not_found'
   expiresAt?: string
   seatCount?: number
 }
@@ -90,21 +82,15 @@ type SeatApiResponse = {
 const SEAT_SPACING = 60
 const SEAT_OFFSET = 20
 const SEATS_PER_ROW = 6
-const SEAT_REFRESH_INTERVAL = 2000
+const SEAT_REFRESH_INTERVAL = 500
 
 /* =====================
    STATE
 ===================== */
 const seats = ref<Seat[]>([])
 const selectedSeatIds = ref<string[]>([])
-const orderId = ref<string | null>(null)
 const error = ref<string | null>(null)
-
-const activeOrder = ref<{
-  orderId: string
-  expiresAt: string
-  seatCount?: number
-} | null>(null)
+const activeOrder = ref<ActiveOrder | null>(null)
 
 const showModal = ref(false)
 const isSubmitting = ref(false)
@@ -183,10 +169,10 @@ function startMainAnimationLoop() {
       }
     }
 
-    // 2. Rafraîchissement des sièges toutes les 2 secondes
+    // 2. Rafraîchissement des sièges (non bloquant)
     if (now - lastSeatRefresh >= SEAT_REFRESH_INTERVAL) {
-      await loadSeats()
       lastSeatRefresh = now
+      loadSeats()
     }
 
     mainAnimationFrame = requestAnimationFrame(update)
@@ -215,7 +201,7 @@ onMounted(async () => {
 
   if (!process.client) return
 
-  const storedOrderId = localStorage.getItem('order_id')
+  const storedOrderId = localStorage.getItem(STORAGE_ORDER_KEY)
   if (!storedOrderId) return
 
   try {
@@ -229,13 +215,19 @@ onMounted(async () => {
         expiresAt: res.expiresAt,
         seatCount: res.seatCount
       }
-      orderId.value = storedOrderId
       startTimerFromExpiresAt(res.expiresAt)
     } else {
-      localStorage.removeItem('order_id')
+      if (res.status === 'expired') {
+        await $fetch('/api/cancel-order', {
+          method: 'POST',
+          body: { orderId: storedOrderId }
+        })
+        await loadSeats()
+      }
+      localStorage.removeItem(STORAGE_ORDER_KEY)
     }
   } catch {
-    localStorage.removeItem('order_id')
+    localStorage.removeItem(STORAGE_ORDER_KEY)
   }
 })
 
@@ -246,9 +238,10 @@ function toggleSeat(id: string) {
   const seat = seats.value.find(s => s.id === id)
   if (!seat || seat.status !== 'free') return
 
-  selectedSeatIds.value.includes(id)
-    ? selectedSeatIds.value = selectedSeatIds.value.filter(s => s !== id)
-    : selectedSeatIds.value.push(id)
+  const ids = selectedSeatIds.value
+  selectedSeatIds.value = ids.includes(id)
+    ? ids.filter((s) => s !== id)
+    : [...ids, id]
 }
 
 /* =====================
@@ -328,8 +321,7 @@ async function submitReservation() {
       expiresAt: res.expiresAt,
       seatCount: selectedSeatIds.value.length
     }
-    orderId.value = res.orderId
-    localStorage.setItem('order_id', res.orderId)
+    localStorage.setItem(STORAGE_ORDER_KEY, res.orderId)
 
     selectedSeatIds.value = []
     startTimerFromExpiresAt(res.expiresAt)
@@ -351,11 +343,10 @@ async function cancelActiveOrder() {
   })
 
   activeOrder.value = null
-  orderId.value = null
   remainingSeconds.value = 0
   timerExpiresAt = null
   timerHasExpired = false
-  localStorage.removeItem('order_id')
+  localStorage.removeItem(STORAGE_ORDER_KEY)
   await loadSeats()
 }
 
@@ -363,11 +354,12 @@ async function cancelActiveOrder() {
    STRIPE
 ===================== */
 async function pay() {
-  if (!orderId.value) return
+  const orderId = activeOrder.value?.orderId
+  if (!orderId) return
 
   const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
     method: 'POST',
-    body: { orderId: orderId.value }
+    body: { orderId }
   })
 
   window.location.href = res.url

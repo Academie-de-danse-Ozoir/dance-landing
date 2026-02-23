@@ -1,56 +1,114 @@
 <template>
   <div class="page">
-    <div class="card">
-      <div class="success-icon">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          class="success-icon__svg"
-        >
-          <circle cx="12" cy="12" r="10" fill="#198754" />
-          <path
-            d="M7 12l3 3 6-6"
-            stroke="white"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </div>
+    <div class="card" v-if="isLoaded">
 
-      <h1>{{ content.success.title }}</h1>
+      <!-- SUCCESS -->
+      <template v-if="isValid">
+        <div class="success-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="success-icon__svg"
+          >
+            <circle cx="12" cy="12" r="10" fill="#198754" />
+            <path
+              d="M7 12l3 3 6-6"
+              stroke="white"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
 
-      <p class="success-message" v-html="formattedMessage">
-      </p>
+        <h1>{{ content.success.title }}</h1>
 
-      <p class="info-text">
-        {{ content.success.info }}
-      </p>
+        <p class="success-message" v-html="formattedMessage"></p>
+
+        <p class="info-text">
+          {{ content.success.info }}
+        </p>
+      </template>
+
+      <!-- ERROR / EXPIRED -->
+      <template v-else>
+        <div class="error-icon">
+          ❌
+        </div>
+
+        <h1>Paiement invalide</h1>
+
+        <p class="error-message">
+          Le paiement a été refusé ou la commande a expiré.
+        </p>
+
+        <p class="info-text">
+          Si le paiement a été effectué après expiration,
+          il a été automatiquement remboursé.
+        </p>
+      </template>
 
       <LinkButton
         to="/"
         variant="primary"
-        :label="content.success.backToSeats"
+        label="Retour aux sièges"
       />
+    </div>
+
+    <!-- LOADING -->
+    <div v-else class="card">
+      Vérification du paiement...
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { STORAGE_ORDER_KEY } from '../constants'
 import content from '../locales/fr.json'
 import LinkButton from '../components/buttons/LinkButton.vue'
+
+const route = useRoute()
+
+const isValid = ref(false)
+const isLoaded = ref(false)
 
 const formattedMessage = computed(() => {
   return content.success.message.replace(/\n/g, '<br />')
 })
 
-onMounted(() => {
-  localStorage.removeItem('order_id')
+onMounted(async () => {
+  const orderId = route.query.order_id as string
+
+  if (!orderId) {
+    isLoaded.value = true
+    return
+  }
+
+  try {
+    const data = await $fetch<{ status: string }>('/api/order-status', {
+      query: { orderId }
+    })
+
+    if (data?.status === 'paid') {
+      isValid.value = true
+      localStorage.removeItem(STORAGE_ORDER_KEY)
+    } else if (data?.status === 'pending' || data?.status === 'expired') {
+      // Paiement non validé → même appel que le bouton "Annuler" sur la home
+      await $fetch('/api/cancel-order', {
+        method: 'POST',
+        body: { orderId }
+      })
+    }
+  } catch (err) {
+    console.error(err)
+  }
+
+  isLoaded.value = true
 })
 </script>
-
 
 <style scoped>
 .page {
@@ -135,11 +193,6 @@ h1 {
   line-height: 1.6;
 }
 
-
-/* =====================
-   RESPONSIVE - Bootstrap breakpoints
-===================== */
-/* Extra small devices (phones, less than 576px) */
 @media (max-width: 575.98px) {
   .page {
     padding: 15px;
@@ -169,14 +222,12 @@ h1 {
   }
 }
 
-/* Small devices (landscape phones, 576px and up) */
 @media (min-width: 576px) and (max-width: 767.98px) {
   .card {
     padding: 40px 28px;
   }
 }
 
-/* Medium devices (tablets, 768px and up) */
 @media (min-width: 768px) {
   .card {
     padding: 48px 32px;

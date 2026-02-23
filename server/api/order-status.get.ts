@@ -25,7 +25,6 @@ export default defineEventHandler(async (event) => {
 
   /* =====================
      2️⃣ SI PAYÉ → STOP IMMÉDIAT
-     (CRITIQUE POUR TON BUG)
   ===================== */
   if (order.status === 'paid') {
     return { status: 'paid' }

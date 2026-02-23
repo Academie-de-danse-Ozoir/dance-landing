@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   }
 
   /* =====================
-     3) Vérifier expiration (SOURCE DE VÉRITÉ)
+     3) Vérifier expiration
   ===================== */
   const now = Date.now()
 
@@ -91,7 +91,6 @@ export default defineEventHandler(async (event) => {
       order_id: orderId
     },
 
-    // ✅ ICI
     success_url: `${process.env.PUBLIC_SITE_URL}/success?order_id=${orderId}`,
     cancel_url: `${process.env.PUBLIC_SITE_URL}/cancel?order_id=${orderId}`
   })

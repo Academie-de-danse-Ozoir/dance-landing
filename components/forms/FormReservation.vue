@@ -44,7 +44,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import content from '../../locales/fr.json'
 import FormField from './FormField.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
@@ -71,12 +70,12 @@ const emit = defineEmits<{
   'field-blur': [key: string]
 }>()
 
-const formFields = computed(() => [
-  { key: 'firstName', label: content.home.modal.fields.firstName.label, type: 'text', placeholder: content.home.modal.fields.firstName.placeholder },
-  { key: 'lastName', label: content.home.modal.fields.lastName.label, type: 'text', placeholder: content.home.modal.fields.lastName.placeholder },
-  { key: 'email', label: content.home.modal.fields.email.label, type: 'email', placeholder: content.home.modal.fields.email.placeholder },
-  { key: 'phone', label: content.home.modal.fields.phone.label, type: 'tel', placeholder: content.home.modal.fields.phone.placeholder }
-])
+const formFields = [
+  { key: 'firstName' as const, label: content.home.modal.fields.firstName.label, type: 'text' as const, placeholder: content.home.modal.fields.firstName.placeholder },
+  { key: 'lastName' as const, label: content.home.modal.fields.lastName.label, type: 'text' as const, placeholder: content.home.modal.fields.lastName.placeholder },
+  { key: 'email' as const, label: content.home.modal.fields.email.label, type: 'email' as const, placeholder: content.home.modal.fields.email.placeholder },
+  { key: 'phone' as const, label: content.home.modal.fields.phone.label, type: 'tel' as const, placeholder: content.home.modal.fields.phone.placeholder }
+]
 
 function updateField(key: keyof FormData, value: string) {
   emit('update:form', { ...props.form, [key]: value })
@@ -172,45 +171,6 @@ function handleFieldBlur(key: string) {
     margin-top: auto;
   }
 
-  &__spinner {
-    display: inline-block;
-    vertical-align: text-bottom;
-    border: 0.15em solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    animation: spinner-border 0.75s linear infinite;
-
-    &--sm {
-      width: 0.875rem;
-      height: 0.875rem;
-      border-width: 0.125em;
-    }
-
-    &--me-2 {
-      margin-right: 0.5rem;
-    }
-  }
-}
-
-.spinner-border {
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  vertical-align: text-bottom;
-  border: 0.15em solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spinner-border 0.75s linear infinite;
-
-  &--sm {
-    width: 0.875rem;
-    height: 0.875rem;
-    border-width: 0.125em;
-  }
-
-  &--me-2 {
-    margin-right: 0.5rem;
-  }
 }
 
 @keyframes fadeIn {
@@ -230,12 +190,6 @@ function handleFieldBlur(key: string) {
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-
-@keyframes spinner-border {
-  to {
-    transform: rotate(360deg);
   }
 }
 

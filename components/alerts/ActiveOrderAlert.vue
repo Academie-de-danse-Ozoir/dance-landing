@@ -23,8 +23,10 @@
 import content from '../../locales/fr.json'
 import DefaultButton from '../buttons/DefaultButton.vue'
 
+import type { ActiveOrder } from '../../types'
+
 defineProps<{
-  activeOrder: { orderId: string; expiresAt: string; seatCount?: number } | null
+  activeOrder: ActiveOrder | null
   formattedTime: string
 }>()
 

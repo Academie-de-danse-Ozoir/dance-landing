@@ -1,5 +1,5 @@
-// server/api/cancel-order.post.ts
 import { supabaseAdmin } from '../lib/supabaseAdmin'
+import { stripe } from '../lib/stripe'
 
 export default defineEventHandler(async (event) => {
   const { orderId } = await readBody(event)
@@ -11,22 +11,16 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  /* =====================
-     1) Charger la commande
-  ===================== */
   const { data: order, error } = await supabaseAdmin
     .from('order')
-    .select('id, status')
+    .select('id, status, stripe_session_id')
     .eq('id', orderId)
     .single()
 
   if (error || !order) {
-    return { ok: true } // idempotent
+    return { ok: true }
   }
 
-  /* =====================
-     2) Sécurité : commande payée = INTERDIT
-  ===================== */
   if (order.status === 'paid') {
     throw createError({
       statusCode: 409,
@@ -34,21 +28,27 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  /* =====================
-     3) Supprimer les réservations
-  ===================== */
+  // 1️⃣ Marquer comme expired
+  await supabaseAdmin
+    .from('order')
+    .update({ status: 'expired' })
+    .eq('id', orderId)
+
+  // 2️⃣ Libérer les seats
   await supabaseAdmin
     .from('seat_reservation')
     .delete()
     .eq('order_id', orderId)
 
-  /* =====================
-     4) SUPPRIMER LA COMMANDE
-  ===================== */
-  await supabaseAdmin
-    .from('order')
-    .delete()
-    .eq('id', orderId)
+  // 3️⃣ Expirer la session Stripe
+  if (order.stripe_session_id) {
+    try {
+      await stripe.checkout.sessions.expire(order.stripe_session_id)
+    } catch (err) {
+      console.log('Stripe session already expired or completed')
+    }
+  }
 
   return { ok: true }
 })
+

@@ -36,17 +36,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import type { Seat, ActiveOrder } from '../../types'
 import content from '../../locales/fr.json'
-
-type SeatStatus = 'free' | 'hold' | 'paid'
-
-type Seat = {
-  id: string
-  label: string
-  status: SeatStatus
-  x: number
-  y: number
-}
 
 const SEAT_SIZE = 40
 const SEAT_RADIUS = 4
@@ -61,17 +53,19 @@ const SEAT_COLORS = {
 const props = defineProps<{
   seats: Seat[]
   selectedSeatIds: string[]
-  activeOrder: { orderId: string; expiresAt: string; seatCount?: number } | null
+  activeOrder: ActiveOrder | null
 }>()
 
 const emit = defineEmits<{
   'seat-click': [seatId: string]
 }>()
 
+const selectedSet = computed(() => new Set(props.selectedSeatIds))
+
 function getSeatFill(seat: Seat) {
   if (seat.status === 'paid') return SEAT_COLORS.paid
   if (seat.status === 'hold') return SEAT_COLORS.hold
-  if (props.selectedSeatIds.includes(seat.id)) return SEAT_COLORS.selected
+  if (selectedSet.value.has(seat.id)) return SEAT_COLORS.selected
   return SEAT_COLORS.free
 }
 
