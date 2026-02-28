@@ -7,7 +7,7 @@
         :active-order="activeOrder"
         :formatted-time="formattedTime"
         @resume-payment="pay"
-        @cancel="cancelActiveOrder"
+        @cancel="() => cancelActiveOrder('cancel')"
       />
 
       <SeatMap
@@ -165,7 +165,7 @@ function startMainAnimationLoop() {
       if (remainingSeconds.value <= 0) {
         timerHasExpired = true
         timerExpiresAt = null
-        await cancelActiveOrder()
+        await cancelActiveOrder('timer')
       }
     }
 
@@ -220,7 +220,7 @@ onMounted(async () => {
       if (res.status === 'expired') {
         await $fetch('/api/cancel-order', {
           method: 'POST',
-          body: { orderId: storedOrderId }
+          body: { orderId: storedOrderId, reason: 'timer' }
         })
         await loadSeats()
       }
@@ -334,12 +334,12 @@ async function submitReservation() {
 /* =====================
    CANCEL
 ===================== */
-async function cancelActiveOrder() {
+async function cancelActiveOrder(reason: 'timer' | 'cancel' = 'cancel') {
   if (!activeOrder.value) return
 
   await $fetch('/api/cancel-order', {
     method: 'POST',
-    body: { orderId: activeOrder.value.orderId }
+    body: { orderId: activeOrder.value.orderId, reason }
   })
 
   activeOrder.value = null

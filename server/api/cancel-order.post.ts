@@ -2,7 +2,9 @@ import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { stripe } from '../lib/stripe'
 
 export default defineEventHandler(async (event) => {
-  const { orderId } = await readBody(event)
+  const body = await readBody(event)
+  const orderId = body?.orderId
+  const reason = body?.reason === 'timer' ? 'timer' : 'cancel'
 
   if (!orderId) {
     throw createError({
@@ -28,10 +30,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 1️⃣ Marquer comme expired
+  // expired = timer terminé, canceled = annulation utilisateur ou autre (ne pas écraser expired)
+  const newStatus =
+    reason === 'timer' ? 'expired' : order.status === 'expired' ? 'expired' : 'canceled'
   await supabaseAdmin
     .from('order')
-    .update({ status: 'expired' })
+    .update({ status: newStatus })
     .eq('id', orderId)
 
   // 2️⃣ Libérer les seats

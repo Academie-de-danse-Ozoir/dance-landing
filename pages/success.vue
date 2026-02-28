@@ -96,10 +96,9 @@ onMounted(async () => {
       isValid.value = true
       localStorage.removeItem(STORAGE_ORDER_KEY)
     } else if (data?.status === 'pending' || data?.status === 'expired') {
-      // Paiement non validé → même appel que le bouton "Annuler" sur la home
       await $fetch('/api/cancel-order', {
         method: 'POST',
-        body: { orderId }
+        body: { orderId, reason: 'cancel' }
       })
     }
   } catch (err) {

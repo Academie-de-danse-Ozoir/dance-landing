@@ -52,8 +52,8 @@ export default defineEventHandler(async (event) => {
       reservations.length > 0 &&
       reservations.every((r) => new Date(r.expires_at).getTime() > now)
 
-    // Paiement trop tard : order déjà expired OU plus de réservations valides
-    if (order.status === 'expired' || !hasValidHolds) {
+    // Paiement trop tard : order déjà expired/canceled OU plus de réservations valides
+    if (order.status === 'expired' || order.status === 'canceled' || !hasValidHolds) {
       await supabaseAdmin
         .from('order')
         .update({ status: 'refunded' })
