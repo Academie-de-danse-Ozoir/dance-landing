@@ -26,7 +26,7 @@
         v-for="seat in seats"
         :key="seat.id + '-label'"
         :x="seat.x + SEAT_SIZE / 2"
-        :y="seat.y + SEAT_SIZE / 2 + 6"
+        :y="seat.y + SEAT_SIZE / 2 + 1"
         class="seat-map__label"
       >
         {{ seat.label }}
@@ -40,8 +40,8 @@ import { computed } from 'vue'
 import type { Seat, ActiveOrder } from '../../types'
 import content from '../../locales/fr.json'
 
-const SEAT_SIZE = 40
-const SEAT_RADIUS = 4
+const SEAT_SIZE = 9
+const SEAT_RADIUS = 1
 
 const SEAT_COLORS = {
   paid: '#e53935',
@@ -100,11 +100,12 @@ function handleSeatClick(seat: Seat) {
 
   &__svg {
     width: 100%;
-    max-width: 420px;
-    height: auto;
+    max-width: 100%;
+    height: 600px;
     border: 2px solid #dee2e6;
     border-radius: 8px;
     background: #f8f9fa;
+    user-select: none;
   }
 
   &__seat {
@@ -123,7 +124,7 @@ function handleSeatClick(seat: Seat) {
 
   &__label {
     text-anchor: middle;
-    font-size: 12px;
+    font-size: 3px;
     pointer-events: none;
   }
 }

@@ -1,11 +1,19 @@
 import { stripe } from '../lib/stripe'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
+import {
+  ERROR_MISSING_ORDER_ID,
+  ERROR_ORDER_NOT_FOUND,
+  ERROR_ORDER_NOT_PAYABLE,
+  ERROR_RESERVATION_EXPIRED,
+  ORDER_STATUS,
+  SEAT_STATUS
+} from '../../constants'
 
 export default defineEventHandler(async (event) => {
   const { orderId } = await readBody(event)
 
   if (!orderId) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing orderId' })
+    throw createError({ statusCode: 400, statusMessage: ERROR_MISSING_ORDER_ID })
   }
 
   /* =====================
@@ -18,11 +26,11 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (orderError || !order) {
-    throw createError({ statusCode: 404, statusMessage: 'Order not found' })
+    throw createError({ statusCode: 404, statusMessage: ERROR_ORDER_NOT_FOUND })
   }
 
-  if (order.status !== 'pending') {
-    throw createError({ statusCode: 409, statusMessage: 'Order not payable' })
+  if (order.status !== ORDER_STATUS.PENDING) {
+    throw createError({ statusCode: 409, statusMessage: ERROR_ORDER_NOT_PAYABLE })
   }
 
   /* =====================
@@ -32,12 +40,12 @@ export default defineEventHandler(async (event) => {
     .from('seat_reservation')
     .select('id, expires_at')
     .eq('order_id', orderId)
-    .eq('status', 'hold')
+    .eq('status', SEAT_STATUS.HOLD)
 
   if (resError || !reservations || reservations.length === 0) {
     throw createError({
       statusCode: 409,
-      statusMessage: 'Reservation expired'
+      statusMessage: ERROR_RESERVATION_EXPIRED
     })
   }
 
@@ -56,11 +64,11 @@ export default defineEventHandler(async (event) => {
       .from('seat_reservation')
       .delete()
       .eq('order_id', orderId)
-      .eq('status', 'hold')
+      .eq('status', SEAT_STATUS.HOLD)
 
     throw createError({
       statusCode: 409,
-      statusMessage: 'Reservation expired'
+      statusMessage: ERROR_RESERVATION_EXPIRED
     })
   }
 

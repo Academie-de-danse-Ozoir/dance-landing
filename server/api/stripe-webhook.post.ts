@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { buffer } from 'node:stream/consumers'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
+import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -27,7 +28,7 @@ export default defineEventHandler(async (event) => {
     const orderId = session.metadata?.order_id
 
     if (!orderId) return { received: true }
-    if (session.payment_status !== 'paid') return { received: true }
+    if (session.payment_status !== ORDER_STATUS.PAID) return { received: true }
 
     const { data: order } = await supabaseAdmin
       .from('order')
@@ -36,15 +37,15 @@ export default defineEventHandler(async (event) => {
       .single()
 
     if (!order) return { received: true }
-    if (order.status === 'paid') return { received: true }
-    if (order.status === 'refunded') return { received: true }
+    if (order.status === ORDER_STATUS.PAID) return { received: true }
+    if (order.status === ORDER_STATUS.REFUNDED) return { received: true }
 
     // Source de vérité : les réservations hold encore valides (expires_at > now)
     const { data: reservations } = await supabaseAdmin
       .from('seat_reservation')
       .select('id, expires_at')
       .eq('order_id', orderId)
-      .eq('status', 'hold')
+      .eq('status', SEAT_STATUS.HOLD)
 
     const now = Date.now()
     const hasValidHolds =
@@ -53,10 +54,10 @@ export default defineEventHandler(async (event) => {
       reservations.every((r) => new Date(r.expires_at).getTime() > now)
 
     // Paiement trop tard : order déjà expired/canceled OU plus de réservations valides
-    if (order.status === 'expired' || order.status === 'canceled' || !hasValidHolds) {
+    if (order.status === ORDER_STATUS.EXPIRED || order.status === ORDER_STATUS.CANCELED || !hasValidHolds) {
       await supabaseAdmin
         .from('order')
-        .update({ status: 'refunded' })
+        .update({ status: ORDER_STATUS.REFUNDED })
         .eq('id', orderId)
 
       const paymentIntentId =
@@ -76,7 +77,7 @@ export default defineEventHandler(async (event) => {
           .from('seat_reservation')
           .delete()
           .eq('order_id', orderId)
-          .eq('status', 'hold')
+          .eq('status', SEAT_STATUS.HOLD)
       }
       return { received: true }
     }
@@ -84,14 +85,14 @@ export default defineEventHandler(async (event) => {
     // Paiement OK : réservations encore valides
     await supabaseAdmin
       .from('order')
-      .update({ status: 'paid' })
+      .update({ status: ORDER_STATUS.PAID })
       .eq('id', orderId)
 
     await supabaseAdmin
       .from('seat_reservation')
-      .update({ status: 'paid', expires_at: null })
+      .update({ status: SEAT_STATUS.PAID, expires_at: null })
       .eq('order_id', orderId)
-      .eq('status', 'hold')
+      .eq('status', SEAT_STATUS.HOLD)
   }
 
   return { received: true }

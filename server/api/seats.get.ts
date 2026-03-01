@@ -1,10 +1,9 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
+import { EVENT_ID, SEAT_STATUS } from '../../constants'
 
 type SeatStatus = 'free' | 'hold' | 'paid'
 
 export default defineEventHandler(async () => {
-  const EVENT_ID = 'eb53c5be-ac8a-4bdc-8dca-73ceff948e49'
-
   // 1️⃣ Tous les sièges
   const { data: seats, error: seatError } = await supabaseAdmin
     .from('seat')
@@ -22,7 +21,7 @@ export default defineEventHandler(async () => {
     .from('seat_reservation')
     .select('seat_id, status')
     .eq('event_id', EVENT_ID)
-    .in('status', ['hold', 'paid'])
+    .in('status', [SEAT_STATUS.HOLD, SEAT_STATUS.PAID])
 
   if (resError) {
     throw createError({
@@ -41,7 +40,7 @@ export default defineEventHandler(async () => {
   return seats.map(seat => ({
     id: seat.id,
     label: seat.label,
-    status: reservationMap.get(seat.id) ?? 'free'
+    status: reservationMap.get(seat.id) ?? SEAT_STATUS.FREE
   }))
 })
 

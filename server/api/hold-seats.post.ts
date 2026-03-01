@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
+import { EVENT_ID } from '../../constants'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -24,8 +25,6 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Missing customer information'
     })
   }
-
-  const EVENT_ID = 'eb53c5be-ac8a-4bdc-8dca-73ceff948e49'
 
   const { data, error } = await supabaseAdmin.rpc('hold_seats', {
     p_seat_ids: seatIds,

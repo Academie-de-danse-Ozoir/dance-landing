@@ -1,15 +1,21 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { stripe } from '../lib/stripe'
+import {
+  ERROR_MISSING_ORDER_ID,
+  ERROR_PAID_ORDER_CANNOT_BE_CANCELLED,
+  ORDER_STATUS,
+  CANCEL_REASON
+} from '../../constants'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const orderId = body?.orderId
-  const reason = body?.reason === 'timer' ? 'timer' : 'cancel'
+  const reason = body?.reason === CANCEL_REASON.TIMER ? CANCEL_REASON.TIMER : CANCEL_REASON.USER
 
   if (!orderId) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing orderId'
+      statusMessage: ERROR_MISSING_ORDER_ID
     })
   }
 
@@ -23,16 +29,20 @@ export default defineEventHandler(async (event) => {
     return { ok: true }
   }
 
-  if (order.status === 'paid') {
+  if (order.status === ORDER_STATUS.PAID) {
     throw createError({
       statusCode: 409,
-      statusMessage: 'Paid order cannot be cancelled'
+      statusMessage: ERROR_PAID_ORDER_CANNOT_BE_CANCELLED
     })
   }
 
   // expired = timer terminé, canceled = annulation utilisateur ou autre (ne pas écraser expired)
   const newStatus =
-    reason === 'timer' ? 'expired' : order.status === 'expired' ? 'expired' : 'canceled'
+    reason === CANCEL_REASON.TIMER
+      ? ORDER_STATUS.EXPIRED
+      : order.status === ORDER_STATUS.EXPIRED
+        ? ORDER_STATUS.EXPIRED
+        : ORDER_STATUS.CANCELED
   await supabaseAdmin
     .from('order')
     .update({ status: newStatus })

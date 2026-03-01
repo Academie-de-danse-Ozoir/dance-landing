@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
+import { ERROR_MISSING_ORDER_ID, ORDER_STATUS, SEAT_STATUS } from '../../constants'
 
 export default defineEventHandler(async (event) => {
   const orderId = getQuery(event).orderId as string
@@ -6,7 +7,7 @@ export default defineEventHandler(async (event) => {
   if (!orderId) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing orderId'
+      statusMessage: ERROR_MISSING_ORDER_ID
     })
   }
 
@@ -26,11 +27,11 @@ export default defineEventHandler(async (event) => {
   /* =====================
      2️⃣ SI PAYÉ → STOP IMMÉDIAT
   ===================== */
-  if (order.status === 'paid') {
-    return { status: 'paid' }
+  if (order.status === ORDER_STATUS.PAID) {
+    return { status: ORDER_STATUS.PAID }
   }
 
-  if (order.status !== 'pending') {
+  if (order.status !== ORDER_STATUS.PENDING) {
     return { status: order.status }
   }
 
@@ -41,10 +42,10 @@ export default defineEventHandler(async (event) => {
     .from('seat_reservation')
     .select('expires_at')
     .eq('order_id', orderId)
-    .eq('status', 'hold')
+    .eq('status', SEAT_STATUS.HOLD)
 
   if (resError || !reservations || reservations.length === 0) {
-    return { status: 'expired' }
+    return { status: ORDER_STATUS.EXPIRED }
   }
 
   /* =====================
@@ -53,14 +54,14 @@ export default defineEventHandler(async (event) => {
   const expiresAt = reservations[0].expires_at
 
   if (new Date(expiresAt).getTime() <= Date.now()) {
-    return { status: 'expired' }
+    return { status: ORDER_STATUS.EXPIRED }
   }
 
   /* =====================
      5️⃣ Pending valide
   ===================== */
   return {
-    status: 'pending',
+    status: ORDER_STATUS.PENDING,
     expiresAt,
     seatCount: reservations.length
   }

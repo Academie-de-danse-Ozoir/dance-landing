@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { STORAGE_ORDER_KEY } from '../constants'
+import { STORAGE_ORDER_KEY, CANCEL_REASON, ORDER_STATUS } from '../constants'
 import content from '../locales/fr.json'
 import LinkButton from '../components/buttons/LinkButton.vue'
 
@@ -92,13 +92,13 @@ onMounted(async () => {
       query: { orderId }
     })
 
-    if (data?.status === 'paid') {
+    if (data?.status === ORDER_STATUS.PAID) {
       isValid.value = true
       localStorage.removeItem(STORAGE_ORDER_KEY)
-    } else if (data?.status === 'pending' || data?.status === 'expired') {
+    } else if (data?.status === ORDER_STATUS.PENDING || data?.status === ORDER_STATUS.EXPIRED) {
       await $fetch('/api/cancel-order', {
         method: 'POST',
-        body: { orderId, reason: 'cancel' }
+        body: { orderId, reason: CANCEL_REASON.USER }
       })
     }
   } catch (err) {

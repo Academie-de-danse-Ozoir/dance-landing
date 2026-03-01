@@ -7,7 +7,7 @@
         :active-order="activeOrder"
         :formatted-time="formattedTime"
         @resume-payment="pay"
-        @cancel="() => cancelActiveOrder('cancel')"
+        @cancel="() => cancelActiveOrder(CANCEL_REASON.USER)"
       />
 
       <SeatMap
@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import type { Seat, SeatStatus, ActiveOrder } from '../types'
-import { STORAGE_ORDER_KEY } from '../constants'
+import { STORAGE_ORDER_KEY, CANCEL_REASON } from '../constants'
 import content from '../locales/fr.json'
 import ActiveOrderAlert from '../components/alerts/ActiveOrderAlert.vue'
 import SeatMap from '../components/seats/SeatMap.vue'
@@ -79,9 +79,9 @@ type SeatApiResponse = {
 /* =====================
    CONSTANTS
 ===================== */
-const SEAT_SPACING = 60
+const SEAT_SPACING = 10
 const SEAT_OFFSET = 20
-const SEATS_PER_ROW = 6
+const SEATS_PER_ROW = 38
 const SEAT_REFRESH_INTERVAL = 500
 
 /* =====================
@@ -165,7 +165,7 @@ function startMainAnimationLoop() {
       if (remainingSeconds.value <= 0) {
         timerHasExpired = true
         timerExpiresAt = null
-        await cancelActiveOrder('timer')
+        await cancelActiveOrder(CANCEL_REASON.TIMER)
       }
     }
 
@@ -220,7 +220,7 @@ onMounted(async () => {
       if (res.status === 'expired') {
         await $fetch('/api/cancel-order', {
           method: 'POST',
-          body: { orderId: storedOrderId, reason: 'timer' }
+          body: { orderId: storedOrderId, reason: CANCEL_REASON.TIMER }
         })
         await loadSeats()
       }
@@ -334,7 +334,7 @@ async function submitReservation() {
 /* =====================
    CANCEL
 ===================== */
-async function cancelActiveOrder(reason: 'timer' | 'cancel' = 'cancel') {
+async function cancelActiveOrder(reason: 'timer' | 'cancel' = CANCEL_REASON.USER) {
   if (!activeOrder.value) return
 
   await $fetch('/api/cancel-order', {
@@ -378,7 +378,7 @@ async function pay() {
   }
 
   &__wrapper {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
     background: white;
     padding: 40px;
