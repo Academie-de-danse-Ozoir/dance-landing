@@ -1,5 +1,11 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { EVENT_ID } from '../../constants'
+import {
+  EVENT_ID,
+  ERROR_NO_SEATS_SELECTED,
+  ERROR_MISSING_CUSTOMER_INFO,
+  ERROR_SEATS_UNAVAILABLE,
+  ERROR_CREATE_RESERVATION_FAILED
+} from '../../constants'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -15,14 +21,14 @@ export default defineEventHandler(async (event) => {
   if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'No seats selected'
+      statusMessage: ERROR_NO_SEATS_SELECTED
     })
   }
 
   if (!firstName || !lastName || !email || !phone) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing customer information'
+      statusMessage: ERROR_MISSING_CUSTOMER_INFO
     })
   }
 
@@ -39,14 +45,14 @@ export default defineEventHandler(async (event) => {
     console.error('hold_seats error:', error)
     throw createError({
       statusCode: 409,
-      statusMessage: error.message
+      statusMessage: ERROR_SEATS_UNAVAILABLE
     })
   }
 
   if (!data || data.length === 0) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to create reservation'
+      statusMessage: ERROR_CREATE_RESERVATION_FAILED
     })
   }
 

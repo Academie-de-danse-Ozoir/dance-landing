@@ -52,7 +52,7 @@
       <LinkButton
         to="/"
         variant="primary"
-        label="Retour aux sièges"
+        :label="content.success.backToSeats"
       />
     </div>
 

@@ -121,6 +121,11 @@ const formattedTime = computed(() => {
   return `${m}:${s.toString().padStart(2, '0')}`
 })
 
+function getErrorMessage(err: unknown): string {
+  const e = err as { data?: { statusMessage?: string; message?: string } }
+  return e?.data?.statusMessage ?? e?.data?.message ?? content.home.errors.generic
+}
+
 const displayedSeatCount = computed(() => {
   return activeOrder.value?.seatCount ?? selectedSeatIds.value.length
 })
@@ -196,7 +201,11 @@ onUnmounted(() => {
    INIT
 ===================== */
 onMounted(async () => {
-  await loadSeats()
+  try {
+    await loadSeats()
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  }
   startMainAnimationLoop()
 
   if (!process.client) return
@@ -249,6 +258,7 @@ function toggleSeat(id: string) {
 ===================== */
 function openModal() {
   if (selectedSeatIds.value.length === 0) return
+  error.value = null
   showModal.value = true
 }
 
@@ -326,6 +336,8 @@ async function submitReservation() {
     selectedSeatIds.value = []
     startTimerFromExpiresAt(res.expiresAt)
     await pay()
+  } catch (err) {
+    error.value = getErrorMessage(err)
   } finally {
     isSubmitting.value = false
   }
@@ -337,17 +349,21 @@ async function submitReservation() {
 async function cancelActiveOrder(reason: 'timer' | 'cancel' = CANCEL_REASON.USER) {
   if (!activeOrder.value) return
 
-  await $fetch('/api/cancel-order', {
-    method: 'POST',
-    body: { orderId: activeOrder.value.orderId, reason }
-  })
+  try {
+    await $fetch('/api/cancel-order', {
+      method: 'POST',
+      body: { orderId: activeOrder.value.orderId, reason }
+    })
 
-  activeOrder.value = null
-  remainingSeconds.value = 0
-  timerExpiresAt = null
-  timerHasExpired = false
-  localStorage.removeItem(STORAGE_ORDER_KEY)
-  await loadSeats()
+    activeOrder.value = null
+    remainingSeconds.value = 0
+    timerExpiresAt = null
+    timerHasExpired = false
+    localStorage.removeItem(STORAGE_ORDER_KEY)
+    await loadSeats()
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  }
 }
 
 /* =====================
@@ -357,12 +373,16 @@ async function pay() {
   const orderId = activeOrder.value?.orderId
   if (!orderId) return
 
-  const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
-    method: 'POST',
-    body: { orderId }
-  })
+  try {
+    const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
+      method: 'POST',
+      body: { orderId }
+    })
 
-  window.location.href = res.url
+    window.location.href = res.url
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  }
 }
 </script>
 

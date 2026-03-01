@@ -1,7 +1,7 @@
 import Stripe from 'stripe'
 import { buffer } from 'node:stream/consumers'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS, ERROR_INVALID_REQUEST } from '../../constants'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
   } catch (err: any) {
-    throw createError({ statusCode: 400 })
+    throw createError({ statusCode: 400, statusMessage: ERROR_INVALID_REQUEST })
   }
 
   if (stripeEvent.type === 'checkout.session.completed') {

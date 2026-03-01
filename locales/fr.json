@@ -52,7 +52,8 @@
       }
     },
     "errors": {
-      "reservationExpired": "Réservation expirée, libération en cours…"
+      "reservationExpired": "Réservation expirée, libération en cours…",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
     }
   },
   "success": {
