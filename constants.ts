@@ -15,6 +15,7 @@ export const ERROR_CREATE_RESERVATION_FAILED = 'Impossible de créer la réserva
 export const ERROR_LOAD_SEATS_FAILED = 'Impossible de charger les sièges.'
 export const ERROR_LOAD_RESERVATIONS_FAILED = 'Impossible de charger les réservations.'
 export const ERROR_INVALID_REQUEST = 'Requête invalide.'
+export const ERROR_ADULT_CHILD_MISMATCH = 'Répartition adultes/enfants incohérente avec le nombre de places.'
 
 // Statuts commande
 export const ORDER_STATUS = {

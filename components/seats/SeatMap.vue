@@ -1,6 +1,6 @@
 <template>
-  <div class="seat-map__container">
-    <svg viewBox="0 0 420 320" class="seat-map__svg" preserveAspectRatio="xMidYMid meet">
+  <div class="seat-map_container">
+    <svg viewBox="0 0 420 320" class="container__svg" preserveAspectRatio="xMidYMid meet">
       <rect
         v-for="seat in seats"
         :key="seat.id"
@@ -12,11 +12,11 @@
         :ry="SEAT_RADIUS"
         :fill="getSeatFill(seat)"
         :class="[
-          'seat-map__seat',
+          'svg__seat',
           {
-            'seat-map__seat--clickable': isSeatClickable(seat),
-            'seat-map__seat--disabled': !isSeatClickable(seat),
-            'seat-map__seat--dimmed': getSeatOpacity(seat) < 1
+            'svg__seat--clickable': isSeatClickable(seat),
+            'svg__seat--disabled': !isSeatClickable(seat),
+            'svg__seat--dimmed': getSeatOpacity(seat) < 1
           }
         ]"
         :title="getSeatTitle(seat)"
@@ -27,7 +27,7 @@
         :key="seat.id + '-label'"
         :x="seat.x + SEAT_SIZE / 2"
         :y="seat.y + SEAT_SIZE / 2 + 1"
-        class="seat-map__label"
+        class="svg__label"
       >
         {{ seat.label }}
       </text>
@@ -91,14 +91,12 @@ function handleSeatClick(seat: Seat) {
 </script>
 
 <style lang="scss" scoped>
-.seat-map {
-  &__container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 24px;
-  }
+.seat-map_container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
 
-  &__svg {
+  .container__svg {
     width: 100%;
     max-width: 100%;
     height: 600px;
@@ -106,27 +104,26 @@ function handleSeatClick(seat: Seat) {
     border-radius: 8px;
     background: #f8f9fa;
     user-select: none;
-  }
 
-  &__seat {
-    &--clickable {
-      cursor: pointer;
+    .svg__seat {
+      &--clickable {
+        cursor: pointer;
+      }
+
+      &--disabled {
+        cursor: not-allowed;
+      }
+
+      &--dimmed {
+        opacity: 0.4;
+      }
     }
 
-    &--disabled {
-      cursor: not-allowed;
+    .svg__label {
+      text-anchor: middle;
+      font-size: 3px;
+      pointer-events: none;
     }
-
-    &--dimmed {
-      opacity: 0.4;
-    }
-  }
-
-  &__label {
-    text-anchor: middle;
-    font-size: 3px;
-    pointer-events: none;
   }
 }
 </style>
-

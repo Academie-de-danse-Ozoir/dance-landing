@@ -1,24 +1,24 @@
 <template>
   <div class="form-field">
-    <label :for="fieldKey" class="form-field__label">
-      {{ label }} <span class="form-field__required">*</span>
+    <label :for="fieldKey" class="form-field_label">
+      {{ label }} <span class="label__required">*</span>
     </label>
     <input
       :id="fieldKey"
       :value="modelValue"
       :type="type"
-      class="form-field__input"
+      class="form-field_input"
       :class="{
-        'form-field__input--invalid': error,
-        'form-field__input--valid': touched && !error
+        'form-field_input--invalid': error,
+        'form-field_input--valid': touched && !error
       }"
       :placeholder="placeholder"
       @blur="$emit('blur')"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
-    <div class="form-field__feedback">
-      <span v-if="error" class="form-field__error">{{ error }}</span>
-      <span v-else class="form-field__placeholder">&nbsp;</span>
+    <div class="form-field_feedback">
+      <span v-if="error" class="feedback__error">{{ error }}</span>
+      <span v-else class="feedback__placeholder">&nbsp;</span>
     </div>
   </div>
 </template>
@@ -44,15 +44,19 @@ defineEmits<{
 .form-field {
   margin-bottom: 20px;
 
-  &__label {
+  .form-field_label {
     display: block;
     margin-bottom: 6px;
     font-size: 14px;
     font-weight: 500;
     color: #212529;
+
+    .label__required {
+      color: #dc3545;
+    }
   }
 
-  &__input {
+  .form-field_input {
     display: block;
     width: 100%;
     padding: 10px 12px;
@@ -106,26 +110,21 @@ defineEmits<{
     }
   }
 
-  &__feedback {
+  .form-field_feedback {
     display: block;
     width: 100%;
     margin-top: 6px;
     min-height: 20px;
     line-height: 1.4;
-  }
 
-  &__error {
-    font-size: 13px;
-    color: #dc3545;
-  }
+    .feedback__error {
+      font-size: 13px;
+      color: #dc3545;
+    }
 
-  &__placeholder {
-    visibility: hidden;
-  }
-
-  &__required {
-    color: #dc3545;
+    .feedback__placeholder {
+      visibility: hidden;
+    }
   }
 }
 </style>
-

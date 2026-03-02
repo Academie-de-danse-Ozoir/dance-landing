@@ -5,12 +5,17 @@ import {
   ERROR_ORDER_NOT_FOUND,
   ERROR_ORDER_NOT_PAYABLE,
   ERROR_RESERVATION_EXPIRED,
+  ERROR_ADULT_CHILD_MISMATCH,
   ORDER_STATUS,
   SEAT_STATUS
 } from '../../constants'
 
+const PRICE_ADULT_CENTS = 10000   // 100 €
+const PRICE_CHILD_CENTS = 5000    // 50 €
+
 export default defineEventHandler(async (event) => {
-  const { orderId } = await readBody(event)
+  const body = await readBody(event)
+  const { orderId, adultCount: bodyAdult, childCount: bodyChild } = body
 
   if (!orderId) {
     throw createError({ statusCode: 400, statusMessage: ERROR_MISSING_ORDER_ID })
@@ -73,6 +78,36 @@ export default defineEventHandler(async (event) => {
   }
 
   const seatCount = reservations.length
+  const adultCount = Math.max(0, Number(bodyAdult))
+  const childCount = Math.max(0, Number(bodyChild))
+  if (adultCount + childCount !== seatCount) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: ERROR_ADULT_CHILD_MISMATCH
+    })
+  }
+
+  const lineItems: { price_data: { currency: string; product_data: { name: string }; unit_amount: number }; quantity: number }[] = []
+  if (adultCount > 0) {
+    lineItems.push({
+      price_data: {
+        currency: 'eur',
+        product_data: { name: 'Billet adulte – Spectacle de danse Ozoir' },
+        unit_amount: PRICE_ADULT_CENTS
+      },
+      quantity: adultCount
+    })
+  }
+  if (childCount > 0) {
+    lineItems.push({
+      price_data: {
+        currency: 'eur',
+        product_data: { name: 'Billet enfant – Spectacle de danse Ozoir' },
+        unit_amount: PRICE_CHILD_CENTS
+      },
+      quantity: childCount
+    })
+  }
 
   /* =====================
      4) Créer la session Stripe
@@ -82,18 +117,7 @@ export default defineEventHandler(async (event) => {
     payment_method_types: ['card'],
     customer_email: order.email,
 
-    line_items: [
-      {
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: 'Billet – Spectacle de danse Ozoir'
-          },
-          unit_amount: 50 // 25€
-        },
-        quantity: seatCount
-      }
-    ],
+    line_items: lineItems,
 
     metadata: {
       order_id: orderId

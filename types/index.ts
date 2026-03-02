@@ -12,4 +12,6 @@ export type ActiveOrder = {
   orderId: string
   expiresAt: string
   seatCount?: number
+  adultCount?: number
+  childCount?: number
 }

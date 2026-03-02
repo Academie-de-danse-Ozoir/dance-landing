@@ -1,9 +1,9 @@
 <template>
   <div v-if="activeOrder" class="alert alert--warning">
-    <strong class="alert__title">{{ content.home.activeOrder.title }}</strong><br />
-    <span class="alert__time">{{ content.home.activeOrder.timeRemaining }} {{ formattedTime }}</span>
+    <strong class="alert_title">{{ content.home.activeOrder.title }}</strong><br />
+    <span class="alert_time">{{ content.home.activeOrder.timeRemaining }} {{ formattedTime }}</span>
 
-    <div class="alert__actions">
+    <div class="alert_actions">
       <DefaultButton
         variant="primary"
         :label="content.home.activeOrder.resumePayment"
@@ -50,15 +50,15 @@ defineEmits<{
     border-color: #b6d4fe;
   }
 
-  &__title {
+  .alert_title {
     display: block;
   }
 
-  &__time {
+  .alert_time {
     display: block;
   }
 
-  &__actions {
+  .alert_actions {
     margin-top: 12px;
     display: flex;
     gap: 12px;
@@ -66,4 +66,3 @@ defineEmits<{
   }
 }
 </style>
-

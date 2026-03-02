@@ -43,6 +43,12 @@
         "phone": {
           "label": "Téléphone",
           "placeholder": "06 12 34 56 78"
+        },
+        "adultCount": {
+          "label": "Nombre de places adultes"
+        },
+        "childCount": {
+          "label": "Nombre de places enfants"
         }
       },
       "validation": {

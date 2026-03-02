@@ -1,7 +1,7 @@
 <template>
-  <div class="page-container">
-    <div class="page__wrapper">
-      <h1 class="page__title">{{ content.home.title }}</h1>
+  <div class="page_container">
+    <div class="page_wrapper">
+      <h1 class="wrapper__title">{{ content.home.title }}</h1>
 
       <ActiveOrderAlert
         :active-order="activeOrder"
@@ -19,7 +19,7 @@
 
       <SelectionInfo :seat-count="displayedSeatCount" />
 
-      <div class="page__actions">
+      <div class="wrapper__actions">
         <DefaultButton
           variant="primary"
           :label="content.home.actions.reserve"
@@ -28,12 +28,13 @@
         />
       </div>
 
-      <div v-if="error" class="page__alert page__alert--danger">{{ error }}</div>
+      <div v-if="error" class="wrapper__alert wrapper__alert--danger">{{ error }}</div>
     </div>
 
     <FormReservation
       v-model:form="form"
       :show="showModal"
+      :seat-count="selectedSeatIds.length"
       :errors="errors"
       :touched="touched"
       :is-submitting="isSubmitting"
@@ -102,7 +103,9 @@ const form = ref({
   firstName: '',
   lastName: '',
   email: '',
-  phone: ''
+  phone: '',
+  adultCount: 0,
+  childCount: 0
 })
 
 const errors = ref<Record<string, string>>({})
@@ -210,26 +213,42 @@ onMounted(async () => {
 
   if (!process.client) return
 
-  const storedOrderId = localStorage.getItem(STORAGE_ORDER_KEY)
-  if (!storedOrderId) return
+  const stored = localStorage.getItem(STORAGE_ORDER_KEY)
+  if (!stored) return
+
+  let orderId: string
+  let storedData: ActiveOrder | null = null
+  try {
+    const parsed = JSON.parse(stored)
+    if (parsed && typeof parsed.orderId === 'string') {
+      orderId = parsed.orderId
+      storedData = parsed
+    } else {
+      orderId = stored
+    }
+  } catch {
+    orderId = stored
+  }
 
   try {
     const res = await $fetch<OrderStatusResponse>('/api/order-status', {
-      query: { orderId: storedOrderId }
+      query: { orderId }
     })
 
     if (res.status === 'pending' && res.expiresAt) {
       activeOrder.value = {
-        orderId: storedOrderId,
+        orderId,
         expiresAt: res.expiresAt,
-        seatCount: res.seatCount
+        seatCount: res.seatCount,
+        adultCount: storedData?.adultCount ?? res.seatCount,
+        childCount: storedData?.childCount ?? 0
       }
       startTimerFromExpiresAt(res.expiresAt)
     } else {
       if (res.status === 'expired') {
         await $fetch('/api/cancel-order', {
           method: 'POST',
-          body: { orderId: storedOrderId, reason: CANCEL_REASON.TIMER }
+          body: { orderId, reason: CANCEL_REASON.TIMER }
         })
         await loadSeats()
       }
@@ -259,6 +278,8 @@ function toggleSeat(id: string) {
 function openModal() {
   if (selectedSeatIds.value.length === 0) return
   error.value = null
+  const n = selectedSeatIds.value.length
+  form.value = { ...form.value, adultCount: n, childCount: 0 }
   showModal.value = true
 }
 
@@ -271,9 +292,11 @@ function closeModal() {
 /* =====================
    VALIDATION
 ===================== */
-function validateField(field: keyof typeof form.value) {
+const formFieldKeys = ['firstName', 'lastName', 'email', 'phone'] as const
+
+function validateField(field: typeof formFieldKeys[number]) {
   touched.value[field] = true
-  const v = form.value[field].trim()
+  const v = String(form.value[field]).trim()
 
   if (!v) {
     errors.value[field] = content.home.modal.validation.required
@@ -297,13 +320,15 @@ function validateField(field: keyof typeof form.value) {
 }
 
 function handleFieldBlur(key: string) {
-  validateField(key as keyof typeof form.value)
+  if (key === 'adultCount' || key === 'childCount') {
+    touched.value[key] = true
+    return
+  }
+  validateField(key as typeof formFieldKeys[number])
 }
 
 function validateForm() {
-  Object.keys(form.value).forEach(k =>
-    validateField(k as keyof typeof form.value)
-  )
+  formFieldKeys.forEach(k => validateField(k))
   return Object.keys(errors.value).length === 0
 }
 
@@ -326,12 +351,15 @@ async function submitReservation() {
       }
     })
 
+    const seatCount = selectedSeatIds.value.length
     activeOrder.value = {
       orderId: res.orderId,
       expiresAt: res.expiresAt,
-      seatCount: selectedSeatIds.value.length
+      seatCount,
+      adultCount: form.value.adultCount,
+      childCount: form.value.childCount
     }
-    localStorage.setItem(STORAGE_ORDER_KEY, res.orderId)
+    localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
 
     selectedSeatIds.value = []
     startTimerFromExpiresAt(res.expiresAt)
@@ -370,13 +398,17 @@ async function cancelActiveOrder(reason: 'timer' | 'cancel' = CANCEL_REASON.USER
    STRIPE
 ===================== */
 async function pay() {
-  const orderId = activeOrder.value?.orderId
-  if (!orderId) return
+  const order = activeOrder.value
+  const orderId = order?.orderId
+  if (!orderId || !order) return
 
   try {
+    const seatCount = order.seatCount ?? 0
+    const adultCount = order.adultCount ?? seatCount
+    const childCount = order.childCount ?? 0
     const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
       method: 'POST',
-      body: { orderId }
+      body: { orderId, adultCount, childCount }
     })
 
     window.location.href = res.url
@@ -388,49 +420,47 @@ async function pay() {
 
 
 <style lang="scss" scoped>
-.page {
-  &-container {
-    height: 100dvh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 40px 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-      sans-serif;
-  }
+.page_container {
+  height: 100dvh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
 
-  &__wrapper {
+  .page_wrapper {
     max-width: 1200px;
     margin: 0 auto;
     background: white;
     padding: 40px;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  }
 
-  &__title {
-    margin: 0 0 32px 0;
-    font-size: 32px;
-    font-weight: 600;
-    color: #212529;
-    text-align: center;
-  }
+    .wrapper__title {
+      margin: 0 0 32px 0;
+      font-size: 32px;
+      font-weight: 600;
+      color: #212529;
+      text-align: center;
+    }
 
-  &__actions {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 24px;
-  }
+    .wrapper__actions {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
 
-  &__alert {
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    font-size: 14px;
+    .wrapper__alert {
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 14px;
 
-    &--danger {
-      color: #842029;
-      background-color: #f8d7da;
-      border-color: #f5c2c7;
+      &--danger {
+        color: #842029;
+        background-color: #f8d7da;
+        border-color: #f5c2c7;
+      }
     }
   }
 }

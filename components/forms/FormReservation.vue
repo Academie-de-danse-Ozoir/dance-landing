@@ -1,15 +1,15 @@
 <template>
-  <div v-if="show" class="form-reservation__overlay" @click.self="$emit('close')">
+  <div v-if="show" class="form-reservation_overlay" @click.self="$emit('close')">
     <div class="form-reservation">
-      <div class="form-reservation__header">
-        <h2 class="form-reservation__title">{{ content.home.modal.title }}</h2>
-        <button type="button" class="form-reservation__close" @click="$emit('close')" :aria-label="content.home.modal.close">
-          <span class="form-reservation__close-icon">&times;</span>
+      <div class="form-reservation_header">
+        <h2 class="header__title">{{ content.home.modal.title }}</h2>
+        <button type="button" class="header__close" @click="$emit('close')" :aria-label="content.home.modal.close">
+          <span class="close__icon">&times;</span>
         </button>
       </div>
 
-      <div class="form-reservation__body">
-        <form class="form-reservation__form" @submit.prevent="$emit('submit')">
+      <div class="form-reservation_body">
+        <form class="body__form" @submit.prevent="$emit('submit')">
           <FormField
             v-for="field in formFields"
             :key="field.key"
@@ -24,7 +24,32 @@
             @blur="handleFieldBlur(field.key)"
           />
 
-          <div class="form-reservation__footer">
+          <div class="form__seats">
+            <FormFieldSelect
+              v-if="seatCount > 0"
+              field-key="adultCount"
+              :label="content.home.modal.fields.adultCount.label"
+              :model-value="form.adultCount"
+              :options="seatCountOptions"
+              :error="errors.adultCount"
+              :touched="touched.adultCount"
+              @update:model-value="updateAdultCount"
+              @blur="handleFieldBlur('adultCount')"
+            />
+            <FormFieldSelect
+              v-if="seatCount > 0"
+              field-key="childCount"
+              :label="content.home.modal.fields.childCount.label"
+              :model-value="form.childCount"
+              :options="seatCountOptions"
+              :error="errors.childCount"
+              :touched="touched.childCount"
+              @update:model-value="updateChildCount"
+              @blur="handleFieldBlur('childCount')"
+            />
+          </div>
+
+          <div class="form__footer">
             <DefaultButton
               variant="secondary"
               :label="content.home.modal.cancel"
@@ -44,20 +69,25 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import content from '../../locales/fr.json'
 import FormField from './FormField.vue'
+import FormFieldSelect from './FormFieldSelect.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
 
-type FormData = {
+export type FormData = {
   firstName: string
   lastName: string
   email: string
   phone: string
+  adultCount: number
+  childCount: number
 }
 
 const props = defineProps<{
   show: boolean
   form: FormData
+  seatCount: number
   errors: Record<string, string>
   touched: Record<string, boolean>
   isSubmitting: boolean
@@ -70,6 +100,10 @@ const emit = defineEmits<{
   'field-blur': [key: string]
 }>()
 
+const seatCountOptions = computed(() =>
+  Array.from({ length: props.seatCount + 1 }, (_, i) => ({ value: i, label: String(i) }))
+)
+
 const formFields = [
   { key: 'firstName' as const, label: content.home.modal.fields.firstName.label, type: 'text' as const, placeholder: content.home.modal.fields.firstName.placeholder },
   { key: 'lastName' as const, label: content.home.modal.fields.lastName.label, type: 'text' as const, placeholder: content.home.modal.fields.lastName.placeholder },
@@ -81,24 +115,40 @@ function updateField(key: keyof FormData, value: string) {
   emit('update:form', { ...props.form, [key]: value })
 }
 
+function updateAdultCount(value: number) {
+  emit('update:form', {
+    ...props.form,
+    adultCount: value,
+    childCount: props.seatCount - value
+  })
+}
+
+function updateChildCount(value: number) {
+  emit('update:form', {
+    ...props.form,
+    childCount: value,
+    adultCount: props.seatCount - value
+  })
+}
+
 function handleFieldBlur(key: string) {
   emit('field-blur', key)
 }
 </script>
 
 <style lang="scss" scoped>
-.form-reservation {
-  &__overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1050;
-    animation: fadeIn 0.15s ease-out;
-  }
+.form-reservation_overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  animation: fadeIn 0.15s ease-out;
+}
 
+.form-reservation {
   background: white;
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -111,66 +161,65 @@ function handleFieldBlur(key: string) {
   animation: slideDown 0.3s ease-out;
   margin: auto;
 
-  &__header {
+  .form-reservation_header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
     border-bottom: 1px solid #dee2e6;
-  }
 
-  &__title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #212529;
-  }
-
-  &__close {
-    background: none;
-    border: none;
-    font-size: 28px;
-    line-height: 1;
-    color: #6c757d;
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
-
-    &:hover {
-      background-color: #f8f9fa;
+    .header__title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
       color: #212529;
+    }
+
+    .header__close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      line-height: 1;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+      }
+
+      .close__icon {
+        display: block;
+      }
     }
   }
 
-  &__close-icon {
-    display: block;
-  }
-
-  &__body {
+  .form-reservation_body {
     padding: 24px;
     overflow-y: auto;
-  }
 
-  &__form {
-    display: flex;
-    flex-direction: column;
-  }
+    .body__form {
+      display: flex;
+      flex-direction: column;
 
-  &__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid #dee2e6;
-    margin-top: auto;
+      .form__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #dee2e6;
+        margin-top: auto;
+      }
+    }
   }
-
 }
 
 @keyframes fadeIn {
@@ -199,20 +248,19 @@ function handleFieldBlur(key: string) {
     max-width: none;
     margin: 10px;
 
-    &__header {
+    .form-reservation_header {
       padding: 16px 20px;
     }
 
-    &__body {
+    .form-reservation_body {
       padding: 20px;
-    }
 
-    &__footer {
-      padding: 12px 20px;
-      flex-direction: column;
-      gap: 8px;
+      .body__form .form__footer {
+        padding: 12px 20px;
+        flex-direction: column;
+        gap: 8px;
+      }
     }
   }
 }
 </style>
-
