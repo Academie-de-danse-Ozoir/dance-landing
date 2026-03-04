@@ -10,8 +10,8 @@ import {
   SEAT_STATUS
 } from '../../constants'
 
-const PRICE_ADULT_CENTS = 10000   // 100 €
-const PRICE_CHILD_CENTS = 5000    // 50 €
+const PRICE_ADULT_CENTS = 100 
+const PRICE_CHILD_CENTS = 50
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -116,6 +116,7 @@ export default defineEventHandler(async (event) => {
     mode: 'payment',
     payment_method_types: ['card'],
     customer_email: order.email,
+    locale: 'fr',
 
     line_items: lineItems,
 

@@ -10,11 +10,13 @@
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             class="icon__svg"
+            aria-hidden="true"
           >
             <circle cx="12" cy="12" r="10" fill="#198754" />
             <path
               d="M7 12l3 3 6-6"
-              stroke="white"
+              fill="none"
+              stroke="#fff"
               stroke-width="2.5"
               stroke-linecap="round"
               stroke-linejoin="round"
