@@ -4,6 +4,7 @@
       <h1 class="wrapper__title">{{ content.home.title }}</h1>
 
       <ActiveOrderAlert
+        v-if="activeOrder && !showModal"
         :active-order="activeOrder"
         :formatted-time="formattedTime"
         @resume-payment="pay"
@@ -34,12 +35,16 @@
     <FormReservation
       v-model:form="form"
       :show="showModal"
-      :seat-count="selectedSeatIds.length"
+      :seat-count="formStep === 1 ? selectedSeatIds.length : (activeOrder?.seatCount ?? selectedSeatIds.length)"
+      :step="formStep"
+      :seat-items="step2SeatItems"
       :errors="errors"
       :touched="touched"
       :is-submitting="isSubmitting"
       @close="closeModal"
-      @submit="submitReservation"
+      @next="onFormNext"
+      @back="formStep = 1"
+      @submit="submitStep2"
       @field-blur="handleFieldBlur"
     />
   </div>
@@ -47,7 +52,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import type { Seat, SeatStatus, ActiveOrder } from '../types'
+import type { Seat, SeatStatus, ActiveOrder, TicketDetail } from '../types'
 import { STORAGE_ORDER_KEY, CANCEL_REASON } from '../constants'
 import content from '../locales/fr.json'
 import ActiveOrderAlert from '../components/alerts/ActiveOrderAlert.vue'
@@ -94,7 +99,17 @@ const error = ref<string | null>(null)
 const activeOrder = ref<ActiveOrder | null>(null)
 
 const showModal = ref(false)
+const formStep = ref<1 | 2>(1)
 const isSubmitting = ref(false)
+
+const step2SeatItems = computed(() => {
+  const ids = activeOrder.value?.seatIds ?? selectedSeatIds.value
+  if (!ids?.length || !seats.value.length) return []
+  return ids.map((id) => {
+    const s = seats.value.find((se) => se.id === id)
+    return { id, label: s?.label ?? id }
+  })
+})
 
 /* =====================
    FORM
@@ -285,6 +300,7 @@ function openModal() {
 
 function closeModal() {
   showModal.value = false
+  formStep.value = 1
   errors.value = {}
   touched.value = {}
 }
@@ -333,36 +349,60 @@ function validateForm() {
 }
 
 /* =====================
-   HOLD SEATS
+   ÉTAPE 1 : SUIVANT → hold seats (ou juste passer à l’étape 2 si déjà réservé)
 ===================== */
-async function submitReservation() {
+function onFormNext() {
   if (!validateForm()) return
+  formStep.value = 2
+}
 
+/* =====================
+   ÉTAPE 2 : PAYER → hold seats, détails billets, puis redirection Stripe (timer et al. uniquement ici)
+===================== */
+async function submitStep2(payload: { form: { firstName: string; lastName: string; email: string; phone: string; adultCount: number; childCount: number }; ticketDetails: TicketDetail[] }) {
   isSubmitting.value = true
   error.value = null
 
   try {
+    const seatIds = [...selectedSeatIds.value]
     const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
       method: 'POST',
       body: {
-        seatIds: selectedSeatIds.value,
-        ...form.value,
-        phone: form.value.phone.replace(/\D/g, '')
+        seatIds,
+        firstName: payload.form.firstName,
+        lastName: payload.form.lastName,
+        email: payload.form.email,
+        phone: payload.form.phone.replace(/\D/g, '')
       }
     })
 
-    const seatCount = selectedSeatIds.value.length
+    const adultCount = payload.ticketDetails.filter((t) => t.ticketType === 'adult').length
+    const childCount = payload.ticketDetails.filter((t) => t.ticketType === 'child').length
     activeOrder.value = {
       orderId: res.orderId,
       expiresAt: res.expiresAt,
-      seatCount,
-      adultCount: form.value.adultCount,
-      childCount: form.value.childCount
+      seatCount: seatIds.length,
+      adultCount,
+      childCount,
+      seatIds
     }
     localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
+    startTimerFromExpiresAt(res.expiresAt)
+
+    await $fetch('/api/order-ticket-details', {
+      method: 'POST',
+      body: {
+        orderId: res.orderId,
+        tickets: payload.ticketDetails.map((t) => ({
+          seatId: t.seatId,
+          firstName: t.firstName.trim(),
+          lastName: t.lastName.trim(),
+          ticketType: t.ticketType
+        }))
+      }
+    })
 
     selectedSeatIds.value = []
-    startTimerFromExpiresAt(res.expiresAt)
     await pay()
   } catch (err) {
     error.value = getErrorMessage(err)

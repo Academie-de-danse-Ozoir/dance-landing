@@ -2,6 +2,14 @@ export const STORAGE_ORDER_KEY = 'order_id'
 
 export const EVENT_ID = '1f616667-67e6-4907-bd61-21360736fdc7'
 
+/** Date et lieu du spectacle (affichés sur les billets PDF) */
+export const EVENT_DATE = 'Samedi 17 mai 2025'
+export const EVENT_VENUE = 'Salle des fêtes – Ozoir-la-Ferrière'
+
+/** Tarifs en centimes (affichage front + Stripe) */
+export const PRICE_ADULT_CENTS = 100
+export const PRICE_CHILD_CENTS = 50
+
 // Erreurs API (messages utilisateur en français)
 export const ERROR_MISSING_ORDER_ID = 'Identifiant de commande manquant.'
 export const ERROR_ORDER_NOT_FOUND = 'Commande introuvable.'

@@ -14,4 +14,14 @@ export type ActiveOrder = {
   seatCount?: number
   adultCount?: number
   childCount?: number
+  /** IDs des places réservées (pour l’étape 2 du formulaire) */
+  seatIds?: string[]
+}
+
+export type TicketDetail = {
+  seatId: string
+  seatLabel: string
+  firstName: string
+  lastName: string
+  ticketType: 'adult' | 'child'
 }

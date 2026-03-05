@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS, EVENT_DATE, EVENT_VENUE } from '../../constants'
 import { buildTicketPdfBuffer } from '../utils/ticketPdf'
 import { verifyTicketsSignature } from '../utils/ticketsLink'
 
@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
 
   const { data: order, error: orderError } = await supabaseAdmin
     .from('order')
-    .select('id, status')
+    .select('id, status, email, first_name, last_name, phone, ticket_attendees')
     .eq('id', orderId)
     .single()
 
@@ -83,10 +83,32 @@ export default defineEventHandler(async (event) => {
     .map((id) => labelById.get(id))
     .filter((l): l is string => typeof l === 'string')
 
+  const attendees = (order as { ticket_attendees?: Record<string, { firstName?: string; lastName?: string; ticketType?: string }> }).ticket_attendees
+  const tickets = seatIds.map((seatId) => {
+    const label = labelById.get(seatId) ?? seatId
+    const att = attendees?.[seatId]
+    return {
+      seatLabel: label,
+      firstName: att?.firstName ?? null,
+      lastName: att?.lastName ?? null,
+      ticketType: (att?.ticketType === 'adult' || att?.ticketType === 'child' ? att.ticketType : null) as 'adult' | 'child' | null
+    }
+  })
+
+  const customerName =
+    order.first_name || order.last_name
+      ? [order.first_name, order.last_name].filter(Boolean).join(' ')
+      : null
+
   const pdfBuffer = await buildTicketPdfBuffer({
     orderId: order.id,
     seatLabels,
-    customerName: undefined
+    tickets,
+    customerName: customerName ?? undefined,
+    customerEmail: order.email ?? undefined,
+    customerPhone: order.phone ?? undefined,
+    eventDate: EVENT_DATE,
+    eventVenue: EVENT_VENUE
   })
 
   setResponseHeader(event, 'Content-Type', 'application/pdf')

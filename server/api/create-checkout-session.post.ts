@@ -7,11 +7,10 @@ import {
   ERROR_RESERVATION_EXPIRED,
   ERROR_ADULT_CHILD_MISMATCH,
   ORDER_STATUS,
-  SEAT_STATUS
+  SEAT_STATUS,
+  PRICE_ADULT_CENTS,
+  PRICE_CHILD_CENTS
 } from '../../constants'
-
-const PRICE_ADULT_CENTS = 100 
-const PRICE_CHILD_CENTS = 50
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -87,12 +86,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const lineItems: { price_data: { currency: string; product_data: { name: string }; unit_amount: number }; quantity: number }[] = []
+  const lineItems: { price_data: { currency: string; product_data: { name: string; description: string }; unit_amount: number }; quantity: number }[] = []
   if (adultCount > 0) {
     lineItems.push({
       price_data: {
         currency: 'eur',
-        product_data: { name: 'Billet adulte – Spectacle de danse Ozoir' },
+        product_data: {
+          name: 'Spectacle de danse d\'Ozoir',
+          description: 'Billet adulte'
+        },
         unit_amount: PRICE_ADULT_CENTS
       },
       quantity: adultCount
@@ -102,7 +104,10 @@ export default defineEventHandler(async (event) => {
     lineItems.push({
       price_data: {
         currency: 'eur',
-        product_data: { name: 'Billet enfant – Spectacle de danse Ozoir' },
+        product_data: {
+          name: 'Spectacle de danse d\'Ozoir',
+          description: 'Billet enfant'
+        },
         unit_amount: PRICE_CHILD_CENTS
       },
       quantity: childCount

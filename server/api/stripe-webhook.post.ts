@@ -1,11 +1,11 @@
 import Stripe from 'stripe'
 import { buffer } from 'node:stream/consumers'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS, ERROR_INVALID_REQUEST } from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS, ERROR_INVALID_REQUEST, EVENT_DATE, EVENT_VENUE } from '../../constants'
 import Mailjet from 'node-mailjet'
 import type { TicketEmailData } from '../utils/ticketEmailTemplate'
 import { buildTicketEmailHtml } from '../utils/ticketEmailTemplate'
-import { buildTicketsDownloadUrl } from '../utils/ticketsLink'
+import { buildTicketPdfBuffer } from '../utils/ticketPdf'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -34,23 +34,27 @@ function formatDate(date: Date): string {
   })
 }
 
-async function sendTicketEmail(data: TicketEmailData) {
+async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
   const html = buildTicketEmailHtml(data)
-  await mailjet
-    .post('send', { version: 'v3.1' })
-    .request({
-      Messages: [
-        {
-          From: {
-            Email: 'thoma.lecornu@gmail.com',
-            Name: 'Billetterie officielle – Spectacle de Danse d’Ozoir',
-          },
-          To: [{ Email: data.customerEmail }],
-          Subject: 'Votre billet – Spectacle de Danse d\'Ozoir 🎭',
-          HTMLPart: html,
-        },
-      ],
-    })
+  const message: Record<string, unknown> = {
+    From: {
+      Email: 'thoma.lecornu@gmail.com',
+      Name: "Billetterie officielle – Spectacle de Danse d'Ozoir",
+    },
+    To: [{ Email: data.customerEmail }],
+    Subject: "Votre billet – Spectacle de Danse d'Ozoir 🎭",
+    HTMLPart: html,
+  }
+  if (pdfBuffer && pdfBuffer.length > 0) {
+    message.Attachments = [
+      {
+        ContentType: 'application/pdf',
+        Filename: `billets-${data.orderId}.pdf`,
+        Base64Content: pdfBuffer.toString('base64'),
+      },
+    ]
+  }
+  await mailjet.post('send', { version: 'v3.1' }).request({ Messages: [message] })
 }
 
 export default defineEventHandler(async (event) => {
@@ -78,7 +82,7 @@ export default defineEventHandler(async (event) => {
 
     const { data: order } = await supabaseAdmin
       .from('order')
-      .select('id, status, email, ticket_sent')
+      .select('id, status, email, ticket_sent, first_name, last_name, phone')
       .eq('id', orderId)
       .single()
 
@@ -199,15 +203,19 @@ export default defineEventHandler(async (event) => {
         })
       }
 
-      const ticketsUrl = buildTicketsDownloadUrl(updatedOrder.id)
+      const firstName = (order as { first_name?: string } | null)?.first_name ?? null
+      const lastName = (order as { last_name?: string } | null)?.last_name ?? null
+      const customerName = [firstName, lastName].filter(Boolean).join(' ') || null
+      const paidAtFormatted = formatDate(new Date())
+      const amountTotalFormatted = formatAmount(amountTotal, currency)
 
       const emailData: TicketEmailData = {
         orderId: updatedOrder.id,
         customerEmail: updatedOrder.email,
-        firstName: (order as { first_name?: string } | null)?.first_name ?? null,
-        lastName: (order as { last_name?: string } | null)?.last_name ?? null,
+        firstName,
+        lastName,
         seatCount: reservations!.length,
-        amountTotalFormatted: formatAmount(amountTotal, currency),
+        amountTotalFormatted,
         currency,
         lineItems: lineItems.length > 0 ? lineItems : [{
           description: 'Billet(s) – Spectacle de Danse d\'Ozoir',
@@ -215,14 +223,61 @@ export default defineEventHandler(async (event) => {
           unitPriceFormatted: formatAmount(amountTotal / Math.max(1, reservations!.length), currency),
           totalFormatted: formatAmount(amountTotal, currency)
         }],
-        ticketsUrl: ticketsUrl ?? null,
+        ticketsUrl: null,
+        ticketsInAttachment: true,
         receiptUrl: receiptUrl ?? null,
         stripeSessionId: sessionId,
         paymentStatus: session.payment_status ?? 'paid',
-        paidAtFormatted: formatDate(new Date())
+        paidAtFormatted
       }
 
-      await sendTicketEmail(emailData)
+      let pdfBuffer: Buffer | undefined
+      try {
+        const { data: paidReservations } = await supabaseAdmin
+          .from('seat_reservation')
+          .select('seat_id')
+          .eq('order_id', updatedOrder.id)
+          .eq('status', SEAT_STATUS.PAID)
+        const seatIds = (paidReservations ?? []).map((r) => r.seat_id)
+        if (seatIds.length > 0) {
+          const [{ data: orderWithAttendees }, { data: seats }] = await Promise.all([
+            supabaseAdmin.from('order').select('ticket_attendees').eq('id', updatedOrder.id).single(),
+            supabaseAdmin.from('seat').select('id, label').in('id', seatIds)
+          ])
+          const labelById = new Map((seats ?? []).map((s) => [s.id, s.label]))
+          const attendees = (orderWithAttendees as { ticket_attendees?: Record<string, { firstName?: string; lastName?: string; ticketType?: string }> } | null)?.ticket_attendees
+          const tickets = seatIds.map((seatId) => {
+            const label = labelById.get(seatId) ?? seatId
+            const att = attendees?.[seatId]
+            return {
+              seatLabel: label,
+              firstName: att?.firstName ?? null,
+              lastName: att?.lastName ?? null,
+              ticketType: (att?.ticketType === 'adult' || att?.ticketType === 'child' ? att.ticketType : null) as 'adult' | 'child' | null
+            }
+          })
+          const seatLabels = tickets.map((t) => t.seatLabel)
+          if (seatLabels.length > 0) {
+            pdfBuffer = await buildTicketPdfBuffer({
+              orderId: updatedOrder.id,
+              seatLabels,
+              tickets,
+              customerName: customerName ?? undefined,
+              customerEmail: updatedOrder.email ?? undefined,
+              customerPhone: (order as { phone?: string } | null)?.phone ?? undefined,
+              amountTotalFormatted,
+              paidAtFormatted,
+              eventDate: EVENT_DATE,
+              eventVenue: EVENT_VENUE,
+              lineItems: lineItems.length > 0 ? lineItems : undefined
+            })
+          }
+        }
+      } catch (e) {
+        console.error('Génération PDF billets pour email:', e)
+      }
+
+      await sendTicketEmail(emailData, pdfBuffer)
 
       await supabaseAdmin
         .from('order')

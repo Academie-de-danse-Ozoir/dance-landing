@@ -24,8 +24,10 @@ export interface TicketEmailData {
   currency: string
   /** Détail des lignes (adultes / enfants) */
   lineItems: TicketEmailLineItem[]
-  /** Lien vers le PDF des billets (téléchargement) */
+  /** Lien vers le PDF des billets (téléchargement) — non utilisé si billets en pièce jointe */
   ticketsUrl?: string | null
+  /** Si true, les billets sont envoyés en pièce jointe (pas de lien de téléchargement) */
+  ticketsInAttachment?: boolean
   /** Lien vers le reçu Stripe (PDF) */
   receiptUrl?: string | null
   /** ID de la session Stripe (pour référence) */
@@ -75,8 +77,17 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
     )
     .join('')
 
-  const ticketsBlock = data.ticketsUrl
+  const ticketsBlock = data.ticketsInAttachment
     ? `
+    <p style="margin: 24px 0 8px 0; font-size: 13px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Vos billets</p>
+    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Vos billets sont en <strong>pièce jointe</strong> de cet email (fichier PDF, un billet par place). Ouvrez ou téléchargez la pièce jointe pour les consulter et présentez-les à l'entrée du spectacle.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px;">
+      <tr>
+        <td style="padding: 14px 24px; background-color: #198754; color: #ffffff; font-size: 14px; font-weight: 600; border-radius: 8px; text-align: center;">📎 Billets en pièce jointe</td>
+      </tr>
+    </table>`
+    : data.ticketsUrl
+      ? `
     <p style="margin: 24px 0 8px 0; font-size: 13px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Vos billets</p>
     <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Téléchargez vos billets au format PDF (un billet par place). Présentez-les à l'entrée du spectacle.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px;">
@@ -86,7 +97,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
         </td>
       </tr>
     </table>`
-    : ''
+      : ''
 
   const receiptBlock = data.receiptUrl
     ? `
