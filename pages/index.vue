@@ -52,8 +52,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useSupabaseClient } from '#imports'
 import type { Seat, SeatStatus, ActiveOrder, TicketDetail } from '../types'
-import { STORAGE_ORDER_KEY, CANCEL_REASON } from '../constants'
+import { STORAGE_ORDER_KEY, CANCEL_REASON, EVENT_ID } from '../constants'
 import content from '../locales/fr.json'
 import ActiveOrderAlert from '../components/alerts/ActiveOrderAlert.vue'
 import SeatMap from '../components/seats/SeatMap.vue'
@@ -62,8 +63,16 @@ import FormReservation from '../components/forms/FormReservation.vue'
 import DefaultButton from '../components/buttons/DefaultButton.vue'
 
 /* =====================
+   SUPABASE
+===================== */
+
+const supabase = useSupabaseClient()
+let realtimeChannel: any = null
+
+/* =====================
    TYPES
 ===================== */
+
 type OrderStatusResponse = {
   status: 'pending' | 'paid' | 'expired' | 'canceled' | 'refunded' | 'not_found'
   expiresAt?: string
@@ -85,14 +94,15 @@ type SeatApiResponse = {
 /* =====================
    CONSTANTS
 ===================== */
+
 const SEAT_SPACING = 10
 const SEAT_OFFSET = 20
 const SEATS_PER_ROW = 38
-const SEAT_REFRESH_INTERVAL = 500
 
 /* =====================
    STATE
 ===================== */
+
 const seats = ref<Seat[]>([])
 const selectedSeatIds = ref<string[]>([])
 const error = ref<string | null>(null)
@@ -105,6 +115,7 @@ const isSubmitting = ref(false)
 const step2SeatItems = computed(() => {
   const ids = activeOrder.value?.seatIds ?? selectedSeatIds.value
   if (!ids?.length || !seats.value.length) return []
+
   return ids.map((id) => {
     const s = seats.value.find((se) => se.id === id)
     return { id, label: s?.label ?? id }
@@ -114,6 +125,7 @@ const step2SeatItems = computed(() => {
 /* =====================
    FORM
 ===================== */
+
 const form = ref({
   firstName: '',
   lastName: '',
@@ -129,6 +141,7 @@ const touched = ref<Record<string, boolean>>({})
 /* =====================
    TIMER (UX ONLY)
 ===================== */
+
 const remainingSeconds = ref(0)
 let timerExpiresAt: number | null = null
 let timerHasExpired = false
@@ -148,17 +161,18 @@ const displayedSeatCount = computed(() => {
   return activeOrder.value?.seatCount ?? selectedSeatIds.value.length
 })
 
-
 function startTimerFromExpiresAt(expiresAt: string) {
   timerExpiresAt = new Date(expiresAt).getTime()
   timerHasExpired = false
 }
 
 /* =====================
-   LOAD SEATS (DB TRUTH)
+   LOAD SEATS (INITIAL DB LOAD)
 ===================== */
+
 async function loadSeats() {
   const data = await $fetch<SeatApiResponse[]>('/api/seats')
+
   seats.value = data.map((seat, i) => ({
     ...seat,
     x: (i % SEATS_PER_ROW) * SEAT_SPACING + SEAT_OFFSET,
@@ -167,20 +181,57 @@ async function loadSeats() {
 }
 
 /* =====================
-   ANIMATION LOOP (UNIFIED)
+   REALTIME SEATS
 ===================== */
+
+function startSeatsRealtime() {
+  const opts: { event: string; schema: string; table: string; filter?: string } = {
+    event: '*',
+    schema: 'public',
+    table: 'seat_reservation',
+    filter: `event_id=eq.${EVENT_ID}`
+  }
+  realtimeChannel = supabase
+    .channel('seat_reservation-realtime')
+    .on(
+      'postgres_changes',
+      opts,
+      (payload) => {
+        if (import.meta.dev) {
+          console.log('[Realtime] seat_reservation changé → loadSeats()', payload.eventType, payload)
+        }
+        loadSeats()
+      }
+    )
+    .subscribe((status, err) => {
+      if (import.meta.dev) {
+        console.log('[Realtime] seat_reservation status:', status, err ?? '')
+      }
+      if (status === 'CHANNEL_ERROR' && err) {
+        console.error('[Realtime] seat_reservation error:', err)
+      }
+    })
+}
+
+function stopSeatsRealtime() {
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel)
+    realtimeChannel = null
+  }
+}
+
+/* =====================
+   TIMER LOOP
+===================== */
+
 let mainAnimationFrame: number | undefined
-let lastSeatRefresh: number = 0
 
 function startMainAnimationLoop() {
   if (mainAnimationFrame) return
-  
-  lastSeatRefresh = Date.now()
 
-  const update = async (timestamp: number) => {
+  const update = async () => {
     const now = Date.now()
 
-    // 1. Mise à jour du timer à chaque frame (si actif)
     if (timerExpiresAt !== null && !timerHasExpired) {
       const diff = (timerExpiresAt - now) / 1000
       remainingSeconds.value = Math.max(0, diff)
@@ -192,16 +243,10 @@ function startMainAnimationLoop() {
       }
     }
 
-    // 2. Rafraîchissement des sièges (non bloquant)
-    if (now - lastSeatRefresh >= SEAT_REFRESH_INTERVAL) {
-      lastSeatRefresh = now
-      loadSeats()
-    }
-
     mainAnimationFrame = requestAnimationFrame(update)
   }
 
-  update(Date.now())
+  update()
 }
 
 function stopMainAnimationLoop() {
@@ -211,19 +256,18 @@ function stopMainAnimationLoop() {
   }
 }
 
-onUnmounted(() => {
-  stopMainAnimationLoop()
-})
-
 /* =====================
    INIT
 ===================== */
+
 onMounted(async () => {
   try {
     await loadSeats()
+    startSeatsRealtime()
   } catch (err) {
     error.value = getErrorMessage(err)
   }
+
   startMainAnimationLoop()
 
   if (!process.client) return
@@ -233,8 +277,10 @@ onMounted(async () => {
 
   let orderId: string
   let storedData: ActiveOrder | null = null
+
   try {
     const parsed = JSON.parse(stored)
+
     if (parsed && typeof parsed.orderId === 'string') {
       orderId = parsed.orderId
       storedData = parsed
@@ -258,6 +304,7 @@ onMounted(async () => {
         adultCount: storedData?.adultCount ?? res.seatCount,
         childCount: storedData?.childCount ?? 0
       }
+
       startTimerFromExpiresAt(res.expiresAt)
     } else {
       if (res.status === 'expired') {
@@ -265,8 +312,10 @@ onMounted(async () => {
           method: 'POST',
           body: { orderId, reason: CANCEL_REASON.TIMER }
         })
+
         await loadSeats()
       }
+
       localStorage.removeItem(STORAGE_ORDER_KEY)
     }
   } catch {
@@ -274,14 +323,21 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  stopMainAnimationLoop()
+  stopSeatsRealtime()
+})
+
 /* =====================
    SEAT SELECTION
 ===================== */
+
 function toggleSeat(id: string) {
-  const seat = seats.value.find(s => s.id === id)
+  const seat = seats.value.find((s) => s.id === id)
   if (!seat || seat.status !== 'free') return
 
   const ids = selectedSeatIds.value
+
   selectedSeatIds.value = ids.includes(id)
     ? ids.filter((s) => s !== id)
     : [...ids, id]
@@ -290,11 +346,15 @@ function toggleSeat(id: string) {
 /* =====================
    MODAL
 ===================== */
+
 function openModal() {
   if (selectedSeatIds.value.length === 0) return
+
   error.value = null
   const n = selectedSeatIds.value.length
+
   form.value = { ...form.value, adultCount: n, childCount: 0 }
+
   showModal.value = true
 }
 
@@ -308,10 +368,12 @@ function closeModal() {
 /* =====================
    VALIDATION
 ===================== */
+
 const formFieldKeys = ['firstName', 'lastName', 'email', 'phone'] as const
 
 function validateField(field: typeof formFieldKeys[number]) {
   touched.value[field] = true
+
   const v = String(form.value[field]).trim()
 
   if (!v) {
@@ -340,31 +402,45 @@ function handleFieldBlur(key: string) {
     touched.value[key] = true
     return
   }
+
   validateField(key as typeof formFieldKeys[number])
 }
 
 function validateForm() {
-  formFieldKeys.forEach(k => validateField(k))
+  formFieldKeys.forEach((k) => validateField(k))
   return Object.keys(errors.value).length === 0
 }
 
 /* =====================
-   ÉTAPE 1 : SUIVANT → hold seats (ou juste passer à l’étape 2 si déjà réservé)
+   STEP 1
 ===================== */
+
 function onFormNext() {
   if (!validateForm()) return
   formStep.value = 2
 }
 
 /* =====================
-   ÉTAPE 2 : PAYER → hold seats, détails billets, puis redirection Stripe (timer et al. uniquement ici)
+   STEP 2
 ===================== */
-async function submitStep2(payload: { form: { firstName: string; lastName: string; email: string; phone: string; adultCount: number; childCount: number }; ticketDetails: TicketDetail[] }) {
+
+async function submitStep2(payload: {
+  form: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    adultCount: number
+    childCount: number
+  }
+  ticketDetails: TicketDetail[]
+}) {
   isSubmitting.value = true
   error.value = null
 
   try {
     const seatIds = [...selectedSeatIds.value]
+
     const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
       method: 'POST',
       body: {
@@ -376,8 +452,14 @@ async function submitStep2(payload: { form: { firstName: string; lastName: strin
       }
     })
 
-    const adultCount = payload.ticketDetails.filter((t) => t.ticketType === 'adult').length
-    const childCount = payload.ticketDetails.filter((t) => t.ticketType === 'child').length
+    const adultCount = payload.ticketDetails.filter(
+      (t) => t.ticketType === 'adult'
+    ).length
+
+    const childCount = payload.ticketDetails.filter(
+      (t) => t.ticketType === 'child'
+    ).length
+
     activeOrder.value = {
       orderId: res.orderId,
       expiresAt: res.expiresAt,
@@ -386,7 +468,9 @@ async function submitStep2(payload: { form: { firstName: string; lastName: strin
       childCount,
       seatIds
     }
+
     localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
+
     startTimerFromExpiresAt(res.expiresAt)
 
     await $fetch('/api/order-ticket-details', {
@@ -403,6 +487,7 @@ async function submitStep2(payload: { form: { firstName: string; lastName: strin
     })
 
     selectedSeatIds.value = []
+
     await pay()
   } catch (err) {
     error.value = getErrorMessage(err)
@@ -414,7 +499,10 @@ async function submitStep2(payload: { form: { firstName: string; lastName: strin
 /* =====================
    CANCEL
 ===================== */
-async function cancelActiveOrder(reason: 'timer' | 'cancel' = CANCEL_REASON.USER) {
+
+async function cancelActiveOrder(
+  reason: 'timer' | 'cancel' = CANCEL_REASON.USER
+) {
   if (!activeOrder.value) return
 
   try {
@@ -427,7 +515,9 @@ async function cancelActiveOrder(reason: 'timer' | 'cancel' = CANCEL_REASON.USER
     remainingSeconds.value = 0
     timerExpiresAt = null
     timerHasExpired = false
+
     localStorage.removeItem(STORAGE_ORDER_KEY)
+
     await loadSeats()
   } catch (err) {
     error.value = getErrorMessage(err)
@@ -437,15 +527,18 @@ async function cancelActiveOrder(reason: 'timer' | 'cancel' = CANCEL_REASON.USER
 /* =====================
    STRIPE
 ===================== */
+
 async function pay() {
   const order = activeOrder.value
   const orderId = order?.orderId
+
   if (!orderId || !order) return
 
   try {
     const seatCount = order.seatCount ?? 0
     const adultCount = order.adultCount ?? seatCount
     const childCount = order.childCount ?? 0
+
     const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
       method: 'POST',
       body: { orderId, adultCount, childCount }
