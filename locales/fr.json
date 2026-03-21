@@ -43,6 +43,23 @@
     "pdfLabelEvent": "Spectacle",
     "pdfPresentTicketAtEntry": "Présentez ce billet à l'entrée du spectacle."
   },
+  "admin": {
+    "newOrderEmailSubject": "Nouvelle commande payée — {{ref}} — {{spectacle}}",
+    "newOrderEmailTitle": "Nouvelle commande payée",
+    "registerLinkIntro": "Registre des commandes validées (Google Sheets) : toutes les lignes sont ajoutées automatiquement à chaque paiement.",
+    "registerLinkCta": "Ouvrir le registre des présences / commandes",
+    "labelOrderId": "N° commande",
+    "labelPaidAt": "Date de paiement",
+    "labelContactEmail": "Email (contact)",
+    "labelContactPhone": "Téléphone",
+    "labelContactName": "Nom (réservation)",
+    "labelSeatCount": "Nombre de places",
+    "labelSeats": "Sièges",
+    "labelTicketHolders": "Détail par billet",
+    "labelAmount": "Montant payé",
+    "labelStripeSession": "Session Stripe",
+    "labelEvent": "Événement"
+  },
   "home": {
     "title": "Sélection des sièges",
     "activeOrder": {

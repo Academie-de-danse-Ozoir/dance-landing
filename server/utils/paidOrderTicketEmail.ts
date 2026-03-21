@@ -17,6 +17,11 @@ import {
 import type { TicketEmailData } from './ticketEmailTemplate'
 import { buildTicketEmailHtml } from './ticketEmailTemplate'
 import { buildTicketPdfBuffer } from './ticketPdf'
+import {
+  appendPaidOrderRowToGoogleSheetIfConfigured,
+  buildGoogleSheetsRegisterUrl
+} from './googleSheetsAppendOrder'
+import { sendAdminNewOrderNotificationIfConfigured } from './sendAdminNewOrderNotification'
 
 const mailjet = Mailjet.apiConnect(
   process.env.MJ_APIKEY_PUBLIC!,
@@ -252,7 +257,13 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     paidAtFormatted
   }
 
-  let pdfBuffer: Buffer | undefined
+  type TicketRow = {
+    seatLabel: string
+    firstName: string | null
+    lastName: string | null
+    ticketType: 'adult' | 'child' | null
+  }
+  let tickets: TicketRow[] = []
   try {
     const [{ data: orderWithAttendees }, { data: seats }] = await Promise.all([
       supabaseAdmin.from('order').select('ticket_attendees').eq('id', order.id).single(),
@@ -260,7 +271,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     ])
     const labelById = new Map((seats ?? []).map((s) => [s.id, s.label]))
     const attendees = (orderWithAttendees as { ticket_attendees?: Record<string, { firstName?: string; lastName?: string; ticketType?: string }> } | null)?.ticket_attendees
-    const tickets = seatIds.map((seatId) => {
+    tickets = seatIds.map((seatId) => {
       const label = labelById.get(seatId) ?? seatId
       const att = attendees?.[seatId]
       return {
@@ -270,8 +281,14 @@ export async function sendPaidOrderTicketEmailIfNeeded(
         ticketType: (att?.ticketType === 'adult' || att?.ticketType === 'child' ? att.ticketType : null) as 'adult' | 'child' | null
       }
     })
-    const seatLabels = tickets.map((t) => t.seatLabel)
-    if (seatLabels.length > 0) {
+  } catch (e) {
+    console.error(`${LOG} Chargement détails billets (PDF / admin):`, e)
+  }
+
+  let pdfBuffer: Buffer | undefined
+  const seatLabels = tickets.map((t) => t.seatLabel)
+  if (seatLabels.length > 0) {
+    try {
       pdfBuffer = await buildTicketPdfBuffer({
         orderId: order.id,
         seatLabels,
@@ -285,12 +302,63 @@ export async function sendPaidOrderTicketEmailIfNeeded(
         eventVenue: brand.eventVenue,
         lineItems: lineItems.length > 0 ? lineItems : undefined
       })
+    } catch (e) {
+      console.error(`${LOG} Génération PDF billets:`, e)
     }
-  } catch (e) {
-    console.error(`${LOG} Génération PDF billets:`, e)
   }
 
   await sendTicketEmail(emailData, pdfBuffer)
+
+  const registerUrl = buildGoogleSheetsRegisterUrl()
+
+  const ticketsDetailLines = tickets.map((t) => {
+    const n = [t.firstName, t.lastName].filter(Boolean).join(' ') || '—'
+    const typ = t.ticketType === 'child' ? 'Enfant' : t.ticketType === 'adult' ? 'Adulte' : '—'
+    return `${t.seatLabel}: ${n} (${typ})`
+  })
+  const seatLabelsJoined = seatLabels.length > 0 ? seatLabels.join(', ') : '—'
+
+  const [adminResult, sheetResult] = await Promise.allSettled([
+    sendAdminNewOrderNotificationIfConfigured({
+      orderRefShort: orderRefShort(order.id),
+      registerUrl,
+      emailData,
+      customerPhone: order.phone ?? null,
+      seatLabelsJoined,
+      ticketsDetailLines
+    }),
+    appendPaidOrderRowToGoogleSheetIfConfigured({
+      orderId: order.id,
+      buyerLastName: lastName?.trim() ?? '',
+      buyerFirstName: firstName?.trim() ?? '',
+      buyerEmail: order.email,
+      buyerPhone: order.phone?.trim() ?? '',
+      seats:
+        tickets.length > 0
+          ? tickets.map((t) => ({
+              seatLabel: String(t.seatLabel),
+              attendeeFirstName: t.firstName?.trim() ?? '',
+              attendeeLastName: t.lastName?.trim() ?? '',
+              ticketTypeLabel:
+                t.ticketType === 'child' ? 'Enfant' : t.ticketType === 'adult' ? 'Adulte' : '—'
+            }))
+          : seatIds.map((id) => ({
+              seatLabel: String(id),
+              attendeeFirstName: '',
+              attendeeLastName: '',
+              ticketTypeLabel: '—'
+            }))
+    })
+  ])
+  if (sheetResult.status === 'rejected') {
+    console.error(`${LOG} append Google Sheet — promesse rejetée`, {
+      orderId: order.id,
+      reason: sheetResult.reason
+    })
+  }
+  if (adminResult.status === 'rejected') {
+    console.error(`${LOG} email admin — promesse rejetée`, { orderId: order.id, reason: adminResult.reason })
+  }
 
   const { error: ticketSentErr } = await supabaseAdmin
     .from('order')

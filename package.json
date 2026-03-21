@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@nuxtjs/supabase": "^2.0.4",
+    "google-auth-library": "^10.6.2",
     "node-mailjet": "^6.0.11",
     "nuxt": "^3.13.0",
     "pdfkit": "^0.17.2",
