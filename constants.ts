@@ -1,9 +1,9 @@
 export const STORAGE_ORDER_KEY = 'order_id'
 
-export const EVENT_ID = '1f616667-67e6-4907-bd61-21360736fdc7'
+export const EVENT_ID = 'f179039c-c6a9-4c93-ac39-2153c02105ec'
 
 /** Date et lieu du spectacle (affichés sur les billets PDF) */
-export const EVENT_DATE = 'Samedi 17 mai 2025'
+export const EVENT_DATE = 'Samedi 24 mai 2026'
 export const EVENT_VENUE = 'Salle des fêtes – Ozoir-la-Ferrière'
 
 /** Tarifs en centimes (affichage front + Stripe) */
