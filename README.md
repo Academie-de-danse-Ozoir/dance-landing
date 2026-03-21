@@ -73,3 +73,14 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Billetterie — variables d’environnement (sécurité)
+
+| Variable                         | Obligatoire              | Description                                                                                 |
+| -------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------- |
+| `TURNSTILE_SECRET_KEY`           | Non (recommandé en prod) | Clé **secrète** Cloudflare Turnstile ; si définie, `/api/hold-seats` exige un jeton valide. |
+| `NUXT_PUBLIC_TURNSTILE_SITE_KEY` | Si Turnstile actif       | Clé **site** (publique) pour afficher le widget à l’étape 2 du formulaire.                  |
+
+**Billet par email (Mailjet)** : déclenché quand la commande est **`paid`**, les sièges sont **`paid`**, et **`ticket_sent`** est encore **`false`**. Après envoi accepté par Mailjet, **`ticket_sent`** passe à **`true`** (anti double envoi). Déclencheur principal : le **webhook Stripe** `checkout.session.completed`. L’expéditeur doit être **validé** dans Mailjet.
+
+Voir `supabase/RLS-recommendations.md` pour des pistes sur le Row Level Security.

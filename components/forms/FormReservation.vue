@@ -78,6 +78,17 @@
             </div>
           </div>
 
+          <ClientOnly>
+            <div v-if="turnstileSiteKey" class="form__turnstile">
+              <TurnstileField
+                :site-key="turnstileSiteKey"
+                :hint="content.home.modal.turnstileHint"
+                @update:token="onTurnstileToken"
+              />
+              <p v-if="turnstileError" class="form__turnstile-error">{{ turnstileError }}</p>
+            </div>
+          </ClientOnly>
+
           <div class="form__price-summary">
             <p class="price-summary__title">{{ content.home.modal.priceSummary }}</p>
             <template v-if="priceSummary.adultCount > 0">
@@ -115,6 +126,7 @@ import content from '../../locales/fr.json'
 import { PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
 import FormField from './FormField.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
+import TurnstileField from '../TurnstileField.vue'
 
 function formatEuros(cents: number): string {
   const value = (cents / 100).toFixed(2).replace('.', ',')
@@ -148,13 +160,33 @@ const emit = defineEmits<{
   'close': []
   'next': []
   'back': []
-  'submit': [payload: { form: FormData; ticketDetails: TicketDetail[] }]
+  'submit': [payload: { form: FormData; ticketDetails: TicketDetail[]; turnstileToken?: string }]
   'update:form': [form: FormData]
   'field-blur': [key: string]
 }>()
 
+const config = useRuntimeConfig()
+const turnstileSiteKey = computed(() => (config.public.turnstileSiteKey as string) || '')
+const turnstileToken = ref<string | null>(null)
+const turnstileError = ref<string | null>(null)
+
+function onTurnstileToken(t: string | null) {
+  turnstileToken.value = t
+  turnstileError.value = null
+}
+
 const ticketDetails = ref<TicketDetail[]>([])
 const ticketErrors = ref<Record<number, { firstName?: string; lastName?: string }>>({})
+
+watch(
+  () => props.step,
+  (newStep) => {
+    if (newStep === 1) {
+      turnstileToken.value = null
+      turnstileError.value = null
+    }
+  }
+)
 
 watch(
   () => [props.step, props.seatItems] as const,
@@ -240,7 +272,15 @@ function onNext() {
 
 function onSubmitStep2() {
   if (!validateStep2()) return
-  emit('submit', { form: props.form, ticketDetails: ticketDetails.value })
+  if (turnstileSiteKey.value && !turnstileToken.value) {
+    turnstileError.value = content.home.modal.validation.turnstileRequired
+    return
+  }
+  emit('submit', {
+    form: props.form,
+    ticketDetails: ticketDetails.value,
+    ...(turnstileToken.value ? { turnstileToken: turnstileToken.value } : {})
+  })
 }
 </script>
 
@@ -361,6 +401,16 @@ function onSubmitStep2() {
             background: white;
           }
         }
+      }
+
+      .form__turnstile {
+        margin-top: 8px;
+      }
+
+      .form__turnstile-error {
+        margin: 8px 0 0;
+        font-size: 14px;
+        color: #dc3545;
       }
 
       .form__price-summary {

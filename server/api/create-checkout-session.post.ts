@@ -2,31 +2,44 @@ import { stripe } from '../lib/stripe'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
 import {
   ERROR_MISSING_ORDER_ID,
+  ERROR_MISSING_ORDER_TOKEN,
   ERROR_ORDER_NOT_FOUND,
   ERROR_ORDER_NOT_PAYABLE,
   ERROR_RESERVATION_EXPIRED,
   ERROR_ADULT_CHILD_MISMATCH,
+  ERROR_RATE_LIMIT,
   ORDER_STATUS,
   SEAT_STATUS,
   PRICE_ADULT_CENTS,
-  PRICE_CHILD_CENTS
+  PRICE_CHILD_CENTS,
+  RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE
 } from '../../constants'
+import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  const { orderId, adultCount: bodyAdult, childCount: bodyChild } = body
+  const ip = getClientIp(event)
+  if (!checkRateLimit(ip, 'checkout', RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE).ok) {
+    throw createError({ statusCode: 429, statusMessage: ERROR_RATE_LIMIT })
+  }
 
-  if (!orderId) {
-    throw createError({ statusCode: 400, statusMessage: ERROR_MISSING_ORDER_ID })
+  const body = await readBody(event)
+  const { orderId, orderToken, adultCount: bodyAdult, childCount: bodyChild } = body
+
+  if (!orderId || !orderToken) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: !orderToken ? ERROR_MISSING_ORDER_TOKEN : ERROR_MISSING_ORDER_ID
+    })
   }
 
   /* =====================
-     1) Vérifier la commande
+     1) Vérifier la commande (id + token)
   ===================== */
   const { data: order, error: orderError } = await supabaseAdmin
     .from('order')
     .select('id, email, status')
     .eq('id', orderId)
+    .eq('order_token', orderToken)
     .single()
 
   if (orderError || !order) {
@@ -129,7 +142,8 @@ export default defineEventHandler(async (event) => {
       order_id: orderId
     },
 
-    success_url: `${process.env.PUBLIC_SITE_URL}/success?order_id=${orderId}`,
+    // {CHECKOUT_SESSION_ID} est remplacé par Stripe (query utile pour logs / debug)
+    success_url: `${process.env.PUBLIC_SITE_URL}/success?order_id=${orderId}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.PUBLIC_SITE_URL}/cancel?order_id=${orderId}`
   })
 
@@ -140,6 +154,12 @@ export default defineEventHandler(async (event) => {
     .from('order')
     .update({ stripe_session_id: session.id })
     .eq('id', orderId)
+
+  console.info('[billetterie:create-checkout-session]', {
+    orderId,
+    stripeSessionId: session.id,
+    successUrlHost: process.env.PUBLIC_SITE_URL ?? '(PUBLIC_SITE_URL non défini)'
+  })
 
   return { url: session.url }
 })

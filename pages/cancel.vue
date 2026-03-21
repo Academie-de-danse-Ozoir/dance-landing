@@ -1,17 +1,14 @@
 <template />
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { STORAGE_ORDER_KEY } from '../constants'
+import { useRouter } from 'vue-router'
 
-const route = useRoute()
 const router = useRouter()
 
 onMounted(() => {
-  const orderId = route.query.order_id as string | undefined
-  if (orderId) {
-    localStorage.setItem(STORAGE_ORDER_KEY, orderId)
-  }
+  // Ne pas écraser localStorage avec seul l'order_id : la home a besoin du JSON complet
+  // (orderToken, expiresAt, etc.) pour restaurer le timer. L'URL peut contenir order_id
+  // pour debug, mais la session est déjà stockée avant la redirection Stripe.
   router.replace('/')
 })
 </script>

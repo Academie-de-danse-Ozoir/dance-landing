@@ -2,20 +2,38 @@ import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { stripe } from '../lib/stripe'
 import {
   ERROR_MISSING_ORDER_ID,
+  ERROR_MISSING_ORDER_TOKEN,
   ERROR_PAID_ORDER_CANNOT_BE_CANCELLED,
+  ERROR_RATE_LIMIT,
+  RATE_LIMIT_CANCEL_ORDER_PER_MINUTE,
   ORDER_STATUS,
   CANCEL_REASON
 } from '../../constants'
+import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  const ip = getClientIp(event)
+  
+  if (!checkRateLimit(ip, 'cancel', RATE_LIMIT_CANCEL_ORDER_PER_MINUTE).ok) {
+    throw createError({ statusCode: 429, statusMessage: ERROR_RATE_LIMIT })
+  }
+
   const body = await readBody(event)
   const orderId = body?.orderId
+  const orderToken = body?.orderToken
   const reason = body?.reason === CANCEL_REASON.TIMER ? CANCEL_REASON.TIMER : CANCEL_REASON.USER
 
-  if (!orderId) {
+  console.info('[billetterie:cancel-order] Demande', {
+    orderId,
+    reason,
+    reasonRaw: body?.reason,
+    ip
+  })
+
+  if (!orderId || !orderToken) {
     throw createError({
       statusCode: 400,
-      statusMessage: ERROR_MISSING_ORDER_ID
+      statusMessage: orderToken ? ERROR_MISSING_ORDER_ID : ERROR_MISSING_ORDER_TOKEN
     })
   }
 
@@ -23,13 +41,15 @@ export default defineEventHandler(async (event) => {
     .from('order')
     .select('id, status, stripe_session_id')
     .eq('id', orderId)
+    .eq('order_token', orderToken)
     .single()
 
   if (error || !order) {
-    return { ok: true }
+    throw createError({ statusCode: 404, statusMessage: ERROR_MISSING_ORDER_TOKEN })
   }
 
   if (order.status === ORDER_STATUS.PAID) {
+    console.warn('[billetterie:cancel-order] Refusé : commande déjà PAID', { orderId })
     throw createError({
       statusCode: 409,
       statusMessage: ERROR_PAID_ORDER_CANNOT_BE_CANCELLED
@@ -48,6 +68,13 @@ export default defineEventHandler(async (event) => {
     .update({ status: newStatus })
     .eq('id', orderId)
 
+  console.info('[billetterie:cancel-order] Statut mis à jour', {
+    orderId,
+    ancienStatut: order.status,
+    nouveauStatut: newStatus,
+    reason
+  })
+
   // 2️⃣ Libérer les seats
   await supabaseAdmin
     .from('seat_reservation')
@@ -58,11 +85,13 @@ export default defineEventHandler(async (event) => {
   if (order.stripe_session_id) {
     try {
       await stripe.checkout.sessions.expire(order.stripe_session_id)
+      console.info('[billetterie:cancel-order] Session Stripe expirée', { stripeSessionId: order.stripe_session_id })
     } catch (err) {
-      console.log('Stripe session already expired or completed')
+      console.info('[billetterie:cancel-order] expire session Stripe (déjà complétée ou expirée)', err)
     }
   }
 
+  console.info('[billetterie:cancel-order] Terminé OK', { orderId })
   return { ok: true }
 })
 

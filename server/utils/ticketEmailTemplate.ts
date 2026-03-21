@@ -60,6 +60,8 @@ function formatPaymentStatus(status: string): string {
  * Génère le HTML complet de l'email de confirmation de billet.
  */
 export function buildTicketEmailHtml(data: TicketEmailData): string {
+  const orderRef = data.orderId.split('-')[0] ?? data.orderId.slice(0, 8)
+
   const customerName =
     data.firstName || data.lastName
       ? [data.firstName, data.lastName].filter(Boolean).join(' ')
@@ -117,7 +119,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmation de réservation – Spectacle de Danse d'Ozoir</title>
+  <title>Commande ${escapeHtml(orderRef)} — Confirmation billet – Spectacle de Danse d'Ozoir</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f3f0; -webkit-font-smoothing: antialiased;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f3f0;">
@@ -129,7 +131,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
             <td style="background-color: #2d2a26; padding: 36px 40px; text-align: center;">
               <p style="margin: 0; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #c9b896; font-weight: 600;">Billetterie officielle</p>
               <h1 style="margin: 12px 0 0 0; font-size: 24px; font-weight: 600; color: #ffffff; letter-spacing: -0.02em;">Spectacle de Danse d'Ozoir</h1>
-              <p style="margin: 16px 0 0 0; font-size: 14px; color: #a8a29e;">Confirmation de votre réservation</p>
+              <p style="margin: 16px 0 0 0; font-size: 14px; color: #a8a29e;">Confirmation — commande ${escapeHtml(orderRef)}</p>
             </td>
           </tr>
           <!-- Contenu principal -->

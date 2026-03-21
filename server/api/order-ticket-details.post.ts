@@ -4,7 +4,16 @@
  * { [seatId]: { firstName, lastName, ticketType } }
  */
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS, ERROR_ORDER_NOT_FOUND, ERROR_SEATS_UNAVAILABLE } from '../../constants'
+import {
+  ORDER_STATUS,
+  SEAT_STATUS,
+  ERROR_ORDER_NOT_FOUND,
+  ERROR_SEATS_UNAVAILABLE,
+  ERROR_MISSING_ORDER_TOKEN,
+  ERROR_RATE_LIMIT,
+  RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE
+} from '../../constants'
+import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 
 type TicketPayload = {
   seatId: string
@@ -14,13 +23,25 @@ type TicketPayload = {
 }
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  const { orderId, tickets } = body as { orderId: string; tickets: TicketPayload[] }
+  const ip = getClientIp(event)
+  if (!checkRateLimit(ip, 'ticket-details', RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE).ok) {
+    throw createError({ statusCode: 429, statusMessage: ERROR_RATE_LIMIT })
+  }
 
-  if (!orderId || !Array.isArray(tickets) || tickets.length === 0) {
+  const body = await readBody(event)
+  const { orderId, orderToken: rawToken, tickets } = body as {
+    orderId?: string
+    orderToken?: string
+    tickets?: TicketPayload[]
+  }
+
+  const orderToken =
+    typeof rawToken === 'string' ? rawToken.trim() : rawToken != null ? String(rawToken).trim() : ''
+
+  if (!orderId || !orderToken || !Array.isArray(tickets) || tickets.length === 0) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'orderId et tickets requis.'
+      statusMessage: !orderToken ? ERROR_MISSING_ORDER_TOKEN : 'orderId et tickets requis.'
     })
   }
 
@@ -28,6 +49,7 @@ export default defineEventHandler(async (event) => {
     .from('order')
     .select('id, status')
     .eq('id', orderId)
+    .eq('order_token', orderToken)
     .single()
 
   if (orderError || !order || order.status !== ORDER_STATUS.PENDING) {

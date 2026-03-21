@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (orderError || !order) {
+    console.info('[billetterie:order-status]', { orderId, status: 'not_found' })
     return { status: 'not_found' }
   }
 
@@ -28,10 +29,12 @@ export default defineEventHandler(async (event) => {
      2️⃣ SI PAYÉ → STOP IMMÉDIAT
   ===================== */
   if (order.status === ORDER_STATUS.PAID) {
+    console.info('[billetterie:order-status]', { orderId, status: ORDER_STATUS.PAID })
     return { status: ORDER_STATUS.PAID }
   }
 
   if (order.status !== ORDER_STATUS.PENDING) {
+    console.info('[billetterie:order-status]', { orderId, status: order.status })
     return { status: order.status }
   }
 
@@ -45,6 +48,7 @@ export default defineEventHandler(async (event) => {
     .eq('status', SEAT_STATUS.HOLD)
 
   if (resError || !reservations || reservations.length === 0) {
+    console.info('[billetterie:order-status]', { orderId, status: ORDER_STATUS.EXPIRED, reason: 'pas de hold' })
     return { status: ORDER_STATUS.EXPIRED }
   }
 
@@ -54,12 +58,19 @@ export default defineEventHandler(async (event) => {
   const expiresAt = reservations[0].expires_at
 
   if (new Date(expiresAt).getTime() <= Date.now()) {
+    console.info('[billetterie:order-status]', { orderId, status: ORDER_STATUS.EXPIRED, reason: 'timer expires_at' })
     return { status: ORDER_STATUS.EXPIRED }
   }
 
   /* =====================
      5️⃣ Pending valide
   ===================== */
+  console.info('[billetterie:order-status]', {
+    orderId,
+    status: ORDER_STATUS.PENDING,
+    expiresAt,
+    seatCount: reservations.length
+  })
   return {
     status: ORDER_STATUS.PENDING,
     expiresAt,

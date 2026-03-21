@@ -68,7 +68,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { STORAGE_ORDER_KEY, CANCEL_REASON, ORDER_STATUS } from '../constants'
+import { STORAGE_ORDER_KEY, ORDER_STATUS } from '../constants'
 import content from '../locales/fr.json'
 import LinkButton from '../components/buttons/LinkButton.vue'
 
@@ -81,32 +81,53 @@ const formattedMessage = computed(() => {
   return content.success.message.replace(/\n/g, '<br />')
 })
 
+const LOG = '[billetterie:success]'
+
 onMounted(async () => {
   const orderId = route.query.order_id as string
+  const t0 = performance.now()
+
+  console.info(`${LOG} Page chargée`, { orderId: orderId || '(absent)', query: { ...route.query } })
 
   if (!orderId) {
+    console.warn(`${LOG} Pas de order_id dans l’URL → écran invalide`)
     isLoaded.value = true
     return
   }
 
   try {
+    const sessionId =
+      typeof route.query.session_id === 'string' ? route.query.session_id : undefined
+
     const data = await $fetch<{ status: string }>('/api/order-status', {
       query: { orderId }
+    })
+    console.info(`${LOG} order-status`, {
+      orderId,
+      sessionId: sessionId ?? '(absent)',
+      status: data?.status,
+      ms: Math.round(performance.now() - t0)
     })
 
     if (data?.status === ORDER_STATUS.PAID) {
       isValid.value = true
       localStorage.removeItem(STORAGE_ORDER_KEY)
-    } else if (data?.status === ORDER_STATUS.PENDING || data?.status === ORDER_STATUS.EXPIRED) {
-      await $fetch('/api/cancel-order', {
-        method: 'POST',
-        body: { orderId, reason: CANCEL_REASON.USER }
+      console.info(`${LOG} OK → PAID, localStorage nettoyé`, { totalMs: Math.round(performance.now() - t0) })
+      console.info(
+        `${LOG} Les logs [billetterie:mail] sont dans le terminal du serveur (npm run dev), pas dans la console du navigateur.`
+      )
+    } else {
+      console.warn(`${LOG} Pas de PAID`, {
+        status: data?.status,
+        totalMs: Math.round(performance.now() - t0),
+        hadSessionId: !!sessionId
       })
     }
   } catch (err) {
-    console.error(err)
+    console.error(`${LOG} Erreur`, err)
   }
 
+  console.info(`${LOG} Fin vérification`, { isValid: isValid.value, totalMs: Math.round(performance.now() - t0) })
   isLoaded.value = true
 })
 </script>

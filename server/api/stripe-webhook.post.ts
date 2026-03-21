@@ -1,61 +1,12 @@
 import Stripe from 'stripe'
 import { buffer } from 'node:stream/consumers'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS, ERROR_INVALID_REQUEST, EVENT_DATE, EVENT_VENUE } from '../../constants'
-import Mailjet from 'node-mailjet'
-import type { TicketEmailData } from '../utils/ticketEmailTemplate'
-import { buildTicketEmailHtml } from '../utils/ticketEmailTemplate'
-import { buildTicketPdfBuffer } from '../utils/ticketPdf'
+import { ORDER_STATUS, SEAT_STATUS, ERROR_INVALID_REQUEST } from '../../constants'
+import { sendPaidOrderTicketEmailIfNeeded } from '../utils/paidOrderTicketEmail'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
 })
-
-const mailjet = Mailjet.apiConnect(
-  process.env.MJ_APIKEY_PUBLIC!,
-  process.env.MJ_APIKEY_PRIVATE!
-)
-
-/** Formate un montant en centimes en chaîne lisible (ex: 15000 → "150,00 €") */
-function formatAmount(cents: number, currency: string = 'eur'): string {
-  const value = (cents / 100).toFixed(2).replace('.', ',')
-  return currency.toUpperCase() === 'EUR' ? `${value} €` : `${value} ${currency.toUpperCase()}`
-}
-
-/** Formate une date pour l'affichage en français */
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
-  const html = buildTicketEmailHtml(data)
-  const message: Record<string, unknown> = {
-    From: {
-      Email: 'thoma.lecornu@gmail.com',
-      Name: "Billetterie officielle – Spectacle de Danse d'Ozoir",
-    },
-    To: [{ Email: data.customerEmail }],
-    Subject: "Votre billet – Spectacle de Danse d'Ozoir 🎭",
-    HTMLPart: html,
-  }
-  if (pdfBuffer && pdfBuffer.length > 0) {
-    message.Attachments = [
-      {
-        ContentType: 'application/pdf',
-        Filename: `billets-${data.orderId}.pdf`,
-        Base64Content: pdfBuffer.toString('base64'),
-      },
-    ]
-  }
-  await mailjet.post('send', { version: 'v3.1' }).request({ Messages: [message] })
-}
 
 export default defineEventHandler(async (event) => {
   const rawBody = await buffer(event.node.req)
@@ -70,15 +21,32 @@ export default defineEventHandler(async (event) => {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
   } catch (err: any) {
+    console.error('[billetterie:stripe-webhook] Signature invalide (STRIPE_WEBHOOK_SECRET / corps brut ?)', err?.message ?? err)
     throw createError({ statusCode: 400, statusMessage: ERROR_INVALID_REQUEST })
   }
 
+  console.info('[billetterie:stripe-webhook] Événement reçu', { type: stripeEvent.type, id: stripeEvent.id })
+
   if (stripeEvent.type === 'checkout.session.completed') {
+    const eventId = stripeEvent.id
     const session = stripeEvent.data.object as Stripe.Checkout.Session
     const orderId = session.metadata?.order_id
 
-    if (!orderId) return { received: true }
-    if (session.payment_status !== ORDER_STATUS.PAID) return { received: true }
+    console.info('[billetterie:stripe-webhook] checkout.session.completed', {
+      eventId,
+      orderId: orderId ?? '(absent)',
+      payment_status: session.payment_status,
+      sessionId: session.id
+    })
+
+    if (!orderId) {
+      console.warn('[billetterie:stripe-webhook] Pas de metadata.order_id → rien à faire')
+      return { received: true }
+    }
+    if (session.payment_status !== ORDER_STATUS.PAID) {
+      console.info('[billetterie:stripe-webhook] payment_status !== paid → sortie', { payment_status: session.payment_status })
+      return { received: true }
+    }
 
     const { data: order } = await supabaseAdmin
       .from('order')
@@ -86,11 +54,35 @@ export default defineEventHandler(async (event) => {
       .eq('id', orderId)
       .single()
 
-    if (!order) return { received: true }
-    if (order.status === ORDER_STATUS.PAID) return { received: true }
-    if (order.status === ORDER_STATUS.REFUNDED) return { received: true }
+    if (!order) {
+      console.warn('[billetterie:stripe-webhook] Commande introuvable en BDD', { orderId })
+      return { received: true }
+    }
 
-    // Vérifier réservations encore valides
+    /* Sync-checkout a souvent déjà mis PAID avant ce handler — envoyer le mail si pas encore fait */
+    if (order.status === ORDER_STATUS.PAID) {
+      if (!order.ticket_sent) {
+        console.info('[billetterie:mail] Commande déjà PAID (sync ou retry) — envoi email si besoin', { orderId })
+        try {
+          const emailResult = await sendPaidOrderTicketEmailIfNeeded(session, orderId)
+          console.info('[billetterie:mail] Résultat envoi (branche déjà-PAID)', { orderId, emailResult })
+        } catch (e) {
+          console.error('[billetterie:mail] Échec envoi (branche déjà-PAID)', { orderId, e })
+          throw e
+        }
+      } else {
+        console.info('[billetterie:stripe-webhook] Commande déjà PAID + ticket_sent', { orderId })
+      }
+      return { received: true }
+    }
+
+    if (order.status === ORDER_STATUS.REFUNDED) {
+      console.info('[billetterie:stripe-webhook] Commande déjà REFUNDED', { orderId })
+      return { received: true }
+    }
+
+    console.info('[billetterie:stripe-webhook] Commande avant traitement', { orderId, status: order.status })
+
     const { data: reservations } = await supabaseAdmin
       .from('seat_reservation')
       .select('id, expires_at')
@@ -111,6 +103,12 @@ export default defineEventHandler(async (event) => {
       order.status === ORDER_STATUS.CANCELED ||
       !hasValidHolds
     ) {
+      console.warn('[billetterie:stripe-webhook] Branche REMBOURSEMENT (holds invalides ou commande expirée/canceled)', {
+        orderId,
+        orderStatus: order.status,
+        hasValidHolds,
+        holdsCount: reservations?.length ?? 0
+      })
       await supabaseAdmin
         .from('order')
         .update({ status: ORDER_STATUS.REFUNDED })
@@ -140,7 +138,7 @@ export default defineEventHandler(async (event) => {
       return { received: true }
     }
 
-    // ✅ Paiement valide
+    console.info('[billetterie:stripe-webhook] Branche PAID — mise à jour commande + sièges', { orderId })
     const { data: updatedOrder } = await supabaseAdmin
       .from('order')
       .update({ status: ORDER_STATUS.PAID })
@@ -154,135 +152,30 @@ export default defineEventHandler(async (event) => {
       .eq('order_id', orderId)
       .eq('status', SEAT_STATUS.HOLD)
 
-    // 📧 Envoi email (anti-doublon)
+    console.info('[billetterie:mail] Après mise à jour PAID — décision email', {
+      orderId,
+      hasUpdatedOrder: !!updatedOrder,
+      ticket_sent: updatedOrder?.ticket_sent,
+      willSendEmail: !!(updatedOrder && !updatedOrder.ticket_sent)
+    })
+
     if (updatedOrder && !updatedOrder.ticket_sent) {
-      const sessionId = session.id
-      const currency = (session.currency ?? 'eur').toLowerCase()
-      const amountTotal = session.amount_total ?? 0
-
-      // Récupérer le reçu Stripe (lien PDF) et les line items
-      let receiptUrl: string | null = null
-      const lineItems: TicketEmailData['lineItems'] = []
-
       try {
-        const sessionWithCharge = await stripe.checkout.sessions.retrieve(sessionId, {
-          expand: ['payment_intent.latest_charge']
-        }) as Stripe.Checkout.Session & {
-          payment_intent?: { latest_charge?: { receipt_url?: string } }
-        }
-        const charge = sessionWithCharge.payment_intent?.latest_charge
-        if (charge && typeof charge === 'object' && 'receipt_url' in charge) {
-          receiptUrl = charge.receipt_url ?? null
-        }
-      } catch (_) {
-        // Reçu non disponible (ex: mode test)
+        const emailResult = await sendPaidOrderTicketEmailIfNeeded(session, orderId)
+        console.info('[billetterie:mail] Résultat envoi (branche normale)', { orderId, emailResult })
+      } catch (mailErr) {
+        console.error('[billetterie:mail] Échec envoi (branche normale)', { orderId, mailErr })
+        throw mailErr
       }
-
-      try {
-        const { data: items } = await stripe.checkout.sessions.listLineItems(sessionId)
-        if (items?.length) {
-          for (const item of items) {
-            const qty = item.quantity ?? 1
-            const totalCents = item.amount_total ?? 0
-            const unitCents = qty > 0 ? Math.round(totalCents / qty) : 0
-            lineItems.push({
-              description: item.description ?? 'Billet',
-              quantity: qty,
-              unitPriceFormatted: formatAmount(unitCents, currency),
-              totalFormatted: formatAmount(totalCents, currency)
-            })
-          }
-        }
-      } catch (_) {
-        // Fallback si les line items ne sont pas disponibles
-        lineItems.push({
-          description: 'Spectacle de Danse d\'Ozoir',
-          quantity: reservations!.length,
-          unitPriceFormatted: formatAmount(amountTotal / Math.max(1, reservations!.length), currency),
-          totalFormatted: formatAmount(amountTotal, currency)
-        })
-      }
-
-      const firstName = (order as { first_name?: string } | null)?.first_name ?? null
-      const lastName = (order as { last_name?: string } | null)?.last_name ?? null
-      const customerName = [firstName, lastName].filter(Boolean).join(' ') || null
-      const paidAtFormatted = formatDate(new Date())
-      const amountTotalFormatted = formatAmount(amountTotal, currency)
-
-      const emailData: TicketEmailData = {
-        orderId: updatedOrder.id,
-        customerEmail: updatedOrder.email,
-        firstName,
-        lastName,
-        seatCount: reservations!.length,
-        amountTotalFormatted,
-        currency,
-        lineItems: lineItems.length > 0 ? lineItems : [{
-          description: 'Billet(s) – Spectacle de Danse d\'Ozoir',
-          quantity: reservations!.length,
-          unitPriceFormatted: formatAmount(amountTotal / Math.max(1, reservations!.length), currency),
-          totalFormatted: formatAmount(amountTotal, currency)
-        }],
-        ticketsUrl: null,
-        ticketsInAttachment: true,
-        receiptUrl: receiptUrl ?? null,
-        stripeSessionId: sessionId,
-        paymentStatus: session.payment_status ?? 'paid',
-        paidAtFormatted
-      }
-
-      let pdfBuffer: Buffer | undefined
-      try {
-        const { data: paidReservations } = await supabaseAdmin
-          .from('seat_reservation')
-          .select('seat_id')
-          .eq('order_id', updatedOrder.id)
-          .eq('status', SEAT_STATUS.PAID)
-        const seatIds = (paidReservations ?? []).map((r) => r.seat_id)
-        if (seatIds.length > 0) {
-          const [{ data: orderWithAttendees }, { data: seats }] = await Promise.all([
-            supabaseAdmin.from('order').select('ticket_attendees').eq('id', updatedOrder.id).single(),
-            supabaseAdmin.from('seat').select('id, label').in('id', seatIds)
-          ])
-          const labelById = new Map((seats ?? []).map((s) => [s.id, s.label]))
-          const attendees = (orderWithAttendees as { ticket_attendees?: Record<string, { firstName?: string; lastName?: string; ticketType?: string }> } | null)?.ticket_attendees
-          const tickets = seatIds.map((seatId) => {
-            const label = labelById.get(seatId) ?? seatId
-            const att = attendees?.[seatId]
-            return {
-              seatLabel: label,
-              firstName: att?.firstName ?? null,
-              lastName: att?.lastName ?? null,
-              ticketType: (att?.ticketType === 'adult' || att?.ticketType === 'child' ? att.ticketType : null) as 'adult' | 'child' | null
-            }
-          })
-          const seatLabels = tickets.map((t) => t.seatLabel)
-          if (seatLabels.length > 0) {
-            pdfBuffer = await buildTicketPdfBuffer({
-              orderId: updatedOrder.id,
-              seatLabels,
-              tickets,
-              customerName: customerName ?? undefined,
-              customerEmail: updatedOrder.email ?? undefined,
-              customerPhone: (order as { phone?: string } | null)?.phone ?? undefined,
-              amountTotalFormatted,
-              paidAtFormatted,
-              eventDate: EVENT_DATE,
-              eventVenue: EVENT_VENUE,
-              lineItems: lineItems.length > 0 ? lineItems : undefined
-            })
-          }
-        }
-      } catch (e) {
-        console.error('Génération PDF billets pour email:', e)
-      }
-
-      await sendTicketEmail(emailData, pdfBuffer)
-
-      await supabaseAdmin
-        .from('order')
-        .update({ ticket_sent: true })
-        .eq('id', updatedOrder.id)
+    } else {
+      console.info('[billetterie:mail] Pas d’envoi Mailjet (skip)', {
+        orderId: updatedOrder?.id,
+        reason: !updatedOrder
+          ? 'pas de updatedOrder'
+          : updatedOrder.ticket_sent
+            ? 'ticket_sent déjà true'
+            : 'inconnu'
+      })
     }
   }
 

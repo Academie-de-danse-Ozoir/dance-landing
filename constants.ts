@@ -24,6 +24,30 @@ export const ERROR_LOAD_SEATS_FAILED = 'Impossible de charger les sièges.'
 export const ERROR_LOAD_RESERVATIONS_FAILED = 'Impossible de charger les réservations.'
 export const ERROR_INVALID_REQUEST = 'Requête invalide.'
 export const ERROR_ADULT_CHILD_MISMATCH = 'Répartition adultes/enfants incohérente avec le nombre de places.'
+export const ERROR_MISSING_ORDER_TOKEN = 'Lien de réservation invalide. Recommencez la réservation.'
+export const ERROR_TOO_MANY_SEATS = 'Nombre maximum de places par réservation dépassé.'
+export const ERROR_FIELD_TOO_LONG = 'Un champ est trop long.'
+export const ERROR_RATE_LIMIT = 'Trop de requêtes. Réessayez dans un instant.'
+export const ERROR_CAPTCHA_TURNSTILE = 'Vérification anti-robot échouée ou expirée. Rechargez la page et réessayez.'
+
+/** Nombre max de sièges par réservation */
+export const MAX_SEATS_PER_ORDER = 10
+
+/**
+ * Rate limit (requêtes / minute / IP) — voir server/utils/rateLimit.ts
+ */
+export const RATE_LIMIT_HOLD_SEATS_PER_MINUTE = 10
+export const RATE_LIMIT_CANCEL_ORDER_PER_MINUTE = 10
+export const RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE = 10
+export const RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE = 10
+
+/** Longueurs max pour validation (hold-seats) */
+export const MAX_LENGTH = {
+  firstName: 100,
+  lastName: 100,
+  email: 255,
+  phone: 30
+} as const
 
 // Statuts commande
 export const ORDER_STATUS = {

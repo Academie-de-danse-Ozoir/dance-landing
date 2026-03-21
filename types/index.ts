@@ -10,6 +10,8 @@ export type Seat = {
 
 export type ActiveOrder = {
   orderId: string
+  /** Token secret pour prouver la propriété de la commande (annulation, paiement, détails) */
+  orderToken: string
   expiresAt: string
   seatCount?: number
   adultCount?: number

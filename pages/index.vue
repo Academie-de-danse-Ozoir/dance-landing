@@ -162,8 +162,16 @@ const displayedSeatCount = computed(() => {
 })
 
 function startTimerFromExpiresAt(expiresAt: string) {
-  timerExpiresAt = new Date(expiresAt).getTime()
+  const t = new Date(expiresAt).getTime()
   timerHasExpired = false
+  if (Number.isNaN(t)) {
+    console.error('[timer] expiresAt invalide:', expiresAt)
+    timerExpiresAt = null
+    remainingSeconds.value = 0
+    return
+  }
+  timerExpiresAt = t
+  remainingSeconds.value = Math.max(0, (t - Date.now()) / 1000)
 }
 
 /* =====================
@@ -239,6 +247,7 @@ function startMainAnimationLoop() {
       if (remainingSeconds.value <= 0) {
         timerHasExpired = true
         timerExpiresAt = null
+        console.info('[billetterie:index] Timer expiré → cancel-order (timer)')
         await cancelActiveOrder(CANCEL_REASON.TIMER)
       }
     }
@@ -257,8 +266,75 @@ function stopMainAnimationLoop() {
 }
 
 /* =====================
-   INIT
+   INIT — restauration commande / timer (localStorage)
 ===================== */
+
+async function restoreOrderFromStorage() {
+  if (!process.client) return
+
+  const stored = localStorage.getItem(STORAGE_ORDER_KEY)
+  if (!stored) return
+
+  let orderId: string
+  let storedData: ActiveOrder | null = null
+
+  try {
+    const parsed = JSON.parse(stored) as unknown
+
+    if (parsed && typeof parsed === 'object' && parsed !== null && 'orderId' in parsed && typeof (parsed as ActiveOrder).orderId === 'string') {
+      orderId = (parsed as ActiveOrder).orderId
+      storedData = parsed as ActiveOrder
+    } else {
+      return
+    }
+  } catch {
+    return
+  }
+
+  if (!storedData?.orderToken) {
+    return
+  }
+
+  try {
+    const res = await $fetch<OrderStatusResponse>('/api/order-status', {
+      query: { orderId }
+    })
+
+    const token = storedData.orderToken
+
+    if (res.status === 'pending' && res.expiresAt && token) {
+      activeOrder.value = {
+        orderId,
+        orderToken: token,
+        expiresAt: res.expiresAt,
+        seatCount: res.seatCount,
+        adultCount: storedData.adultCount ?? res.seatCount,
+        childCount: storedData.childCount ?? 0,
+        seatIds: storedData.seatIds
+      }
+
+      startTimerFromExpiresAt(res.expiresAt)
+    } else {
+      if (res.status === 'expired' && token) {
+        console.info('[billetterie:index] restoreOrderFromStorage → cancel-order (timer)', { orderId })
+        await $fetch('/api/cancel-order', {
+          method: 'POST',
+          body: { orderId, orderToken: token, reason: CANCEL_REASON.TIMER }
+        })
+        await loadSeats()
+      }
+      localStorage.removeItem(STORAGE_ORDER_KEY)
+    }
+  } catch {
+    localStorage.removeItem(STORAGE_ORDER_KEY)
+  }
+}
+
+function onPageShow(ev: PageTransitionEvent) {
+  if (ev.persisted) {
+    void restoreOrderFromStorage()
+  }
+}
 
 onMounted(async () => {
   try {
@@ -272,58 +348,15 @@ onMounted(async () => {
 
   if (!process.client) return
 
-  const stored = localStorage.getItem(STORAGE_ORDER_KEY)
-  if (!stored) return
+  await restoreOrderFromStorage()
 
-  let orderId: string
-  let storedData: ActiveOrder | null = null
-
-  try {
-    const parsed = JSON.parse(stored)
-
-    if (parsed && typeof parsed.orderId === 'string') {
-      orderId = parsed.orderId
-      storedData = parsed
-    } else {
-      orderId = stored
-    }
-  } catch {
-    orderId = stored
-  }
-
-  try {
-    const res = await $fetch<OrderStatusResponse>('/api/order-status', {
-      query: { orderId }
-    })
-
-    if (res.status === 'pending' && res.expiresAt) {
-      activeOrder.value = {
-        orderId,
-        expiresAt: res.expiresAt,
-        seatCount: res.seatCount,
-        adultCount: storedData?.adultCount ?? res.seatCount,
-        childCount: storedData?.childCount ?? 0
-      }
-
-      startTimerFromExpiresAt(res.expiresAt)
-    } else {
-      if (res.status === 'expired') {
-        await $fetch('/api/cancel-order', {
-          method: 'POST',
-          body: { orderId, reason: CANCEL_REASON.TIMER }
-        })
-
-        await loadSeats()
-      }
-
-      localStorage.removeItem(STORAGE_ORDER_KEY)
-    }
-  } catch {
-    localStorage.removeItem(STORAGE_ORDER_KEY)
-  }
+  window.addEventListener('pageshow', onPageShow)
 })
 
 onUnmounted(() => {
+  if (process.client) {
+    window.removeEventListener('pageshow', onPageShow)
+  }
   stopMainAnimationLoop()
   stopSeatsRealtime()
 })
@@ -434,6 +467,7 @@ async function submitStep2(payload: {
     childCount: number
   }
   ticketDetails: TicketDetail[]
+  turnstileToken?: string
 }) {
   isSubmitting.value = true
   error.value = null
@@ -448,7 +482,8 @@ async function submitStep2(payload: {
         firstName: payload.form.firstName,
         lastName: payload.form.lastName,
         email: payload.form.email,
-        phone: payload.form.phone.replace(/\D/g, '')
+        phone: payload.form.phone.replace(/\D/g, ''),
+        ...(payload.turnstileToken ? { turnstileToken: payload.turnstileToken } : {})
       }
     })
 
@@ -462,6 +497,7 @@ async function submitStep2(payload: {
 
     activeOrder.value = {
       orderId: res.orderId,
+      orderToken: res.orderToken,
       expiresAt: res.expiresAt,
       seatCount: seatIds.length,
       adultCount,
@@ -471,12 +507,14 @@ async function submitStep2(payload: {
 
     localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
 
+    closeModal()
     startTimerFromExpiresAt(res.expiresAt)
 
     await $fetch('/api/order-ticket-details', {
       method: 'POST',
       body: {
         orderId: res.orderId,
+        orderToken: res.orderToken,
         tickets: payload.ticketDetails.map((t) => ({
           seatId: t.seatId,
           firstName: t.firstName.trim(),
@@ -505,10 +543,19 @@ async function cancelActiveOrder(
 ) {
   if (!activeOrder.value) return
 
+  console.info('[billetterie:index] cancelActiveOrder', {
+    reason,
+    orderId: activeOrder.value.orderId
+  })
+
   try {
     await $fetch('/api/cancel-order', {
       method: 'POST',
-      body: { orderId: activeOrder.value.orderId, reason }
+      body: {
+        orderId: activeOrder.value.orderId,
+        orderToken: activeOrder.value.orderToken,
+        reason
+      }
     })
 
     activeOrder.value = null
@@ -539,11 +586,18 @@ async function pay() {
     const adultCount = order.adultCount ?? seatCount
     const childCount = order.childCount ?? 0
 
-    const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
-      method: 'POST',
-      body: { orderId, adultCount, childCount }
+    console.info('[billetterie:index] pay() → create-checkout-session', {
+      orderId,
+      adultCount,
+      childCount
     })
 
+    const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
+      method: 'POST',
+      body: { orderId, orderToken: order.orderToken, adultCount, childCount }
+    })
+
+    console.info('[billetterie:index] Redirection Stripe Checkout', { hasUrl: !!res.url })
     window.location.href = res.url
   } catch (err) {
     error.value = getErrorMessage(err)

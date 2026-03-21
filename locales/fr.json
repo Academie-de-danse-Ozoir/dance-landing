@@ -63,10 +63,12 @@
           "label": "Nombre de places enfants"
         }
       },
+      "turnstileHint": "Vérifiez que vous n’êtes pas un robot avant de payer.",
       "validation": {
         "required": "Champ requis",
         "emailInvalid": "Email invalide",
-        "phoneInvalid": "Téléphone invalide"
+        "phoneInvalid": "Téléphone invalide",
+        "turnstileRequired": "Veuillez compléter la vérification anti-robot."
       }
     },
     "errors": {
