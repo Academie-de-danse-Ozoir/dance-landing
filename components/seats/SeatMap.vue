@@ -54,6 +54,8 @@ const props = defineProps<{
   seats: Seat[]
   selectedSeatIds: string[]
   activeOrder: ActiveOrder | null
+  /** Aligné sur `MAX_SEATS_PER_ORDER` (API hold-seats). */
+  maxSeatsPerOrder: number
 }>()
 
 const emit = defineEmits<{
@@ -70,7 +72,9 @@ function getSeatFill(seat: Seat) {
 }
 
 function isSeatClickable(seat: Seat) {
-  return seat.status === 'free' && !props.activeOrder
+  if (seat.status !== 'free' || props.activeOrder) return false
+  if (selectedSet.value.has(seat.id)) return true
+  return props.selectedSeatIds.length < props.maxSeatsPerOrder
 }
 
 function getSeatOpacity(seat: Seat) {
@@ -84,9 +88,8 @@ function getSeatTitle(seat: Seat) {
 }
 
 function handleSeatClick(seat: Seat) {
-  if (seat.status === 'free' && !props.activeOrder) {
-    emit('seat-click', seat.id)
-  }
+  if (!isSeatClickable(seat)) return
+  emit('seat-click', seat.id)
 }
 </script>
 

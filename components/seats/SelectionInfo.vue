@@ -6,15 +6,34 @@
       </template>
       <template v-else>{{ content.home.selection.none }}</template>
     </p>
+    <p v-if="maxSeats > 0" class="selection-info_hint">
+      {{ maxHint }}
+    </p>
+    <p v-if="maxSeats > 0 && seatCount >= maxSeats" class="selection-info_limit">
+      {{ atLimitText }}
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import content from '../../locales/fr.json'
 
-defineProps<{
+const props = defineProps<{
   seatCount: number
+  /** Même valeur que `MAX_SEATS_PER_ORDER` côté serveur. */
+  maxSeats?: number
 }>()
+
+const maxSeats = computed(() => props.maxSeats ?? 0)
+
+const maxHint = computed(() =>
+  content.home.selection.maxPerOrderHint.replace('{max}', String(maxSeats.value))
+)
+
+const atLimitText = computed(() =>
+  content.home.selection.limitReached.replace('{max}', String(maxSeats.value))
+)
 </script>
 
 <style lang="scss" scoped>
@@ -35,6 +54,23 @@ defineProps<{
       color: #0d6efd;
       font-weight: 600;
     }
+  }
+
+  .selection-info_hint {
+    max-width: 26rem;
+    margin: 8px auto 0;
+    font-size: 13px;
+    color: #6c757d;
+    text-align: center;
+  }
+
+  .selection-info_limit {
+    max-width: 40rem;
+    margin: 6px auto 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #856404;
+    text-align: center;
   }
 }
 </style>

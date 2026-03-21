@@ -15,10 +15,19 @@
         :seats="seats"
         :selected-seat-ids="selectedSeatIds"
         :active-order="activeOrder"
+        :max-seats-per-order="MAX_SEATS_PER_ORDER"
         @seat-click="toggleSeat"
       />
 
-      <SelectionInfo :seat-count="displayedSeatCount" />
+      <SelectionInfo :seat-count="displayedSeatCount" :max-seats="MAX_SEATS_PER_ORDER" />
+
+      <div
+        v-if="selectionLimitMessage"
+        class="wrapper__alert wrapper__alert--warning"
+        role="status"
+      >
+        {{ selectionLimitMessage }}
+      </div>
 
       <div class="wrapper__actions">
         <DefaultButton
@@ -54,7 +63,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
 import type { Seat, SeatStatus, ActiveOrder, TicketDetail } from '../types'
-import { STORAGE_ORDER_KEY, CANCEL_REASON, EVENT_ID } from '../constants'
+import { STORAGE_ORDER_KEY, CANCEL_REASON, EVENT_ID, MAX_SEATS_PER_ORDER } from '../constants'
 import content from '../locales/fr.json'
 import ActiveOrderAlert from '../components/alerts/ActiveOrderAlert.vue'
 import SeatMap from '../components/seats/SeatMap.vue'
@@ -105,6 +114,7 @@ const SEATS_PER_ROW = 38
 
 const seats = ref<Seat[]>([])
 const selectedSeatIds = ref<string[]>([])
+const selectionLimitMessage = ref<string | null>(null)
 const error = ref<string | null>(null)
 const activeOrder = ref<ActiveOrder | null>(null)
 
@@ -371,9 +381,22 @@ function toggleSeat(id: string) {
 
   const ids = selectedSeatIds.value
 
-  selectedSeatIds.value = ids.includes(id)
-    ? ids.filter((s) => s !== id)
-    : [...ids, id]
+  if (ids.includes(id)) {
+    selectedSeatIds.value = ids.filter((s) => s !== id)
+    selectionLimitMessage.value = null
+    return
+  }
+
+  if (ids.length >= MAX_SEATS_PER_ORDER) {
+    selectionLimitMessage.value = content.home.selection.limitReached.replace(
+      '{max}',
+      String(MAX_SEATS_PER_ORDER)
+    )
+    return
+  }
+
+  selectionLimitMessage.value = null
+  selectedSeatIds.value = [...ids, id]
 }
 
 /* =====================
@@ -647,6 +670,16 @@ async function pay() {
         color: #842029;
         background-color: #f8d7da;
         border-color: #f5c2c7;
+      }
+
+      &--warning {
+        max-width: 26rem;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+        color: #664d03;
+        background-color: #fff3cd;
+        border-color: #ffecb5;
       }
     }
   }

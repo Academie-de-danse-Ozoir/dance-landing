@@ -15,7 +15,7 @@
       "invalidRequest": "Requête invalide.",
       "adultChildMismatch": "Répartition adultes/enfants incohérente avec le nombre de places.",
       "missingOrderToken": "Lien de réservation invalide. Recommencez la réservation.",
-      "tooManySeats": "Nombre maximum de places par réservation dépassé.",
+      "tooManySeats": "Nombre maximum de places par commande dépassé. Effectuez plusieurs commandes si vous avez besoin de plus de places.",
       "fieldTooLong": "Un champ est trop long.",
       "rateLimit": "Trop de requêtes. Réessayez dans un instant.",
       "captchaTurnstile": "Vérification anti-robot échouée ou expirée. Rechargez la page et réessayez.",
@@ -71,13 +71,16 @@
     "seats": {
       "tooltip": {
         "reservationInProgress": "Une réservation est déjà en cours",
-        "seatUnavailable": "Siège indisponible"
+        "seatUnavailable": "Siège indisponible",
+        "maxSelectionReached": "Maximum {max} places par commande — désélectionnez un siège pour en changer, ou passez une autre commande pour plus de places."
       }
     },
     "selection": {
       "none": "Aucun siège sélectionné",
       "one": "siège sélectionné",
-      "multiple": "sièges sélectionnés"
+      "multiple": "sièges sélectionnés",
+      "maxPerOrderHint": "Jusqu’à {max} places par réservation.",
+      "limitReached": "Vous avez atteint la limite de {max} places par commande. Désélectionnez un siège pour en ajouter une autre, ou effectuez plusieurs commandes si vous avez besoin de plus de places."
     },
     "actions": {
       "reserve": "Réserver"
