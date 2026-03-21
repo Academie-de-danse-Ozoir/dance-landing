@@ -3,22 +3,15 @@ import {
   EVENT_ID,
   MAX_SEATS_PER_ORDER,
   RATE_LIMIT_HOLD_SEATS_PER_MINUTE,
-  MAX_LENGTH,
-  ERROR_NO_SEATS_SELECTED,
-  ERROR_MISSING_CUSTOMER_INFO,
-  ERROR_SEATS_UNAVAILABLE,
-  ERROR_CREATE_RESERVATION_FAILED,
-  ERROR_TOO_MANY_SEATS,
-  ERROR_FIELD_TOO_LONG,
-  ERROR_RATE_LIMIT,
-  ERROR_CAPTCHA_TURNSTILE
+  MAX_LENGTH
 } from '../../constants'
+import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 import { verifyTurnstileToken } from '../utils/verifyTurnstile'
 
 function trimStr(s: unknown, max: number): string {
   const str = typeof s === 'string' ? s.trim() : ''
-  if (str.length > max) throw createError({ statusCode: 400, statusMessage: ERROR_FIELD_TOO_LONG })
+  if (str.length > max) throw createError({ statusCode: 400, statusMessage: tApiError('fieldTooLong') })
   return str
 }
 
@@ -26,7 +19,7 @@ export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
 
   if (!checkRateLimit(ip, 'hold', RATE_LIMIT_HOLD_SEATS_PER_MINUTE).ok) {
-    throw createError({ statusCode: 429, statusMessage: ERROR_RATE_LIMIT })
+    throw createError({ statusCode: 429, statusMessage: tApiError('rateLimit') })
   }
 
   const body = await readBody(event)
@@ -42,20 +35,20 @@ export default defineEventHandler(async (event) => {
     const token = typeof turnstileToken === 'string' ? turnstileToken : ''
     const ok = await verifyTurnstileToken(token)
     if (!ok) {
-      throw createError({ statusCode: 400, statusMessage: ERROR_CAPTCHA_TURNSTILE })
+      throw createError({ statusCode: 400, statusMessage: tApiError('captchaTurnstile') })
     }
   }
 
   if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
     throw createError({
       statusCode: 400,
-      statusMessage: ERROR_NO_SEATS_SELECTED
+      statusMessage: tApiError('noSeatsSelected')
     })
   }
   if (seatIds.length > MAX_SEATS_PER_ORDER) {
     throw createError({
       statusCode: 400,
-      statusMessage: ERROR_TOO_MANY_SEATS
+      statusMessage: tApiError('tooManySeats')
     })
   }
 
@@ -70,12 +63,12 @@ export default defineEventHandler(async (event) => {
     ph = trimStr(phone, MAX_LENGTH.phone)
   } catch (e: any) {
     if (e.statusCode === 400) throw e
-    throw createError({ statusCode: 400, statusMessage: ERROR_MISSING_CUSTOMER_INFO })
+    throw createError({ statusCode: 400, statusMessage: tApiError('missingCustomerInfo') })
   }
   if (!fName || !lName || !em || !ph) {
     throw createError({
       statusCode: 400,
-      statusMessage: ERROR_MISSING_CUSTOMER_INFO
+      statusMessage: tApiError('missingCustomerInfo')
     })
   }
 
@@ -92,14 +85,14 @@ export default defineEventHandler(async (event) => {
     console.error('hold_seats error:', error)
     throw createError({
       statusCode: 409,
-      statusMessage: ERROR_SEATS_UNAVAILABLE
+      statusMessage: tApiError('seatsUnavailable')
     })
   }
 
   if (!data || data.length === 0) {
     throw createError({
       statusCode: 500,
-      statusMessage: ERROR_CREATE_RESERVATION_FAILED
+      statusMessage: tApiError('createReservationFailed')
     })
   }
 
@@ -117,8 +110,7 @@ export default defineEventHandler(async (event) => {
     console.error('[billetterie:hold-seats] RPC row inattendu:', row)
     throw createError({
       statusCode: 500,
-      statusMessage:
-        'Réponse hold_seats incomplète : vérifie que la fonction retourne order_id, order_token et expires_at (RETURNS TABLE à 3 colonnes).'
+      statusMessage: tApiError('holdSeatsIncompleteResponse')
     })
   }
 

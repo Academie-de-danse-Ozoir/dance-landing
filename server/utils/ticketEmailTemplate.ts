@@ -1,7 +1,8 @@
 /**
- * Données pour l'email de confirmation de billet
- * Spectacle de Danse d'Ozoir – Billetterie officielle
+ * Données pour l'email de confirmation de billet (textes : locales/fr.json → brand).
  */
+import { billetterieSenderName, brand } from '../../locales/frDisplay'
+
 export interface TicketEmailLineItem {
   description: string
   quantity: number
@@ -119,7 +120,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Commande ${escapeHtml(orderRef)} — Confirmation billet – Spectacle de Danse d'Ozoir</title>
+  <title>Commande ${escapeHtml(orderRef)} — Confirmation billet – ${escapeHtml(brand.spectacleName)}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f3f0; -webkit-font-smoothing: antialiased;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f3f0;">
@@ -129,8 +130,8 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
           <!-- En-tête -->
           <tr>
             <td style="background-color: #2d2a26; padding: 36px 40px; text-align: center;">
-              <p style="margin: 0; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #c9b896; font-weight: 600;">Billetterie officielle</p>
-              <h1 style="margin: 12px 0 0 0; font-size: 24px; font-weight: 600; color: #ffffff; letter-spacing: -0.02em;">Spectacle de Danse d'Ozoir</h1>
+              <p style="margin: 0; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #c9b896; font-weight: 600;">${escapeHtml(brand.billetterieLabel)}</p>
+              <h1 style="margin: 12px 0 0 0; font-size: 24px; font-weight: 600; color: #ffffff; letter-spacing: -0.02em;">${escapeHtml(brand.spectacleName)}</h1>
               <p style="margin: 16px 0 0 0; font-size: 14px; color: #a8a29e;">Confirmation — commande ${escapeHtml(orderRef)}</p>
             </td>
           </tr>
@@ -190,7 +191,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
           <!-- Pied de page -->
           <tr>
             <td style="padding: 24px 40px 32px; border-top: 1px solid #e7e5e4; background-color: #fafaf9;">
-              <p style="margin: 0; font-size: 13px; color: #78716c; text-align: center; line-height: 1.5;">Billetterie officielle – Spectacle de Danse d'Ozoir</p>
+              <p style="margin: 0; font-size: 13px; color: #78716c; text-align: center; line-height: 1.5;">${escapeHtml(billetterieSenderName())}</p>
               <p style="margin: 8px 0 0 0; font-size: 12px; color: #a8a29e; text-align: center;">Cet email confirme votre réservation et votre paiement.</p>
             </td>
           </tr>

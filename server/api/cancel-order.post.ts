@@ -1,21 +1,14 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { stripe } from '../lib/stripe'
-import {
-  ERROR_MISSING_ORDER_ID,
-  ERROR_MISSING_ORDER_TOKEN,
-  ERROR_PAID_ORDER_CANNOT_BE_CANCELLED,
-  ERROR_RATE_LIMIT,
-  RATE_LIMIT_CANCEL_ORDER_PER_MINUTE,
-  ORDER_STATUS,
-  CANCEL_REASON
-} from '../../constants'
+import { RATE_LIMIT_CANCEL_ORDER_PER_MINUTE, ORDER_STATUS, CANCEL_REASON } from '../../constants'
+import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
   
   if (!checkRateLimit(ip, 'cancel', RATE_LIMIT_CANCEL_ORDER_PER_MINUTE).ok) {
-    throw createError({ statusCode: 429, statusMessage: ERROR_RATE_LIMIT })
+    throw createError({ statusCode: 429, statusMessage: tApiError('rateLimit') })
   }
 
   const body = await readBody(event)
@@ -33,7 +26,7 @@ export default defineEventHandler(async (event) => {
   if (!orderId || !orderToken) {
     throw createError({
       statusCode: 400,
-      statusMessage: orderToken ? ERROR_MISSING_ORDER_ID : ERROR_MISSING_ORDER_TOKEN
+      statusMessage: orderToken ? tApiError('missingOrderId') : tApiError('missingOrderToken')
     })
   }
 
@@ -45,14 +38,14 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (error || !order) {
-    throw createError({ statusCode: 404, statusMessage: ERROR_MISSING_ORDER_TOKEN })
+    throw createError({ statusCode: 404, statusMessage: tApiError('missingOrderToken') })
   }
 
   if (order.status === ORDER_STATUS.PAID) {
     console.warn('[billetterie:cancel-order] Refusé : commande déjà PAID', { orderId })
     throw createError({
       statusCode: 409,
-      statusMessage: ERROR_PAID_ORDER_CANNOT_BE_CANCELLED
+      statusMessage: tApiError('paidOrderCannotBeCancelled')
     })
   }
 

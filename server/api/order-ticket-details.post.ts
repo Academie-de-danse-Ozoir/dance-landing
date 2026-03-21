@@ -4,15 +4,8 @@
  * { [seatId]: { firstName, lastName, ticketType } }
  */
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import {
-  ORDER_STATUS,
-  SEAT_STATUS,
-  ERROR_ORDER_NOT_FOUND,
-  ERROR_SEATS_UNAVAILABLE,
-  ERROR_MISSING_ORDER_TOKEN,
-  ERROR_RATE_LIMIT,
-  RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE
-} from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS, RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE } from '../../constants'
+import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 
 type TicketPayload = {
@@ -25,7 +18,7 @@ type TicketPayload = {
 export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
   if (!checkRateLimit(ip, 'ticket-details', RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE).ok) {
-    throw createError({ statusCode: 429, statusMessage: ERROR_RATE_LIMIT })
+    throw createError({ statusCode: 429, statusMessage: tApiError('rateLimit') })
   }
 
   const body = await readBody(event)
@@ -41,7 +34,7 @@ export default defineEventHandler(async (event) => {
   if (!orderId || !orderToken || !Array.isArray(tickets) || tickets.length === 0) {
     throw createError({
       statusCode: 400,
-      statusMessage: !orderToken ? ERROR_MISSING_ORDER_TOKEN : 'orderId et tickets requis.'
+      statusMessage: !orderToken ? tApiError('missingOrderToken') : tApiError('orderAndTicketsRequired')
     })
   }
 
@@ -55,7 +48,7 @@ export default defineEventHandler(async (event) => {
   if (orderError || !order || order.status !== ORDER_STATUS.PENDING) {
     throw createError({
       statusCode: 404,
-      statusMessage: ERROR_ORDER_NOT_FOUND
+      statusMessage: tApiError('orderNotFound')
     })
   }
 
@@ -74,7 +67,7 @@ export default defineEventHandler(async (event) => {
   ) {
     throw createError({
       statusCode: 400,
-      statusMessage: ERROR_SEATS_UNAVAILABLE
+      statusMessage: tApiError('seatsUnavailable')
     })
   }
 
@@ -96,7 +89,7 @@ export default defineEventHandler(async (event) => {
     console.error('order-ticket-details update:', updateError)
     throw createError({
       statusCode: 500,
-      statusMessage: 'Impossible d\'enregistrer les détails des billets.'
+      statusMessage: tApiError('ticketDetailsSaveFailed')
     })
   }
 

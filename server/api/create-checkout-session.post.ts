@@ -1,25 +1,19 @@
 import { stripe } from '../lib/stripe'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
 import {
-  ERROR_MISSING_ORDER_ID,
-  ERROR_MISSING_ORDER_TOKEN,
-  ERROR_ORDER_NOT_FOUND,
-  ERROR_ORDER_NOT_PAYABLE,
-  ERROR_RESERVATION_EXPIRED,
-  ERROR_ADULT_CHILD_MISMATCH,
-  ERROR_RATE_LIMIT,
   ORDER_STATUS,
   SEAT_STATUS,
   PRICE_ADULT_CENTS,
   PRICE_CHILD_CENTS,
   RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE
 } from '../../constants'
+import { brand, tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
   if (!checkRateLimit(ip, 'checkout', RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE).ok) {
-    throw createError({ statusCode: 429, statusMessage: ERROR_RATE_LIMIT })
+    throw createError({ statusCode: 429, statusMessage: tApiError('rateLimit') })
   }
 
   const body = await readBody(event)
@@ -28,7 +22,7 @@ export default defineEventHandler(async (event) => {
   if (!orderId || !orderToken) {
     throw createError({
       statusCode: 400,
-      statusMessage: !orderToken ? ERROR_MISSING_ORDER_TOKEN : ERROR_MISSING_ORDER_ID
+      statusMessage: !orderToken ? tApiError('missingOrderToken') : tApiError('missingOrderId')
     })
   }
 
@@ -43,11 +37,11 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (orderError || !order) {
-    throw createError({ statusCode: 404, statusMessage: ERROR_ORDER_NOT_FOUND })
+    throw createError({ statusCode: 404, statusMessage: tApiError('orderNotFound') })
   }
 
   if (order.status !== ORDER_STATUS.PENDING) {
-    throw createError({ statusCode: 409, statusMessage: ERROR_ORDER_NOT_PAYABLE })
+    throw createError({ statusCode: 409, statusMessage: tApiError('orderNotPayable') })
   }
 
   /* =====================
@@ -62,7 +56,7 @@ export default defineEventHandler(async (event) => {
   if (resError || !reservations || reservations.length === 0) {
     throw createError({
       statusCode: 409,
-      statusMessage: ERROR_RESERVATION_EXPIRED
+      statusMessage: tApiError('reservationExpired')
     })
   }
 
@@ -85,7 +79,7 @@ export default defineEventHandler(async (event) => {
 
     throw createError({
       statusCode: 409,
-      statusMessage: ERROR_RESERVATION_EXPIRED
+      statusMessage: tApiError('reservationExpired')
     })
   }
 
@@ -95,7 +89,7 @@ export default defineEventHandler(async (event) => {
   if (adultCount + childCount !== seatCount) {
     throw createError({
       statusCode: 400,
-      statusMessage: ERROR_ADULT_CHILD_MISMATCH
+      statusMessage: tApiError('adultChildMismatch')
     })
   }
 
@@ -105,8 +99,8 @@ export default defineEventHandler(async (event) => {
       price_data: {
         currency: 'eur',
         product_data: {
-          name: 'Spectacle de danse d\'Ozoir',
-          description: 'Billet adulte'
+          name: brand.spectacleNameStripe,
+          description: brand.stripeLineAdult
         },
         unit_amount: PRICE_ADULT_CENTS
       },
@@ -118,8 +112,8 @@ export default defineEventHandler(async (event) => {
       price_data: {
         currency: 'eur',
         product_data: {
-          name: 'Spectacle de danse d\'Ozoir',
-          description: 'Billet enfant'
+          name: brand.spectacleNameStripe,
+          description: brand.stripeLineChild
         },
         unit_amount: PRICE_CHILD_CENTS
       },

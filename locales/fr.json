@@ -1,4 +1,48 @@
 {
+  "api": {
+    "errors": {
+      "missingOrderId": "Identifiant de commande manquant.",
+      "orderNotFound": "Commande introuvable.",
+      "orderNotPayable": "Cette commande ne peut pas être payée.",
+      "reservationExpired": "Réservation expirée.",
+      "paidOrderCannotBeCancelled": "Une commande payée ne peut pas être annulée.",
+      "noSeatsSelected": "Aucun siège sélectionné.",
+      "missingCustomerInfo": "Informations client manquantes.",
+      "seatsUnavailable": "Un ou plusieurs sièges ne sont plus disponibles.",
+      "createReservationFailed": "Impossible de créer la réservation.",
+      "loadSeatsFailed": "Impossible de charger les sièges.",
+      "loadReservationsFailed": "Impossible de charger les réservations.",
+      "invalidRequest": "Requête invalide.",
+      "adultChildMismatch": "Répartition adultes/enfants incohérente avec le nombre de places.",
+      "missingOrderToken": "Lien de réservation invalide. Recommencez la réservation.",
+      "tooManySeats": "Nombre maximum de places par réservation dépassé.",
+      "fieldTooLong": "Un champ est trop long.",
+      "rateLimit": "Trop de requêtes. Réessayez dans un instant.",
+      "captchaTurnstile": "Vérification anti-robot échouée ou expirée. Rechargez la page et réessayez.",
+      "holdSeatsIncompleteResponse": "Réponse hold_seats incomplète : vérifie que la fonction retourne order_id, order_token et expires_at (RETURNS TABLE à 3 colonnes).",
+      "orderAndTicketsRequired": "orderId et tickets requis.",
+      "ticketDetailsSaveFailed": "Impossible d'enregistrer les détails des billets.",
+      "ticketsDownloadNotConfigured": "Téléchargement des billets non configuré.",
+      "ticketLinkInvalid": "Lien de téléchargement invalide.",
+      "ticketLinkInvalidOrExpired": "Lien de téléchargement invalide ou expiré.",
+      "ticketLinkExpired": "Ce lien de téléchargement a expiré.",
+      "orderNotFoundOrNotPaid": "Commande introuvable ou non payée.",
+      "noSeatsForOrder": "Aucune place trouvée pour cette commande.",
+      "loadSeatsTicketPageFailed": "Impossible de charger les places."
+    }
+  },
+  "brand": {
+    "eventDate": "Samedi 24 mai 2026",
+    "eventVenue": "Salle des fêtes – Ozoir-la-Ferrière",
+    "spectacleName": "Spectacle de Danse d'Ozoir",
+    "spectacleNameStripe": "Spectacle de danse d'Ozoir",
+    "billetterieLabel": "Billetterie officielle",
+    "senderEmail": "spectacle.academiedanseozoir@gmail.com",
+    "stripeLineAdult": "Billet adulte",
+    "stripeLineChild": "Billet enfant",
+    "pdfLabelEvent": "Spectacle",
+    "pdfPresentTicketAtEntry": "Présentez ce billet à l'entrée du spectacle."
+  },
   "home": {
     "title": "Sélection des sièges",
     "activeOrder": {
@@ -83,4 +127,3 @@
     "backToSeats": "Retour à la sélection des sièges"
   }
 }
-

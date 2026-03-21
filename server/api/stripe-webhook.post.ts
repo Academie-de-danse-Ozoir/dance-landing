@@ -1,7 +1,8 @@
 import Stripe from 'stripe'
 import { buffer } from 'node:stream/consumers'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS, ERROR_INVALID_REQUEST } from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import { tApiError } from '../../locales/frDisplay'
 import { sendPaidOrderTicketEmailIfNeeded } from '../utils/paidOrderTicketEmail'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -22,7 +23,7 @@ export default defineEventHandler(async (event) => {
     )
   } catch (err: any) {
     console.error('[billetterie:stripe-webhook] Signature invalide (STRIPE_WEBHOOK_SECRET / corps brut ?)', err?.message ?? err)
-    throw createError({ statusCode: 400, statusMessage: ERROR_INVALID_REQUEST })
+    throw createError({ statusCode: 400, statusMessage: tApiError('invalidRequest') })
   }
 
   console.info('[billetterie:stripe-webhook] Événement reçu', { type: stripeEvent.type, id: stripeEvent.id })

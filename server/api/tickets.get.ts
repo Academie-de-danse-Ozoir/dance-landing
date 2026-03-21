@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS, EVENT_DATE, EVENT_VENUE } from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import { brand, tApiError } from '../../locales/frDisplay'
 import { buildTicketPdfBuffer } from '../utils/ticketPdf'
 import { verifyTicketsSignature } from '../utils/ticketsLink'
 
@@ -13,21 +14,21 @@ export default defineEventHandler(async (event) => {
   if (!secret) {
     throw createError({
       statusCode: 503,
-      statusMessage: 'Téléchargement des billets non configuré.'
+      statusMessage: tApiError('ticketsDownloadNotConfigured')
     })
   }
 
   if (!orderId || !exp || !sig) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Lien de téléchargement invalide.'
+      statusMessage: tApiError('ticketLinkInvalid')
     })
   }
 
   if (!verifyTicketsSignature(orderId, exp, sig, secret)) {
     throw createError({
       statusCode: 403,
-      statusMessage: 'Lien de téléchargement invalide ou expiré.'
+      statusMessage: tApiError('ticketLinkInvalidOrExpired')
     })
   }
 
@@ -35,7 +36,7 @@ export default defineEventHandler(async (event) => {
   if (exp < now) {
     throw createError({
       statusCode: 403,
-      statusMessage: 'Ce lien de téléchargement a expiré.'
+      statusMessage: tApiError('ticketLinkExpired')
     })
   }
 
@@ -48,7 +49,7 @@ export default defineEventHandler(async (event) => {
   if (orderError || !order || order.status !== ORDER_STATUS.PAID) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'Commande introuvable ou non payée.'
+      statusMessage: tApiError('orderNotFoundOrNotPaid')
     })
   }
 
@@ -61,7 +62,7 @@ export default defineEventHandler(async (event) => {
   if (resError || !reservations || reservations.length === 0) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'Aucune place trouvée pour cette commande.'
+      statusMessage: tApiError('noSeatsForOrder')
     })
   }
 
@@ -74,7 +75,7 @@ export default defineEventHandler(async (event) => {
   if (seatsError || !seats || seats.length === 0) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Impossible de charger les places.'
+      statusMessage: tApiError('loadSeatsTicketPageFailed')
     })
   }
 
@@ -107,8 +108,8 @@ export default defineEventHandler(async (event) => {
     customerName: customerName ?? undefined,
     customerEmail: order.email ?? undefined,
     customerPhone: order.phone ?? undefined,
-    eventDate: EVENT_DATE,
-    eventVenue: EVENT_VENUE
+    eventDate: brand.eventDate,
+    eventVenue: brand.eventVenue
   })
 
   setResponseHeader(event, 'Content-Type', 'application/pdf')

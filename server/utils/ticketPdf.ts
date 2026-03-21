@@ -1,7 +1,5 @@
 import PDFDocument from 'pdfkit'
-
-const TITLE = 'Spectacle de Danse d\'Ozoir'
-const SUBTITLE = 'Billetterie officielle'
+import { brand, pdfOrderRecapFooter } from '../../locales/frDisplay'
 
 export interface TicketPdfLineItem {
   description: string
@@ -75,12 +73,12 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       doc
         .fillColor('#c9b896')
         .fontSize(10)
-        .text(SUBTITLE.toUpperCase(), 40, 26, { align: 'center', width: pageWidth })
+        .text(brand.billetterieLabel.toUpperCase(), 40, 26, { align: 'center', width: pageWidth })
       doc
         .fillColor('#ffffff')
         .fontSize(20)
         .font('Helvetica-Bold')
-        .text(TITLE, 40, 44, { align: 'center', width: pageWidth })
+        .text(brand.spectacleName, 40, 44, { align: 'center', width: pageWidth })
 
       doc.y = 100
 
@@ -150,7 +148,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
           .fillColor('#78716c')
           .fontSize(10)
           .font('Helvetica')
-          .text('Spectacle', 56, rowY)
+          .text(brand.pdfLabelEvent, 56, rowY)
         const eventLine = [data.eventDate, data.eventVenue].filter(Boolean).join(' – ')
         doc
           .fillColor('#1c1917')
@@ -163,12 +161,10 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
         .fillColor('#a8a29e')
         .fontSize(9)
         .font('Helvetica')
-        .text(
-          'Présentez ce billet à l\'entrée du spectacle.',
-          40,
-          cardY + cardHeight + 28,
-          { align: 'center', width: pageWidth }
-        )
+        .text(brand.pdfPresentTicketAtEntry, 40, cardY + cardHeight + 28, {
+          align: 'center',
+          width: pageWidth
+        })
     })
 
     // —— Dernière page A4 : récapitulatif de la commande ——
@@ -180,7 +176,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
     doc
       .fillColor('#c9b896')
       .fontSize(10)
-      .text(SUBTITLE.toUpperCase(), 40, 26, { align: 'center', width: pageWidth })
+      .text(brand.billetterieLabel.toUpperCase(), 40, 26, { align: 'center', width: pageWidth })
     doc
       .fillColor('#ffffff')
       .fontSize(18)
@@ -257,7 +253,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
 
     if (data.eventDate || data.eventVenue) {
       labelStyle()
-      doc.text('Spectacle', recapX, recapY)
+      doc.text(brand.pdfLabelEvent, recapX, recapY)
       valueStyle()
       doc.text([data.eventDate, data.eventVenue].filter(Boolean).join(' – '), recapX, recapY + 18)
       recapY += 44
@@ -299,12 +295,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       .fillColor('#a8a29e')
       .fontSize(9)
       .font('Helvetica')
-      .text(
-        'Conservez ce récapitulatif avec vos billets. Billetterie officielle – Spectacle de Danse d\'Ozoir.',
-        40,
-        recapY + 32,
-        { align: 'center', width: pageWidth }
-      )
+      .text(pdfOrderRecapFooter(), 40, recapY + 32, { align: 'center', width: pageWidth })
 
     doc.end()
   })

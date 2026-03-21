@@ -2,33 +2,9 @@ export const STORAGE_ORDER_KEY = 'order_id'
 
 export const EVENT_ID = 'f179039c-c6a9-4c93-ac39-2153c02105ec'
 
-/** Date et lieu du spectacle (affichés sur les billets PDF) */
-export const EVENT_DATE = 'Samedi 24 mai 2026'
-export const EVENT_VENUE = 'Salle des fêtes – Ozoir-la-Ferrière'
-
 /** Tarifs en centimes (affichage front + Stripe) */
 export const PRICE_ADULT_CENTS = 100
 export const PRICE_CHILD_CENTS = 50
-
-// Erreurs API (messages utilisateur en français)
-export const ERROR_MISSING_ORDER_ID = 'Identifiant de commande manquant.'
-export const ERROR_ORDER_NOT_FOUND = 'Commande introuvable.'
-export const ERROR_ORDER_NOT_PAYABLE = 'Cette commande ne peut pas être payée.'
-export const ERROR_RESERVATION_EXPIRED = 'Réservation expirée.'
-export const ERROR_PAID_ORDER_CANNOT_BE_CANCELLED = 'Une commande payée ne peut pas être annulée.'
-export const ERROR_NO_SEATS_SELECTED = 'Aucun siège sélectionné.'
-export const ERROR_MISSING_CUSTOMER_INFO = 'Informations client manquantes.'
-export const ERROR_SEATS_UNAVAILABLE = 'Un ou plusieurs sièges ne sont plus disponibles.'
-export const ERROR_CREATE_RESERVATION_FAILED = 'Impossible de créer la réservation.'
-export const ERROR_LOAD_SEATS_FAILED = 'Impossible de charger les sièges.'
-export const ERROR_LOAD_RESERVATIONS_FAILED = 'Impossible de charger les réservations.'
-export const ERROR_INVALID_REQUEST = 'Requête invalide.'
-export const ERROR_ADULT_CHILD_MISMATCH = 'Répartition adultes/enfants incohérente avec le nombre de places.'
-export const ERROR_MISSING_ORDER_TOKEN = 'Lien de réservation invalide. Recommencez la réservation.'
-export const ERROR_TOO_MANY_SEATS = 'Nombre maximum de places par réservation dépassé.'
-export const ERROR_FIELD_TOO_LONG = 'Un champ est trop long.'
-export const ERROR_RATE_LIMIT = 'Trop de requêtes. Réessayez dans un instant.'
-export const ERROR_CAPTCHA_TURNSTILE = 'Vérification anti-robot échouée ou expirée. Rechargez la page et réessayez.'
 
 /** Nombre max de sièges par réservation */
 export const MAX_SEATS_PER_ORDER = 10
@@ -49,7 +25,7 @@ export const MAX_LENGTH = {
   phone: 30
 } as const
 
-// Statuts commande
+// Statuts commande (valeurs BDD / Stripe — pas des libellés affichés)
 export const ORDER_STATUS = {
   PENDING: 'pending',
   PAID: 'paid',

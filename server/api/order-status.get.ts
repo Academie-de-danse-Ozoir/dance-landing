@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ERROR_MISSING_ORDER_ID, ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import { tApiError } from '../../locales/frDisplay'
 
 export default defineEventHandler(async (event) => {
   const orderId = getQuery(event).orderId as string
@@ -7,7 +8,7 @@ export default defineEventHandler(async (event) => {
   if (!orderId) {
     throw createError({
       statusCode: 400,
-      statusMessage: ERROR_MISSING_ORDER_ID
+      statusMessage: tApiError('missingOrderId')
     })
   }
 

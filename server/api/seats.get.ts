@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { EVENT_ID, SEAT_STATUS, ERROR_LOAD_SEATS_FAILED, ERROR_LOAD_RESERVATIONS_FAILED } from '../../constants'
+import { EVENT_ID, SEAT_STATUS } from '../../constants'
+import { tApiError } from '../../locales/frDisplay'
 
 type SeatStatus = 'free' | 'hold' | 'paid'
 
@@ -12,7 +13,7 @@ export default defineEventHandler(async () => {
   if (seatError) {
     throw createError({
       statusCode: 500,
-      statusMessage: ERROR_LOAD_SEATS_FAILED
+      statusMessage: tApiError('loadSeatsFailed')
     })
   }
 
@@ -26,7 +27,7 @@ export default defineEventHandler(async () => {
   if (resError) {
     throw createError({
       statusCode: 500,
-      statusMessage: ERROR_LOAD_RESERVATIONS_FAILED
+      statusMessage: tApiError('loadReservationsFailed')
     })
   }
 

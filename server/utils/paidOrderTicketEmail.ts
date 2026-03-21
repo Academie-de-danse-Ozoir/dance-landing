@@ -7,7 +7,13 @@ import type Stripe from 'stripe'
 import Mailjet from 'node-mailjet'
 import { stripe } from '../lib/stripe'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS, EVENT_DATE, EVENT_VENUE } from '../../constants'
+import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import {
+  brand,
+  billetterieSenderName,
+  emailAggregateLineDescription,
+  emailTicketSubject
+} from '../../locales/frDisplay'
 import type { TicketEmailData } from './ticketEmailTemplate'
 import { buildTicketEmailHtml } from './ticketEmailTemplate'
 import { buildTicketPdfBuffer } from './ticketPdf'
@@ -54,11 +60,11 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
   const html = buildTicketEmailHtml(data)
   const message: Record<string, unknown> = {
     From: {
-      Email: 'spectacle.academiedanseozoir@gmail.com',
-      Name: "Billetterie officielle – Spectacle de Danse d'Ozoir",
+      Email: brand.senderEmail,
+      Name: billetterieSenderName()
     },
     To: [{ Email: data.customerEmail }],
-    Subject: `Votre billet — commande ${ref} — Spectacle de Danse d'Ozoir 🎭`,
+    Subject: emailTicketSubject(ref),
     HTMLPart: html,
     /** Mailjet : traçabilité ; un envoi par commande (pas de fusion avec un autre achat). */
     CustomID: data.orderId,
@@ -211,7 +217,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     }
   } catch {
     lineItems.push({
-      description: 'Spectacle de Danse d\'Ozoir',
+      description: brand.spectacleName,
       quantity: seatCount,
       unitPriceFormatted: formatAmount(amountTotal / Math.max(1, seatCount), currency),
       totalFormatted: formatAmount(amountTotal, currency)
@@ -233,7 +239,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     amountTotalFormatted,
     currency,
     lineItems: lineItems.length > 0 ? lineItems : [{
-      description: 'Billet(s) – Spectacle de Danse d\'Ozoir',
+      description: emailAggregateLineDescription(),
       quantity: seatCount,
       unitPriceFormatted: formatAmount(amountTotal / Math.max(1, seatCount), currency),
       totalFormatted: formatAmount(amountTotal, currency)
@@ -275,8 +281,8 @@ export async function sendPaidOrderTicketEmailIfNeeded(
         customerPhone: order.phone ?? undefined,
         amountTotalFormatted,
         paidAtFormatted,
-        eventDate: EVENT_DATE,
-        eventVenue: EVENT_VENUE,
+        eventDate: brand.eventDate,
+        eventVenue: brand.eventVenue,
         lineItems: lineItems.length > 0 ? lineItems : undefined
       })
     }
