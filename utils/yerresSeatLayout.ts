@@ -5,6 +5,13 @@
  */
 
 import {
+  SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_EVEN_P,
+  SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_EVEN_Q,
+  SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_ODD_P,
+  SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_ODD_Q,
+  SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_PER_STEP,
+  SEAT_MAP_BALCONY_QP_OUTER_WING_EVEN_OFFSET_STEPS,
+  SEAT_MAP_BALCONY_QP_OUTER_WING_ODD_OFFSET_STEPS,
   SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP,
   SEAT_MAP_BALCONY_VP_WING_OUTWARD_BASE_STEPS,
   SEAT_MAP_BALCONY_WP_WING_GLOBAL_OFFSET_STEPS,
@@ -27,7 +34,8 @@ export type SeatLike = {
   status: string
 }
 
-const SEAT_CELL = 13
+/** Pas horizontal du layout (carte sièges) — partagé avec SeatMap pour l’arc du balcon. */
+export const SEAT_CELL = 13
 const AISLE_GAP = 7
 /** Allée latérale (aile ↔ bloc centre), comme sur le plan entre 18|16 et 17|19, O6|O4, O3|O5. */
 const SIDE_AISLE_GAP = 14
@@ -308,15 +316,59 @@ function balconyVpWingEffectiveAnchors(
 }
 
 /**
+ * Partie **progressive** seule : ramp × **k** jusqu’au seuil ; sur Q/P au-delà, pas **fixe** = `fixedBase` (sans × k).
+ */
+function balconyVpWingAisleProgressDx(
+  stepIndex: number,
+  k: number,
+  row: string,
+  oddWing: boolean,
+  anchorOdd: number,
+  anchorEven: number,
+  progressBase: number,
+  fixedBase: number
+): number {
+  if (stepIndex <= 0) return 0
+
+  const rampPerStep = progressBase * k
+  const fixedPerStep = fixedBase
+  if (rampPerStep === 0 && fixedPerStep === 0) return 0
+
+  const R = row.toUpperCase()
+  const anchor = oddWing ? anchorOdd : anchorEven
+  let thr: number | undefined
+  if (oddWing) {
+    if (R === 'Q') thr = SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_ODD_Q
+    else if (R === 'P') thr = SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_ODD_P
+  } else {
+    if (R === 'Q') thr = SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_EVEN_Q
+    else if (R === 'P') thr = SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_FROM_EVEN_P
+  }
+  if (thr === undefined) return stepIndex * rampPerStep
+  if ((oddWing && thr % 2 === 0) || (!oddWing && thr % 2 === 1)) return stepIndex * rampPerStep
+
+  const stepAtThr = (thr - anchor) / 2
+  if (stepAtThr < 1) return stepIndex * rampPerStep
+  const sBreak = stepAtThr - 1
+  if (stepIndex <= sBreak) return stepIndex * rampPerStep
+  return sBreak * rampPerStep + (stepIndex - sBreak) * fixedPerStep
+}
+
+/**
  * Balcon V→P : ancres impaires 19 (V) → 15 (P), paires 18 → 14 ; k = 1 (V) … 7 (P).
- * Voir `SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP` + `SEAT_MAP_BALCONY_VP_WING_OUTWARD_BASE_STEPS` dans constants.
+ * Voir `SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP` + `…_FIXED_PER_STEP` + seuils `…_FIXED_FROM_*` + `…_OUTWARD_BASE_STEPS`.
  */
 function nudgeBalconyVpWingProgressiveFromAisle<T extends SeatLike & { x: number; y: number }>(
   items: T[]
 ): T[] {
   const progressBase = SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP * SEAT_CELL
+  const fixedCoeff =
+    SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_PER_STEP <= 0
+      ? SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP
+      : SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_FIXED_PER_STEP
+  const fixedBase = fixedCoeff * SEAT_CELL
   const extraPerK = SEAT_MAP_BALCONY_VP_WING_OUTWARD_BASE_STEPS * SEAT_CELL
-  if (progressBase === 0 && extraPerK === 0) return items
+  if (progressBase === 0 && fixedBase === 0 && extraPerK === 0) return items
   const maxOdd = 55
   const maxEven = 56
   return items.map((p) => {
@@ -331,13 +383,33 @@ function nudgeBalconyVpWingProgressiveFromAisle<T extends SeatLike & { x: number
     if (n % 2 === 1 && n >= anchorOdd && n <= maxOdd) {
       const stepIndex = (n - anchorOdd) / 2
       if (stepIndex < 0) return p
-      const dx = stepIndex * progressBase * k + extraPerK * k
+      const dx =
+        balconyVpWingAisleProgressDx(
+          stepIndex,
+          k,
+          pr.row,
+          true,
+          anchorOdd,
+          anchorEven,
+          progressBase,
+          fixedBase
+        ) + extraPerK * k
       return { ...p, x: p.x + dx }
     }
     if (n % 2 === 0 && n >= anchorEven && n <= maxEven) {
       const stepIndex = (n - anchorEven) / 2
       if (stepIndex < 0) return p
-      const dx = stepIndex * progressBase * k + extraPerK * k
+      const dx =
+        balconyVpWingAisleProgressDx(
+          stepIndex,
+          k,
+          pr.row,
+          false,
+          anchorOdd,
+          anchorEven,
+          progressBase,
+          fixedBase
+        ) + extraPerK * k
       return { ...p, x: p.x - dx }
     }
     return p
@@ -606,6 +678,11 @@ function rowHorizontalBand(rowLetter: string): 'balcony' | 'orchestra' | 'other'
   return 'other'
 }
 
+/** Rangée balcon P→X (pour arc visuel, etc.). */
+export function rowIsBalcony(rowLetter: string): boolean {
+  return rowHorizontalBand(rowLetter) === 'balcony'
+}
+
 /** Centre chaque lettre de rangée sur le milieu horizontal d’un sous-ensemble de sièges. */
 function centerRowGroup<T extends SeatLike & { x: number; y: number; w?: number }>(
   items: T[]
@@ -773,13 +850,13 @@ function nudgeBalconyWingBlocks<T extends SeatLike & { x: number; y: number }>(i
 }
 
 /**
- * Balcon P/Q : segments tout à l’extérieur du plan explicite — décalage fixe en « pas » siège.
- * Impairs (côté droit du schéma) vers +x ; pairs (côté gauche) vers −x.
+ * Balcon P/Q : bord extérieur allée — `…_ODD_OFFSET_STEPS` → gauche (−x) ; `…_EVEN_OFFSET_STEPS` → droite (+x).
+ * Voir `constants.ts` pour les plages Q/P.
  */
-const BALCONY_PQ_OUTER_WING_SHIFT_STEPS = 5
-
 function nudgeBalconyPQOuterWingTips<T extends SeatLike & { x: number; y: number }>(items: T[]): T[] {
-  const dxStep = BALCONY_PQ_OUTER_WING_SHIFT_STEPS * SEAT_CELL
+  const oddLeft = SEAT_MAP_BALCONY_QP_OUTER_WING_ODD_OFFSET_STEPS * SEAT_CELL
+  const evenRight = SEAT_MAP_BALCONY_QP_OUTER_WING_EVEN_OFFSET_STEPS * SEAT_CELL
+  if (oddLeft === 0 && evenRight === 0) return items
   return items.map((p) => {
     const pr = parseTheaterSeatLabel((p.label ?? '').trim())
     if (!pr || pr.row.length !== 1) return p
@@ -787,13 +864,13 @@ function nudgeBalconyPQOuterWingTips<T extends SeatLike & { x: number; y: number
     const n = pr.num
 
     if (R === 'Q') {
-      if (n % 2 === 1 && n >= 43 && n <= 51) return { ...p, x: p.x + dxStep }
-      if (n % 2 === 0 && n >= 42 && n <= 50) return { ...p, x: p.x - dxStep }
+      if (n % 2 === 1 && n >= 43 && n <= 51 && oddLeft !== 0) return { ...p, x: p.x - oddLeft }
+      if (n % 2 === 0 && n >= 42 && n <= 50 && evenRight !== 0) return { ...p, x: p.x + evenRight }
       return p
     }
     if (R === 'P') {
-      if (n % 2 === 1 && n >= 41 && n <= 55) return { ...p, x: p.x + dxStep }
-      if (n % 2 === 0 && n >= 40 && n <= 54) return { ...p, x: p.x - dxStep }
+      if (n % 2 === 1 && n >= 41 && n <= 55 && oddLeft !== 0) return { ...p, x: p.x - oddLeft }
+      if (n % 2 === 0 && n >= 40 && n <= 54 && evenRight !== 0) return { ...p, x: p.x + evenRight }
       return p
     }
     return p
