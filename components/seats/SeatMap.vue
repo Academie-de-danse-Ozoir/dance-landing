@@ -39,9 +39,7 @@
           :height="stageBlock.h"
           rx="2"
           ry="2"
-          fill="#5c4033"
-          stroke="rgba(30, 30, 30, 0.4)"
-          stroke-width="0.5"
+          class="svg__stage-rect"
         />
         <text
           :x="stageBlock.cx"
@@ -645,11 +643,18 @@ function handleSeatClick(seat: Seat) {
       pointer-events: none;
     }
 
+    .svg__stage-rect {
+      fill: rgba(72, 62, 56, 0.1);
+      stroke: rgba(30, 30, 30, 0.14);
+      stroke-width: 0.5;
+      pointer-events: none;
+    }
+
     .svg__stage-label {
       text-anchor: middle;
       font-size: 9px;
       font-weight: 700;
-      fill: #f5ebe0;
+      fill: #4a4542;
       letter-spacing: 0.04em;
       pointer-events: none;
     }
