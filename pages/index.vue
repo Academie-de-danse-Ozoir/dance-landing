@@ -17,6 +17,7 @@
         :active-order="activeOrder"
         :max-seats-per-order="MAX_SEATS_PER_ORDER"
         @seat-click="toggleSeat"
+        class="wrapper__seat-map"  
       />
 
       <SelectionInfo :seat-count="displayedSeatCount" :max-seats="MAX_SEATS_PER_ORDER" />
@@ -624,22 +625,25 @@ async function pay() {
 
 <style lang="scss" scoped>
 .page_container {
-  height: 100dvh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
+  // padding: 20px 20px;
+  margin: 10px 0px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
 
   .page_wrapper {
-    max-width: 1200px;
+    height: calc(100dvh - 40px);
     margin: 0 auto;
     background: white;
-    padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 20px 20px;
+    // border-radius: 16px;
+    // box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 
     .wrapper__title {
-      margin: 0 0 32px 0;
+      margin: 0 0 20px 0;
       font-size: 32px;
       font-weight: 600;
       color: #212529;
@@ -649,7 +653,10 @@ async function pay() {
     .wrapper__actions {
       display: flex;
       justify-content: center;
-      margin-bottom: 24px;
+    }
+
+    .wrapper__seat-map {
+      margin-bottom: 40px;
     }
 
     .wrapper__alert {

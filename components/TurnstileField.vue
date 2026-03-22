@@ -118,7 +118,6 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .turnstile-field {
   margin-top: 0;
-  display: none;
 }
 
 .turnstile-field__widget {

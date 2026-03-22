@@ -1045,9 +1045,9 @@ export function layoutYerresTheaterSeats<T extends SeatLike>(seats: T[]): (T & {
 export function seatMapViewBoxString(
   seats: { x: number; y: number; w?: number; h?: number }[],
   seatSize: number,
-  pad = 16
+  pad = 16,
+  extraRects?: { x: number; y: number; w: number; h: number }[]
 ): string {
-  if (!seats.length) return '0 0 560 420'
   const padX = pad + SEAT_MAP_VIEWBOX_EXTRA_HORIZONTAL
   let minX = Infinity
   let minY = Infinity
@@ -1061,6 +1061,15 @@ export function seatMapViewBoxString(
     maxX = Math.max(maxX, s.x + sw)
     maxY = Math.max(maxY, s.y + sh)
   }
+  if (extraRects) {
+    for (const r of extraRects) {
+      minX = Math.min(minX, r.x)
+      minY = Math.min(minY, r.y)
+      maxX = Math.max(maxX, r.x + r.w)
+      maxY = Math.max(maxY, r.y + r.h)
+    }
+  }
+  if (!Number.isFinite(minX)) return '0 0 560 420'
   const w = maxX - minX + 2 * padX
   const h = maxY - minY + 2 * pad
   return `${minX - padX} ${minY - pad} ${w} ${h}`

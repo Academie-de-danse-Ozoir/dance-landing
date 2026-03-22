@@ -1,6 +1,57 @@
 <template>
   <div class="seat-map_container">
     <svg :viewBox="svgViewBox" class="container__svg" preserveAspectRatio="xMidYMid meet">
+      <g v-if="balconyZone" class="svg__zone svg__zone--balcony">
+        <rect
+          :x="balconyZone.x"
+          :y="balconyZone.y"
+          :width="balconyZone.w"
+          :height="balconyZone.h"
+          rx="3"
+          ry="3"
+          class="svg__zone-rect svg__zone-rect--balcony"
+        />
+        <text :x="balconyZone.titleX" :y="balconyZone.titleY" class="svg__zone-title">Balcon</text>
+        <text :x="balconyZone.subtitleX" :y="balconyZone.subtitleY" class="svg__zone-subtitle">
+          Rangées P à X
+        </text>
+      </g>
+      <g v-if="parterreZone" class="svg__zone svg__zone--parterre">
+        <rect
+          :x="parterreZone.x"
+          :y="parterreZone.y"
+          :width="parterreZone.w"
+          :height="parterreZone.h"
+          rx="3"
+          ry="3"
+          class="svg__zone-rect svg__zone-rect--parterre"
+        />
+        <text :x="parterreZone.titleX" :y="parterreZone.titleY" class="svg__zone-title">Parterre</text>
+        <text :x="parterreZone.subtitleX" :y="parterreZone.subtitleY" class="svg__zone-subtitle">
+          Rangées O à A
+        </text>
+      </g>
+      <g v-if="stageBlock" class="svg__stage">
+        <rect
+          :x="stageBlock.x"
+          :y="stageBlock.y"
+          :width="stageBlock.w"
+          :height="stageBlock.h"
+          rx="2"
+          ry="2"
+          fill="#5c4033"
+          stroke="rgba(30, 30, 30, 0.4)"
+          stroke-width="0.5"
+        />
+        <text
+          :x="stageBlock.cx"
+          :y="stageBlock.cy"
+          class="svg__stage-label"
+          dominant-baseline="middle"
+        >
+          Scène
+        </text>
+      </g>
       <rect
         v-for="seat in seats"
         :key="seat.id"
@@ -61,7 +112,11 @@ import {
   SEAT_MAP_BALCONY_ARC_SCALE_X_CURVE_POWER,
   SEAT_MAP_BALCONY_ARC_SCALE_X_MIN
 } from '../../constants'
-import { parseTheaterSeatLabel, rowIsBalcony, seatMapViewBoxString } from '../../utils/yerresSeatLayout'
+import {
+  parseTheaterSeatLabel,
+  rowIsBalcony,
+  seatMapViewBoxString
+} from '../../utils/yerresSeatLayout'
 
 const SEAT_SIZE = 13
 const SEAT_RADIUS = 1.2
@@ -186,9 +241,24 @@ const balconyMaxAbsDeltaRad = computed(() => {
   return max
 })
 
-function seatArcTransform(seat: Seat): string | undefined {
+type BalconyArcSpec =
+  | { mode: 'identity' }
+  | {
+      mode: 'depthRotScale' | 'rotScale'
+      tx: number
+      ty: number
+      cx: number
+      cy: number
+      deg: number
+      sx: number
+    }
+  | { mode: 'depthRot' | 'rot'; tx: number; ty: number; cx: number; cy: number; deg: number }
+  | { mode: 'depthScale' | 'scale'; tx: number; ty: number; cx: number; cy: number; sx: number }
+
+/** Même géométrie que l’attribut `transform` SVG des sièges balcon (pour bbox zone / arc). */
+function computeBalconyArcSpec(seat: Seat): BalconyArcSpec {
   const pr = parseTheaterSeatLabel(seat.label)
-  if (!pr || !rowIsBalcony(pr.row)) return undefined
+  if (!pr || !rowIsBalcony(pr.row)) return { mode: 'identity' }
 
   const cx = seat.x + SEAT_SIZE / 2
   const cy = seat.y + SEAT_SIZE / 2
@@ -244,21 +314,268 @@ function seatArcTransform(seat: Seat): string | undefined {
   const hasDepth =
     Math.abs(tx) > SEAT_MAP_BALCONY_ARC_EPS_DEPTH_PX ||
     Math.abs(ty) > SEAT_MAP_BALCONY_ARC_EPS_DEPTH_PX
-  if (!hasRot && !hasScaleX && !hasDepth) return undefined
+  if (!hasRot && !hasScaleX && !hasDepth) return { mode: 'identity' }
+
+  const dtx = hasDepth ? tx : 0
+  const dty = hasDepth ? ty : 0
+
+  if (hasRot && hasScaleX) {
+    return { mode: hasDepth ? 'depthRotScale' : 'rotScale', tx: dtx, ty: dty, cx, cy, deg, sx: scaleX }
+  }
+  if (hasRot) {
+    return { mode: hasDepth ? 'depthRot' : 'rot', tx: dtx, ty: dty, cx, cy, deg }
+  }
+  return { mode: hasDepth ? 'depthScale' : 'scale', tx: dtx, ty: dty, cx, cy, sx: scaleX }
+}
+
+function mapBalconyArcPoint(px: number, py: number, spec: BalconyArcSpec): { x: number; y: number } {
+  if (spec.mode === 'identity') return { x: px, y: py }
+
+  switch (spec.mode) {
+    case 'depthRotScale':
+    case 'rotScale': {
+      const { tx, ty, cx, cy, deg, sx } = spec
+      const rad = (deg * Math.PI) / 180
+      const cos = Math.cos(rad)
+      const sin = Math.sin(rad)
+      const x = px + tx + cx
+      const y = py + ty + cy
+      const rx = x * cos - y * sin
+      const ry = x * sin + y * cos
+      return { x: rx * sx - cx, y: ry - cy }
+    }
+    case 'depthRot':
+    case 'rot': {
+      const { tx, ty, cx, cy, deg } = spec
+      const rad = (deg * Math.PI) / 180
+      const cos = Math.cos(rad)
+      const sin = Math.sin(rad)
+      const x = px + tx - cx
+      const y = py + ty - cy
+      return { x: x * cos - y * sin + cx, y: x * sin + y * cos + cy }
+    }
+    case 'depthScale':
+    case 'scale': {
+      const { tx, ty, cx, cy, sx } = spec
+      const x = px + tx + cx
+      const y = py + ty + cy
+      return { x: x * sx - cx, y: y - cy }
+    }
+    default:
+      return { x: px, y: py }
+  }
+}
+
+function seatArcTransform(seat: Seat): string | undefined {
+  const spec = computeBalconyArcSpec(seat)
+  if (spec.mode === 'identity') return undefined
+
+  const cx = seat.x + SEAT_SIZE / 2
+  const cy = seat.y + SEAT_SIZE / 2
+  const hasDepth =
+    spec.mode === 'depthRotScale' ||
+    spec.mode === 'depthRot' ||
+    spec.mode === 'depthScale'
 
   const parts: string[] = []
-  if (hasDepth) parts.push(`translate(${tx} ${ty})`)
-  if (hasRot && hasScaleX) {
-    parts.push(`translate(${cx} ${cy}) rotate(${deg}) scale(${scaleX} 1) translate(${-cx} ${-cy})`)
-  } else if (hasRot) {
-    parts.push(`rotate(${deg} ${cx} ${cy})`)
-  } else if (hasScaleX) {
-    parts.push(`translate(${cx} ${cy}) scale(${scaleX} 1) translate(${-cx} ${-cy})`)
+  if (hasDepth) parts.push(`translate(${spec.tx} ${spec.ty})`)
+  if (spec.mode === 'depthRotScale' || spec.mode === 'rotScale') {
+    parts.push(`translate(${cx} ${cy}) rotate(${spec.deg}) scale(${spec.sx} 1) translate(${-cx} ${-cy})`)
+  } else if (spec.mode === 'depthRot' || spec.mode === 'rot') {
+    parts.push(`rotate(${spec.deg} ${cx} ${cy})`)
+  } else if (spec.mode === 'depthScale' || spec.mode === 'scale') {
+    parts.push(`translate(${cx} ${cy}) scale(${spec.sx} 1) translate(${-cx} ${-cy})`)
   }
   return parts.join(' ')
 }
 
-const svgViewBox = computed(() => seatMapViewBoxString(props.seats, SEAT_SIZE, 18))
+function rowHorizontalExtent(seats: Seat[], rowLetter: string): { minX: number; maxX: number } | null {
+  const R = rowLetter.toUpperCase()
+  let minX = Infinity
+  let maxX = -Infinity
+  for (const s of seats) {
+    const pr = parseTheaterSeatLabel(s.label)
+    if (!pr || pr.row.toUpperCase() !== R) continue
+    minX = Math.min(minX, s.x)
+    maxX = Math.max(maxX, s.x + SEAT_SIZE)
+  }
+  if (!Number.isFinite(minX)) return null
+  return { minX, maxX }
+}
+
+function rowMaxBottomY(seats: Seat[], rowLetter: string): number | null {
+  const R = rowLetter.toUpperCase()
+  let maxY = -Infinity
+  for (const s of seats) {
+    const pr = parseTheaterSeatLabel(s.label)
+    if (!pr || pr.row.toUpperCase() !== R) continue
+    maxY = Math.max(maxY, s.y + SEAT_SIZE)
+  }
+  if (!Number.isFinite(maxY)) return null
+  return maxY
+}
+
+/**
+ * Écart souhaité sièges → bord du cadre, **identique** en haut / bas / gauche / droite (balcon et parterre).
+ * Réduit si besoin pour garder un vide entre les deux cadres.
+ */
+/** Inset sièges → bord du cadre (identique les 4 côtés, balcon et parterre). */
+const ZONE_FRAME_UNIFORM_INSET_DESIRED = 22
+/** Espace minimal entre le bas du cadre balcon et le haut du cadre parterre. */
+const MIN_GAP_BETWEEN_BALCONY_PARTERRE_ZONES = 12
+/** Marge du texte depuis le coin haut-gauche du cadre (identique balcon / parterre). */
+const ZONE_FRAME_LABEL_CORNER_PAD_X = 6.75
+const ZONE_FRAME_LABEL_CORNER_PAD_Y = 6
+/** Écart vertical entre le haut du titre et le haut du sous-titre (`dominant-baseline: hanging`). */
+const ZONE_FRAME_LABEL_LINE_STEP = 7.85
+/** Allonge un peu le cadre balcon vers le bas (sièges P–X inchangés). */
+const BALCONY_ZONE_EXTRA_BOTTOM = 6
+
+type SeatBounds = { minX: number; minY: number; maxX: number; maxY: number }
+type ZoneFrameOptions = { extraBottom?: number }
+
+function seatBoundsForRowFilter(
+  seats: Seat[],
+  includeRow: (rowUpper: string) => boolean
+): SeatBounds | null {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const s of seats) {
+    const pr = parseTheaterSeatLabel(s.label)
+    if (!pr || pr.row.length !== 1) continue
+    const R = pr.row.toUpperCase()
+    if (!includeRow(R)) continue
+    minX = Math.min(minX, s.x)
+    minY = Math.min(minY, s.y)
+    maxX = Math.max(maxX, s.x + SEAT_SIZE)
+    maxY = Math.max(maxY, s.y + SEAT_SIZE)
+  }
+  if (!Number.isFinite(minX)) return null
+  return { minX, minY, maxX, maxY }
+}
+
+/** Cadre autour d’une bbox sièges : inset identique sur les quatre côtés ; `extraBottom` optionnel (balcon). */
+function paddedZoneFrameFromBounds(b: SeatBounds, inset: number, opts?: ZoneFrameOptions) {
+  const extraBottom = opts?.extraBottom ?? 0
+  const x = b.minX - inset
+  const y = b.minY - inset
+  const w = b.maxX - b.minX + 2 * inset
+  const h = b.maxY - b.minY + 2 * inset + extraBottom
+  const titleX = x + ZONE_FRAME_LABEL_CORNER_PAD_X
+  const titleY = y + ZONE_FRAME_LABEL_CORNER_PAD_Y
+  const subtitleX = titleX
+  const subtitleY = titleY + ZONE_FRAME_LABEL_LINE_STEP
+  return {
+    x,
+    y,
+    w,
+    h,
+    titleX,
+    titleY,
+    subtitleX,
+    subtitleY
+  }
+}
+
+/**
+ * Inset unique : identique partout ; plafonné pour que
+ * (espace entre bbox balcon et parterre) − 2×inset ≥ MIN_GAP.
+ */
+function uniformInsetForBalconyParterre(bBal: SeatBounds | null, bPar: SeatBounds | null): number {
+  if (!bBal || !bPar) return ZONE_FRAME_UNIFORM_INSET_DESIRED
+  const span = bPar.minY - bBal.maxY
+  const maxInset = (span - MIN_GAP_BETWEEN_BALCONY_PARTERRE_ZONES) / 2
+  return Math.max(0, Math.min(ZONE_FRAME_UNIFORM_INSET_DESIRED, maxInset))
+}
+
+/** Bbox balcon P–X en coordonnées finales (coins sièges après transform d’arc). */
+function seatBoundsBalconyRowsWithArc(seats: Seat[]): SeatBounds | null {
+  const corners: [number, number][] = [
+    [0, 0],
+    [SEAT_SIZE, 0],
+    [SEAT_SIZE, SEAT_SIZE],
+    [0, SEAT_SIZE]
+  ]
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const s of seats) {
+    const pr = parseTheaterSeatLabel(s.label)
+    if (!pr || pr.row.length !== 1) continue
+    const R = pr.row.toUpperCase()
+    if (R < 'P' || R > 'X') continue
+    const spec = computeBalconyArcSpec(s)
+    for (const [dx, dy] of corners) {
+      const pt = mapBalconyArcPoint(s.x + dx, s.y + dy, spec)
+      minX = Math.min(minX, pt.x)
+      minY = Math.min(minY, pt.y)
+      maxX = Math.max(maxX, pt.x)
+      maxY = Math.max(maxY, pt.y)
+    }
+  }
+  if (!Number.isFinite(minX)) return null
+  return { minX, minY, maxX, maxY }
+}
+
+const balconySeatBounds = computed(() => seatBoundsBalconyRowsWithArc(props.seats))
+const parterreSeatBounds = computed(() =>
+  seatBoundsForRowFilter(props.seats, (R) => R >= 'A' && R <= 'O')
+)
+
+const zoneFrameUniformInset = computed(() =>
+  uniformInsetForBalconyParterre(balconySeatBounds.value, parterreSeatBounds.value)
+)
+
+/** Balcon : rangées P à X. */
+const balconyZone = computed(() => {
+  const b = balconySeatBounds.value
+  if (!b) return null
+  return paddedZoneFrameFromBounds(b, zoneFrameUniformInset.value, {
+    extraBottom: BALCONY_ZONE_EXTRA_BOTTOM
+  })
+})
+
+/** Parterre : rangées O à A (sans la scène). */
+const parterreZone = computed(() => {
+  const b = parterreSeatBounds.value
+  if (!b) return null
+  return paddedZoneFrameFromBounds(b, zoneFrameUniformInset.value)
+})
+
+/** Espace entre le bas des sièges A (et le cadre parterre) et le haut du bloc « Scène ». */
+const STAGE_GAP_BELOW_ROW_A = 30
+
+/** Bloc « Scène » sous la rangée A, largeur = emprise horizontale de la rangée H. */
+const stageBlock = computed(() => {
+  const hBand = rowHorizontalExtent(props.seats, 'H')
+  const aBottom = rowMaxBottomY(props.seats, 'A')
+  if (!hBand || aBottom == null) return null
+  const gap = STAGE_GAP_BELOW_ROW_A
+  const h = Math.max(26, Math.min(40, (hBand.maxX - hBand.minX) * 0.12))
+  const y = aBottom + gap
+  const w = hBand.maxX - hBand.minX
+  return {
+    x: hBand.minX,
+    y,
+    w,
+    h,
+    cx: hBand.minX + w / 2,
+    cy: y + h / 2 + 0.5
+  }
+})
+
+const mapOverlayRects = computed(() => {
+  const out: { x: number; y: number; w: number; h: number }[] = []
+  if (balconyZone.value) out.push(balconyZone.value)
+  if (parterreZone.value) out.push(parterreZone.value)
+  if (stageBlock.value) out.push(stageBlock.value)
+  return out.length ? out : undefined
+})
+
+const svgViewBox = computed(() => seatMapViewBoxString(props.seats, SEAT_SIZE, 18, mapOverlayRects.value))
 
 function getSeatFill(seat: Seat) {
   if (seat.status === 'paid') return SEAT_COLORS.paid
@@ -294,12 +611,13 @@ function handleSeatClick(seat: Seat) {
   display: flex;
   justify-content: center;
   margin-bottom: 24px;
-  overflow: visible;
+  overflow: hidden;
+  height: 100dvh;
 
   .container__svg {
     width: 100%;
-    max-width: 100%;
-    overflow: visible;
+    height: 100%;
+    overflow: hidden;
     border: 2px solid #dee2e6;
     border-radius: 8px;
     background: #e8eaed;
@@ -324,6 +642,47 @@ function handleSeatClick(seat: Seat) {
       font-size: 4.5px;
       font-weight: 600;
       fill: #000000;
+      pointer-events: none;
+    }
+
+    .svg__stage-label {
+      text-anchor: middle;
+      font-size: 9px;
+      font-weight: 700;
+      fill: #f5ebe0;
+      letter-spacing: 0.04em;
+      pointer-events: none;
+    }
+
+    .svg__zone-rect {
+      stroke: none;
+      pointer-events: none;
+
+      &--balcony {
+        fill: rgba(78, 98, 128, 0.055);
+      }
+
+      &--parterre {
+        fill: rgba(118, 102, 92, 0.048);
+      }
+    }
+
+    .svg__zone-title {
+      text-anchor: start;
+      dominant-baseline: hanging;
+      font-size: 6.5px;
+      font-weight: 700;
+      fill: #1e2a3d;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+    }
+
+    .svg__zone-subtitle {
+      text-anchor: start;
+      dominant-baseline: hanging;
+      font-size: 4.25px;
+      font-weight: 600;
+      fill: rgba(30, 42, 61, 0.82);
       pointer-events: none;
     }
   }
