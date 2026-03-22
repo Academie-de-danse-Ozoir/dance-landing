@@ -156,12 +156,7 @@ function orchSideNudgeMultiplierSeatCells(row: string): number | null {
   return (idx + 1) * 0.5
 }
 
-/**
- * Bloc central N→A : écart **par numéro** (en ×`SEAT_CELL`), puis ×k (N=1…A=14).
- * Ex. rangée N : N2→−0,25, N4→−0,5… ; N3→+0,25, N5→+0,5… (N1 reste 0).
- */
-const ORCH_CENTER_NUDGE_TIER_SEAT_CELLS = 0.25
-
+/** Multiplicateur de rangée k pour le bloc central N→A (N=1 … A=14). */
 function orchCenterNudgeRowStepsMultiplier(row: string): number | null {
   const R = row.toUpperCase()
   const idx = ORCH_SIDE_NUDGE_ROWS_N_TO_A.indexOf(
