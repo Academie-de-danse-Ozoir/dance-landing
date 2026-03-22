@@ -5,8 +5,12 @@
  */
 
 import {
+  SEAT_MAP_BALCONY_WING_NUDGE_SCALE,
+  SEAT_MAP_BALCONY_WING_OUTER_OFFSET_STEPS,
+  SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS,
   SEAT_MAP_ORCH_CENTER_NUDGE_PER_TIER,
-  SEAT_MAP_ORCH_WING_NUDGE_SCALE
+  SEAT_MAP_ORCH_WING_NUDGE_SCALE,
+  SEAT_MAP_VIEWBOX_EXTRA_HORIZONTAL
 } from '../constants'
 import { BALCONY_GAP_PER_X, balconyExplicitSequence } from './yerresBalconyExplicit'
 
@@ -71,31 +75,32 @@ const ROW_NUDGE_SEAT_SPACES_AFTER_CENTER: Partial<Record<string, number>> = {
 }
 
 /**
- * Balcon (lignes explicites `yerresBalconyExplicit`) : décalage des ailes gauche / droite en pas `SEAT_CELL`.
- * Gauche : pairs avec num ≥ `leftEvenMin` (segment avant le 1ᵉʳ `X X`).
- * Droite : impairs avec num ≥ `rightOddMin` (segment après le 2ᵉ `X X`).
+ * Balcon V→P : rampe d’amplitude comme le parterre N→A (`(index+1)×0.5×SEAT_CELL×scale`).
+ * Seuils : pairs ≥ `leftEvenMin` → gauche ; impairs ≥ `rightOddMin` → droite.
  */
-type BalconyWingNudgeSpec = {
-  rowLetter: string
-  leftEvenMin: number
-  leftSeatSpaces: number
-  rightOddMin: number
-  rightSeatSpaces: number
+const BALCONY_WING_RAMP_ROWS_V_TO_P = ['V', 'U', 'T', 'S', 'R', 'Q', 'P'] as const
+
+const BALCONY_WING_RAMP_THRESHOLDS: Record<
+  (typeof BALCONY_WING_RAMP_ROWS_V_TO_P)[number],
+  { leftEvenMin: number; rightOddMin: number }
+> = {
+  V: { leftEvenMin: 18, rightOddMin: 19 },
+  U: { leftEvenMin: 18, rightOddMin: 19 },
+  T: { leftEvenMin: 18, rightOddMin: 17 },
+  S: { leftEvenMin: 16, rightOddMin: 17 },
+  R: { leftEvenMin: 16, rightOddMin: 15 },
+  Q: { leftEvenMin: 14, rightOddMin: 15 },
+  P: { leftEvenMin: 14, rightOddMin: 15 }
 }
 
-const BALCONY_WING_NUDGE_BY_ROW: BalconyWingNudgeSpec[] = [
-  { rowLetter: 'V', leftEvenMin: 18, leftSeatSpaces: -1, rightOddMin: 19, rightSeatSpaces: 1 },
-  { rowLetter: 'U', leftEvenMin: 18, leftSeatSpaces: -1, rightOddMin: 19, rightSeatSpaces: 1 },
-  { rowLetter: 'T', leftEvenMin: 18, leftSeatSpaces: -1.5, rightOddMin: 17, rightSeatSpaces: 1.5 },
-  { rowLetter: 'S', leftEvenMin: 16, leftSeatSpaces: -2, rightOddMin: 17, rightSeatSpaces: 2 },
-  { rowLetter: 'R', leftEvenMin: 16, leftSeatSpaces: -2.5, rightOddMin: 15, rightSeatSpaces: 2.5 },
-  { rowLetter: 'Q', leftEvenMin: 14, leftSeatSpaces: -3, rightOddMin: 15, rightSeatSpaces: 3 },
-  { rowLetter: 'P', leftEvenMin: 14, leftSeatSpaces: -3, rightOddMin: 15, rightSeatSpaces: 3 }
-]
-
-const BALCONY_WING_NUDGE_LOOKUP = new Map(
-  BALCONY_WING_NUDGE_BY_ROW.map((s) => [s.rowLetter, s])
-)
+function balconyWingRampMultiplierSeatCells(row: string): number | null {
+  const R = row.toUpperCase()
+  const idx = BALCONY_WING_RAMP_ROWS_V_TO_P.indexOf(
+    R as (typeof BALCONY_WING_RAMP_ROWS_V_TO_P)[number]
+  )
+  if (idx < 0) return null
+  return (idx + 1) * 0.5
+}
 
 /**
  * Parterre N→A (pas O) : aile gauche pairs ≥18 jusqu’à 40, aile droite impairs ≥19 jusqu’à 41.
@@ -472,16 +477,41 @@ function applyRowLetterXAfterCenter<T extends SeatLike & { x: number; y: number 
   })
 }
 
+/** Balcon rangée W : ailes (W20…W48 / W21…W49), amplitude `SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS` seule. */
+const BALCONY_W_WING_LEFT_EVEN_MIN = 20
+const BALCONY_W_WING_LEFT_EVEN_MAX = 48
+const BALCONY_W_WING_RIGHT_ODD_MIN = 21
+const BALCONY_W_WING_RIGHT_ODD_MAX = 49
+
 function nudgeBalconyWingBlocks<T extends SeatLike & { x: number; y: number }>(items: T[]): T[] {
+  const scale = SEAT_MAP_BALCONY_WING_NUDGE_SCALE
+  const outerVp = SEAT_MAP_BALCONY_WING_OUTER_OFFSET_STEPS * SEAT_CELL
+  const outerW = SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS * SEAT_CELL
   return items.map((p) => {
     const pr = parseTheaterSeatLabel((p.label ?? '').trim())
     if (!pr || pr.row.length !== 1) return p
-    const spec = BALCONY_WING_NUDGE_LOOKUP.get(pr.row.toUpperCase())
-    if (!spec) return p
+    const R = pr.row.toUpperCase()
     const n = pr.num
+
+    if (R === 'W') {
+      let dx = 0
+      if (n % 2 === 0 && n >= BALCONY_W_WING_LEFT_EVEN_MIN && n <= BALCONY_W_WING_LEFT_EVEN_MAX) {
+        dx -= outerW
+      }
+      if (n % 2 === 1 && n >= BALCONY_W_WING_RIGHT_ODD_MIN && n <= BALCONY_W_WING_RIGHT_ODD_MAX) {
+        dx += outerW
+      }
+      if (dx === 0) return p
+      return { ...p, x: p.x + dx }
+    }
+
+    const rowVp = R as (typeof BALCONY_WING_RAMP_ROWS_V_TO_P)[number]
+    const thresholds = BALCONY_WING_RAMP_THRESHOLDS[rowVp]
+    const mult = balconyWingRampMultiplierSeatCells(rowVp)
+    if (!thresholds || mult == null) return p
     let dx = 0
-    if (n % 2 === 0 && n >= spec.leftEvenMin) dx += spec.leftSeatSpaces * SEAT_CELL
-    if (n % 2 === 1 && n >= spec.rightOddMin) dx += spec.rightSeatSpaces * SEAT_CELL
+    if (n % 2 === 0 && n >= thresholds.leftEvenMin) dx -= mult * SEAT_CELL * scale + outerVp
+    if (n % 2 === 1 && n >= thresholds.rightOddMin) dx += mult * SEAT_CELL * scale + outerVp
     if (dx === 0) return p
     return { ...p, x: p.x + dx }
   })
@@ -592,6 +622,7 @@ export function seatMapViewBoxString(
   pad = 16
 ): string {
   if (!seats.length) return '0 0 560 420'
+  const padX = pad + SEAT_MAP_VIEWBOX_EXTRA_HORIZONTAL
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -604,7 +635,7 @@ export function seatMapViewBoxString(
     maxX = Math.max(maxX, s.x + sw)
     maxY = Math.max(maxY, s.y + sh)
   }
-  const w = maxX - minX + 2 * pad
+  const w = maxX - minX + 2 * padX
   const h = maxY - minY + 2 * pad
-  return `${minX - pad} ${minY - pad} ${w} ${h}`
+  return `${minX - padX} ${minY - pad} ${w} ${h}`
 }

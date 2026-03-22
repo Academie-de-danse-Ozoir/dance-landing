@@ -624,19 +624,15 @@ async function pay() {
 
 <style lang="scss" scoped>
 .page_container {
-  height: 100dvh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
 
   .page_wrapper {
-    max-width: 1200px;
     margin: 0 auto;
     background: white;
+    min-height: 100vh;
     padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 
     .wrapper__title {
       margin: 0 0 32px 0;

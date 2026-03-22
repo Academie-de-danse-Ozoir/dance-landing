@@ -55,7 +55,7 @@ import content from '../../locales/fr.json'
 import { SEAT_MAP_DEBUG_BACKGROUND } from '../../constants'
 import { seatMapViewBoxString } from '../../utils/yerresSeatLayout'
 
-const SEAT_SIZE = 10.5
+const SEAT_SIZE = 12
 const SEAT_RADIUS = 1.2
 
 const SEAT_COLORS = {
@@ -125,11 +125,13 @@ function handleSeatClick(seat: Seat) {
   display: flex;
   justify-content: center;
   margin-bottom: 24px;
+  overflow: visible;
 
   .container__svg {
     width: 100%;
     max-width: 100%;
-    height: 600px;
+    // height: 600px;
+    overflow: visible;
     border: 2px solid #dee2e6;
     border-radius: 8px;
     background: #e8eaed;
@@ -156,7 +158,7 @@ function handleSeatClick(seat: Seat) {
 
     .svg__label {
       text-anchor: middle;
-      font-size: 4.5px;
+      font-size: 5px;
       font-weight: 600;
       fill: #1a1a1a;
       pointer-events: none;

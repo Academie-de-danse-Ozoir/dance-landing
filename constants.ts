@@ -52,6 +52,12 @@ export const CANCEL_REASON = {
 export const SEAT_MAP_DEBUG_BACKGROUND = true
 
 /**
+ * Marge horizontale **en plus** du `pad` du viewBox (chaque côté, unités SVG).
+ * Les décalages d’ailes (balcon / parterre) élargissent le plan : sans ça, `meet` peut tasser ou border le clip.
+ */
+export const SEAT_MAP_VIEWBOX_EXTRA_HORIZONTAL = 72
+
+/**
  * Carte sièges — parterre N→A, **bloc central** : écart par palier (× numéro de siège × rangée k).
  * En multiples de `SEAT_CELL` (13 px dans le layout). `0` = désactivé.
  */
@@ -62,3 +68,18 @@ export const SEAT_MAP_ORCH_CENTER_NUDGE_PER_TIER = 0.025
  * Multiplicateur sur ce décalage : `1` = réglage actuel ; `0.5` = moitié moins ; `0` = pas de décalage.
  */
 export const SEAT_MAP_ORCH_WING_NUDGE_SCALE = 0.5
+
+/**
+ * Balcon V→P, **ailes** : même logique que le parterre (pairs ≥ seuil gauche → −x, impairs ≥ seuil droit → +x),
+ * amplitude qui augmente de V vers P. `1` = plein effet ; `0` = off.
+ */
+export const SEAT_MAP_BALCONY_WING_NUDGE_SCALE = -0.5
+
+/**
+ * Pas `SEAT_CELL` **en plus** vers l’extérieur sur les ailes **V→P** (en plus de la rampe × scale).
+ * Ne s’applique pas à la rangée W (voir `SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS`).
+ */
+export const SEAT_MAP_BALCONY_WING_OUTER_OFFSET_STEPS = 2
+
+/** Même chose **uniquement pour la rangée W** (W20…W48 / W21…W49). */
+export const SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS = 1
