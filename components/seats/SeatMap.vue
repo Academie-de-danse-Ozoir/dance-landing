@@ -1,6 +1,17 @@
 <template>
   <div class="seat-map_container">
-    <svg viewBox="0 0 420 320" class="container__svg" preserveAspectRatio="xMidYMid meet">
+    <svg :viewBox="svgViewBox" class="container__svg" preserveAspectRatio="xMidYMid meet">
+      <image
+        v-if="SEAT_MAP_DEBUG_BACKGROUND"
+        class="container__plan-bg"
+        href="/yerres-plan-numerote-debug.jpg"
+        :x="viewBoxParts.x"
+        :y="viewBoxParts.y"
+        :width="viewBoxParts.w"
+        :height="viewBoxParts.h"
+        preserveAspectRatio="xMidYMid meet"
+        opacity="1"
+      />
       <rect
         v-for="seat in seats"
         :key="seat.id"
@@ -11,6 +22,8 @@
         :rx="SEAT_RADIUS"
         :ry="SEAT_RADIUS"
         :fill="getSeatFill(seat)"
+        stroke="rgba(30, 30, 30, 0.35)"
+        stroke-width="0.45"
         :class="[
           'svg__seat',
           {
@@ -26,7 +39,7 @@
         v-for="seat in seats"
         :key="seat.id + '-label'"
         :x="seat.x + SEAT_SIZE / 2"
-        :y="seat.y + SEAT_SIZE / 2 + 1"
+        :y="seat.y + SEAT_SIZE / 2 + 1.5"
         class="svg__label"
       >
         {{ seat.label }}
@@ -39,15 +52,17 @@
 import { computed } from 'vue'
 import type { Seat, ActiveOrder } from '../../types'
 import content from '../../locales/fr.json'
+import { SEAT_MAP_DEBUG_BACKGROUND } from '../../constants'
+import { seatMapViewBoxString } from '../../utils/yerresSeatLayout'
 
-const SEAT_SIZE = 9
-const SEAT_RADIUS = 1
+const SEAT_SIZE = 10.5
+const SEAT_RADIUS = 1.2
 
 const SEAT_COLORS = {
   paid: '#e53935',
   hold: '#ffb300',
-  selected: '#4caf50',
-  free: '#ccc'
+  selected: '#43a047',
+  free: 'rgba(250, 250, 250, 0.78)'
 } as const
 
 const props = defineProps<{
@@ -63,6 +78,18 @@ const emit = defineEmits<{
 }>()
 
 const selectedSet = computed(() => new Set(props.selectedSeatIds))
+
+const svgViewBox = computed(() => seatMapViewBoxString(props.seats, SEAT_SIZE, 18))
+
+const viewBoxParts = computed(() => {
+  const p = svgViewBox.value.split(/\s+/).map(Number)
+  return {
+    x: p[0] ?? 0,
+    y: p[1] ?? 0,
+    w: p[2] ?? 100,
+    h: p[3] ?? 100
+  }
+})
 
 function getSeatFill(seat: Seat) {
   if (seat.status === 'paid') return SEAT_COLORS.paid
@@ -105,8 +132,13 @@ function handleSeatClick(seat: Seat) {
     height: 600px;
     border: 2px solid #dee2e6;
     border-radius: 8px;
-    background: #f8f9fa;
+    background: #e8eaed;
     user-select: none;
+
+    .container__plan-bg {
+      pointer-events: none;
+      visibility: hidden;
+    }
 
     .svg__seat {
       &--clickable {
@@ -124,7 +156,9 @@ function handleSeatClick(seat: Seat) {
 
     .svg__label {
       text-anchor: middle;
-      font-size: 3px;
+      font-size: 4.5px;
+      font-weight: 600;
+      fill: #1a1a1a;
       pointer-events: none;
     }
   }

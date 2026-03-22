@@ -64,6 +64,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
 import type { Seat, SeatStatus, ActiveOrder, TicketDetail } from '../types'
 import { STORAGE_ORDER_KEY, CANCEL_REASON, EVENT_ID, MAX_SEATS_PER_ORDER } from '../constants'
+import { layoutYerresTheaterSeats } from '../utils/yerresSeatLayout'
 import content from '../locales/fr.json'
 import ActiveOrderAlert from '../components/alerts/ActiveOrderAlert.vue'
 import SeatMap from '../components/seats/SeatMap.vue'
@@ -103,10 +104,6 @@ type SeatApiResponse = {
 /* =====================
    CONSTANTS
 ===================== */
-
-const SEAT_SPACING = 10
-const SEAT_OFFSET = 20
-const SEATS_PER_ROW = 38
 
 /* =====================
    STATE
@@ -191,11 +188,7 @@ function startTimerFromExpiresAt(expiresAt: string) {
 async function loadSeats() {
   const data = await $fetch<SeatApiResponse[]>('/api/seats')
 
-  seats.value = data.map((seat, i) => ({
-    ...seat,
-    x: (i % SEATS_PER_ROW) * SEAT_SPACING + SEAT_OFFSET,
-    y: Math.floor(i / SEATS_PER_ROW) * SEAT_SPACING + SEAT_OFFSET
-  }))
+  seats.value = layoutYerresTheaterSeats(data)
 }
 
 /* =====================

@@ -47,3 +47,18 @@ export const CANCEL_REASON = {
   TIMER: 'timer',
   USER: 'cancel'
 } as const
+
+/** Fond plan Yerres sous la carte (debug calage). Mettre `false` une fois terminé. */
+export const SEAT_MAP_DEBUG_BACKGROUND = true
+
+/**
+ * Carte sièges — parterre N→A, **bloc central** : écart par palier (× numéro de siège × rangée k).
+ * En multiples de `SEAT_CELL` (13 px dans le layout). `0` = désactivé.
+ */
+export const SEAT_MAP_ORCH_CENTER_NUDGE_PER_TIER = 0.025
+
+/**
+ * Parterre N→A, **ailes** : pairs 18–40 vers la gauche, impairs 19–41 vers la droite (ramp N→A).
+ * Multiplicateur sur ce décalage : `1` = réglage actuel ; `0.5` = moitié moins ; `0` = pas de décalage.
+ */
+export const SEAT_MAP_ORCH_WING_NUDGE_SCALE = 0.5
