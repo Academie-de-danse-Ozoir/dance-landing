@@ -66,9 +66,6 @@ export const CANCEL_REASON = {
 // Carte sièges — général (SeatMap, yerresSeatLayout)
 // =============================================================================
 
-/** Fond plan Yerres sous la carte (debug calage). Mettre `false` une fois terminé. */
-export const SEAT_MAP_DEBUG_BACKGROUND = true
-
 /**
  * Marge horizontale **en plus** du `pad` du viewBox (chaque côté, unités SVG).
  * Les décalages d’ailes (balcon / parterre) élargissent le plan : sans ça, `meet` peut tasser ou border le clip.

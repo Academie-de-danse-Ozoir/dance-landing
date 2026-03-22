@@ -1,17 +1,6 @@
 <template>
   <div class="seat-map_container">
     <svg :viewBox="svgViewBox" class="container__svg" preserveAspectRatio="xMidYMid meet">
-      <image
-        v-if="SEAT_MAP_DEBUG_BACKGROUND"
-        class="container__plan-bg"
-        href="/yerres-plan-numerote-debug.jpg"
-        :x="viewBoxParts.x"
-        :y="viewBoxParts.y"
-        :width="viewBoxParts.w"
-        :height="viewBoxParts.h"
-        preserveAspectRatio="xMidYMid meet"
-        opacity="1"
-      />
       <rect
         v-for="seat in seats"
         :key="seat.id"
@@ -70,8 +59,7 @@ import {
   SEAT_MAP_BALCONY_ARC_REF_OFFSET_Y,
   SEAT_MAP_BALCONY_ARC_ROTATION_SIGN,
   SEAT_MAP_BALCONY_ARC_SCALE_X_CURVE_POWER,
-  SEAT_MAP_BALCONY_ARC_SCALE_X_MIN,
-  SEAT_MAP_DEBUG_BACKGROUND
+  SEAT_MAP_BALCONY_ARC_SCALE_X_MIN
 } from '../../constants'
 import { parseTheaterSeatLabel, rowIsBalcony, seatMapViewBoxString } from '../../utils/yerresSeatLayout'
 
@@ -272,16 +260,6 @@ function seatArcTransform(seat: Seat): string | undefined {
 
 const svgViewBox = computed(() => seatMapViewBoxString(props.seats, SEAT_SIZE, 18))
 
-const viewBoxParts = computed(() => {
-  const p = svgViewBox.value.split(/\s+/).map(Number)
-  return {
-    x: p[0] ?? 0,
-    y: p[1] ?? 0,
-    w: p[2] ?? 100,
-    h: p[3] ?? 100
-  }
-})
-
 function getSeatFill(seat: Seat) {
   if (seat.status === 'paid') return SEAT_COLORS.paid
   if (seat.status === 'hold') return SEAT_COLORS.hold
@@ -321,17 +299,11 @@ function handleSeatClick(seat: Seat) {
   .container__svg {
     width: 100%;
     max-width: 100%;
-    // height: 600px;
     overflow: visible;
     border: 2px solid #dee2e6;
     border-radius: 8px;
     background: #e8eaed;
     user-select: none;
-
-    .container__plan-bg {
-      pointer-events: none;
-      visibility: hidden;
-    }
 
     .svg__seat {
       &--clickable {

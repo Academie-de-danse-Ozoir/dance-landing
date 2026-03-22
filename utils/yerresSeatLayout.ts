@@ -28,14 +28,14 @@ import {
 } from '../constants'
 import { BALCONY_GAP_PER_X, balconyExplicitSequence } from './yerresBalconyExplicit'
 
-export type SeatLike = {
+type SeatLike = {
   id: string
   label: string
   status: string
 }
 
-/** Pas horizontal du layout (carte sièges) — partagé avec SeatMap pour l’arc du balcon. */
-export const SEAT_CELL = 13
+/** Pas horizontal du layout (carte sièges) — même valeur que `SEAT_SIZE` dans SeatMap. */
+const SEAT_CELL = 13
 const AISLE_GAP = 7
 /** Allée latérale (aile ↔ bloc centre), comme sur le plan entre 18|16 et 17|19, O6|O4, O3|O5. */
 const SIDE_AISLE_GAP = 14
@@ -478,7 +478,7 @@ function nudgeBalconyWpWingGlobalOffset<T extends SeatLike & { x: number; y: num
   })
 }
 
-export function normalizeSeatLabel(label: string): string {
+function normalizeSeatLabel(label: string): string {
   return label
     .trim()
     .replace(/[\s\-–—]/g, '')
