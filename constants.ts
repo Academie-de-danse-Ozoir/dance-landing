@@ -1,4 +1,12 @@
+// =============================================================================
+// Application
+// =============================================================================
+
 export const STORAGE_ORDER_KEY = 'order_id'
+
+// =============================================================================
+// Événement & tarification
+// =============================================================================
 
 export const EVENT_ID = 'f179039c-c6a9-4c93-ac39-2153c02105ec'
 
@@ -6,12 +14,17 @@ export const EVENT_ID = 'f179039c-c6a9-4c93-ac39-2153c02105ec'
 export const PRICE_ADULT_CENTS = 100
 export const PRICE_CHILD_CENTS = 50
 
+// =============================================================================
+// Réservation
+// =============================================================================
+
 /** Nombre max de sièges par réservation */
 export const MAX_SEATS_PER_ORDER = 10
 
-/**
- * Rate limit (requêtes / minute / IP) — voir server/utils/rateLimit.ts
- */
+// =============================================================================
+// API — rate limits & validation (voir server/utils/rateLimit.ts, hold-seats)
+// =============================================================================
+
 export const RATE_LIMIT_HOLD_SEATS_PER_MINUTE = 10
 export const RATE_LIMIT_CANCEL_ORDER_PER_MINUTE = 10
 export const RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE = 10
@@ -25,7 +38,10 @@ export const MAX_LENGTH = {
   phone: 30
 } as const
 
-// Statuts commande (valeurs BDD / Stripe — pas des libellés affichés)
+// =============================================================================
+// Statuts & énumérations métier (BDD / Stripe — pas des libellés UI)
+// =============================================================================
+
 export const ORDER_STATUS = {
   PENDING: 'pending',
   PAID: 'paid',
@@ -35,18 +51,20 @@ export const ORDER_STATUS = {
   REFUNDED: 'refunded'
 } as const
 
-// Statuts siège / réservation
 export const SEAT_STATUS = {
   FREE: 'free',
   HOLD: 'hold',
   PAID: 'paid'
 } as const
 
-// Raison d'annulation
 export const CANCEL_REASON = {
   TIMER: 'timer',
   USER: 'cancel'
 } as const
+
+// =============================================================================
+// Carte sièges — affichage & viewBox (SeatMap, yerresSeatLayout)
+// =============================================================================
 
 /** Fond plan Yerres sous la carte (debug calage). Mettre `false` une fois terminé. */
 export const SEAT_MAP_DEBUG_BACKGROUND = true
@@ -57,29 +75,81 @@ export const SEAT_MAP_DEBUG_BACKGROUND = true
  */
 export const SEAT_MAP_VIEWBOX_EXTRA_HORIZONTAL = 72
 
+// =============================================================================
+// Carte sièges — parterre (O→A, N→A)
+// =============================================================================
+
 /**
- * Carte sièges — parterre N→A, **bloc central** : écart par palier (× numéro de siège × rangée k).
- * En multiples de `SEAT_CELL` (13 px dans le layout). `0` = désactivé.
+ * Bloc **central** N→A : écart par palier (× numéro de siège × rangée k), en × `SEAT_CELL`. `0` = désactivé.
  */
 export const SEAT_MAP_ORCH_CENTER_NUDGE_PER_TIER = 0.025
 
 /**
- * Parterre N→A, **ailes** : pairs 18–40 vers la gauche, impairs 19–41 vers la droite (ramp N→A).
- * Multiplicateur sur ce décalage : `1` = réglage actuel ; `0.5` = moitié moins ; `0` = pas de décalage.
+ * **Ailes** N→A : pairs 18–40 / impairs 19–41, rampe vers l’extérieur.
+ * `1` = plein effet ; `0.5` = moitié ; `0` = off.
  */
 export const SEAT_MAP_ORCH_WING_NUDGE_SCALE = 0.5
 
 /**
- * Balcon V→P, **ailes** : même logique que le parterre (pairs ≥ seuil gauche → −x, impairs ≥ seuil droit → +x),
- * amplitude qui augmente de V vers P. `1` = plein effet ; `0` = off.
+ * **Ailes** N→A depuis l’allée : impairs ≥21 / pairs ≥20, écart progressif (× `SEAT_CELL` × k).
+ * `0` = désactivé.
  */
-export const SEAT_MAP_BALCONY_WING_NUDGE_SCALE = -0.5
+export const SEAT_MAP_ORCH_WING_AISLE_PROGRESS_STEP = 0.025
 
 /**
- * Pas `SEAT_CELL` **en plus** vers l’extérieur sur les ailes **V→P** (en plus de la rampe × scale).
- * Ne s’applique pas à la rangée W (voir `SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS`).
+ * **Offset global** O→A (× `SEAT_CELL`) : droite impairs O5→O21 puis N19→41… ; gauche pairs O6→O22 puis N18→40….
+ * `0` = off.
+ */
+export const SEAT_MAP_ORCH_OA_WING_GLOBAL_OFFSET_STEPS = 1
+
+// =============================================================================
+// Carte sièges — balcon : bloc central V→P
+// =============================================================================
+
+/**
+ * Bloc **central** V→P : même logique que le parterre ; × k (V=1 … P=7). Bornes V16|17 … P12|13. `0` = off.
+ */
+export const SEAT_MAP_BALCONY_VP_CENTER_NUDGE_PER_TIER = 0.025
+
+// =============================================================================
+// Carte sièges — balcon : ailes V→P & W (rampe, progressifs, offsets)
+// =============================================================================
+
+/**
+ * **Rampe** ailes V→P (pairs / impairs ≥ seuils), amplitude de V vers P.
+ * `1` = plein effet ; `0` = off.
+ */
+export const SEAT_MAP_BALCONY_WING_NUDGE_SCALE = 0
+
+/**
+ * Pas **en plus** vers l’extérieur sur les ailes **U→P** (la rampe V utilise aussi `SEAT_MAP_BALCONY_V_OUTER_OFFSET_STEPS` ; rangée **W** : constante dédiée).
  */
 export const SEAT_MAP_BALCONY_WING_OUTER_OFFSET_STEPS = 2
 
-/** Même chose **uniquement pour la rangée W** (W20…W48 / W21…W49). */
-export const SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS = 1
+/**
+ * Rangée **V** seule : décalage fixe (× `SEAT_CELL`) sur les ailes **V18…V48** (−x) et **V19…V49** (+x). `0` = off.
+ */
+export const SEAT_MAP_BALCONY_V_OUTER_OFFSET_STEPS = 0.5
+
+/** Rangée **W** seule (W20…W48 / W21…W49). */
+export const SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS = 2
+
+/**
+ * Ailes V→P depuis l’allée (impair V19…P15 / pair 18…14) : écart **progressif**.
+ * Indépendant de `SEAT_MAP_ORCH_WING_AISLE_PROGRESS_STEP`. `0` = off.
+ */
+export const SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP = 0.05
+
+/**
+ * Même zone : décalage **fixe** supplémentaire (× `SEAT_CELL` × k, V=1…P=7), en plus du progressif. `0` = rien.
+ */
+export const SEAT_MAP_BALCONY_VP_WING_OUTWARD_BASE_STEPS = 0
+
+// =============================================================================
+// Carte sièges — balcon : offset global W→P
+// =============================================================================
+
+/**
+ * Décalage **global** (× `SEAT_CELL`) sur l’aile depuis **W21…P15** (impairs +x) / pairs **20…14** (−x). `0` = off.
+ */
+export const SEAT_MAP_BALCONY_WP_WING_GLOBAL_OFFSET_STEPS = 0

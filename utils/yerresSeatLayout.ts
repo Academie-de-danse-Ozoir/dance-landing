@@ -5,10 +5,17 @@
  */
 
 import {
+  SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP,
+  SEAT_MAP_BALCONY_VP_WING_OUTWARD_BASE_STEPS,
+  SEAT_MAP_BALCONY_WP_WING_GLOBAL_OFFSET_STEPS,
   SEAT_MAP_BALCONY_WING_NUDGE_SCALE,
   SEAT_MAP_BALCONY_WING_OUTER_OFFSET_STEPS,
+  SEAT_MAP_BALCONY_V_OUTER_OFFSET_STEPS,
   SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS,
   SEAT_MAP_ORCH_CENTER_NUDGE_PER_TIER,
+  SEAT_MAP_BALCONY_VP_CENTER_NUDGE_PER_TIER,
+  SEAT_MAP_ORCH_OA_WING_GLOBAL_OFFSET_STEPS,
+  SEAT_MAP_ORCH_WING_AISLE_PROGRESS_STEP,
   SEAT_MAP_ORCH_WING_NUDGE_SCALE,
   SEAT_MAP_VIEWBOX_EXTRA_HORIZONTAL
 } from '../constants'
@@ -24,8 +31,12 @@ const SEAT_CELL = 13
 const AISLE_GAP = 7
 /** Allée latérale (aile ↔ bloc centre), comme sur le plan entre 18|16 et 17|19, O6|O4, O3|O5. */
 const SIDE_AISLE_GAP = 14
-const ROW_HEIGHT_BAL = 15
-const ROW_HEIGHT_ORCH = 16
+/** +4 px entre chaque rangée balcon (P→X) et parterre (O→A). */
+const ROW_VERTICAL_EXTRA = 1
+const ROW_HEIGHT_BAL = 15 + ROW_VERTICAL_EXTRA
+const ROW_HEIGHT_ORCH = 16 + ROW_VERTICAL_EXTRA
+/** Monte tout le bloc P→X d’un seul coup (repère y vers le bas → soustraire). */
+const BALCONY_BLOCK_SHIFT_UP = 50
 const BALCONY_ROW_COUNT = 9
 const GAP_BALCONY_ORCHESTRA = 28
 
@@ -172,6 +183,226 @@ function nudgeOrchestraNWingRamp<T extends SeatLike & { x: number; y: number }>(
     }
     if (dx === 0) return p
     return { ...p, x: p.x + dx }
+  })
+}
+
+/**
+ * Parterre N→A : depuis l’allée (18 pair / 19 impair), écarte encore vers l’extérieur, de plus en plus,
+ * avec le même multiplicateur de rangée `k` que le bloc central (N=1 … A=14).
+ * Droite : impairs 21→41 (19 inchangé). Gauche : pairs 20→40 (18 inchangé).
+ */
+function nudgeOrchestraWingProgressiveFromAisle<T extends SeatLike & { x: number; y: number }>(
+  items: T[]
+): T[] {
+  const base = SEAT_MAP_ORCH_WING_AISLE_PROGRESS_STEP * SEAT_CELL
+  if (base === 0) return items
+  return items.map((p) => {
+    const pr = parseTheaterSeatLabel((p.label ?? '').trim())
+    if (!pr || pr.row.length !== 1) return p
+    const k = orchCenterNudgeRowStepsMultiplier(pr.row)
+    if (k == null) return p
+    const n = pr.num
+
+    if (n % 2 === 1 && n >= 21 && n <= ORCH_SIDE_NUDGE_RIGHT_ODD_MAX) {
+      const stepIndex = (n - 19) / 2
+      return { ...p, x: p.x + stepIndex * base * k }
+    }
+    if (n % 2 === 0 && n >= 20 && n <= ORCH_SIDE_NUDGE_LEFT_EVEN_MAX) {
+      const stepIndex = (n - 18) / 2
+      return { ...p, x: p.x - stepIndex * base * k }
+    }
+    return p
+  })
+}
+
+/** Rangée O (plan explicite) : bornes des ailes. */
+const ORCH_O_RIGHT_ODD_MIN = 5
+const ORCH_O_RIGHT_ODD_MAX = 21
+const ORCH_O_LEFT_EVEN_MIN = 6
+const ORCH_O_LEFT_EVEN_MAX = 22
+
+function orchOaGlobalRowIsOrchestraOToA(row: string): boolean {
+  const R = row.toUpperCase()
+  if (R === 'O') return true
+  return R.length === 1 && R >= 'A' && R <= 'N'
+}
+
+/** Aile droite : O5 et impairs vers la droite ; N…A : N19 et impairs vers la droite (jusqu’à 41). */
+function orchOaGlobalSeatOnRightWing(row: string, n: number): boolean {
+  if (n % 2 !== 1) return false
+  const R = row.toUpperCase()
+  if (R === 'O') return n >= ORCH_O_RIGHT_ODD_MIN && n <= ORCH_O_RIGHT_ODD_MAX
+  if (R >= 'A' && R <= 'N') {
+    return n >= ORCH_SIDE_NUDGE_RIGHT_ODD_MIN && n <= ORCH_SIDE_NUDGE_RIGHT_ODD_MAX
+  }
+  return false
+}
+
+/** Aile gauche : O6 et pairs vers la gauche ; N…A : N18 et pairs vers la gauche (jusqu’à 40). */
+function orchOaGlobalSeatOnLeftWing(row: string, n: number): boolean {
+  if (n % 2 !== 0) return false
+  const R = row.toUpperCase()
+  if (R === 'O') return n >= ORCH_O_LEFT_EVEN_MIN && n <= ORCH_O_LEFT_EVEN_MAX
+  if (R >= 'A' && R <= 'N') {
+    return n >= ORCH_SIDE_NUDGE_LEFT_EVEN_MIN && n <= ORCH_SIDE_NUDGE_LEFT_EVEN_MAX
+  }
+  return false
+}
+
+function nudgeOrchestraOaWingGlobalOffset<T extends SeatLike & { x: number; y: number }>(items: T[]): T[] {
+  const dx = SEAT_MAP_ORCH_OA_WING_GLOBAL_OFFSET_STEPS * SEAT_CELL
+  if (dx === 0) return items
+  return items.map((p) => {
+    const pr = parseTheaterSeatLabel((p.label ?? '').trim())
+    if (!pr || pr.row.length !== 1) return p
+    if (!orchOaGlobalRowIsOrchestraOToA(pr.row)) return p
+    const n = pr.num
+
+    if (orchOaGlobalSeatOnRightWing(pr.row, n)) {
+      return { ...p, x: p.x + dx }
+    }
+    if (orchOaGlobalSeatOnLeftWing(pr.row, n)) {
+      return { ...p, x: p.x - dx }
+    }
+    return p
+  })
+}
+
+/** Balcon V→P (haut → bas) pour ancres impaires 19→15 / paires 18→14. */
+const BALCONY_VP_PROGRESS_ROWS = ['V', 'U', 'T', 'S', 'R', 'Q', 'P'] as const
+const BALCONY_VP_PROGRESS_LAST = BALCONY_VP_PROGRESS_ROWS.length - 1
+
+function balconyVpProgressRowIndex(row: string): number | null {
+  const R = row.toUpperCase()
+  const idx = BALCONY_VP_PROGRESS_ROWS.indexOf(R as (typeof BALCONY_VP_PROGRESS_ROWS)[number])
+  return idx === -1 ? null : idx
+}
+
+/** Impair d’allée côté droit : 19 en V … 15 en P. */
+function balconyVpAnchorOdd(rowIndex: number): number {
+  const raw = 19 + ((15 - 19) * rowIndex) / BALCONY_VP_PROGRESS_LAST
+  let a = Math.round(raw)
+  if (a % 2 === 0) a -= 1
+  return Math.max(15, Math.min(19, a))
+}
+
+/** Pair d’allée côté gauche : 18 en V … 14 en P (symétrique). */
+function balconyVpAnchorEven(rowIndex: number): number {
+  const raw = 18 + ((14 - 18) * rowIndex) / BALCONY_VP_PROGRESS_LAST
+  let a = Math.round(raw)
+  if (a % 2 === 1) a -= 1
+  return Math.max(14, Math.min(18, a))
+}
+
+/** Ajustements plan Yerres : T16 reste centre (aile gauche à partir de T18) ; R15 dans l’aile droite. */
+function balconyVpWingEffectiveAnchors(
+  row: string,
+  rowIndex: number
+): { anchorOdd: number; anchorEven: number } {
+  let anchorOdd = balconyVpAnchorOdd(rowIndex)
+  let anchorEven = balconyVpAnchorEven(rowIndex)
+  const R = row.toUpperCase()
+  if (R === 'T') anchorEven = 18
+  if (R === 'R') anchorOdd = 15
+  return { anchorOdd, anchorEven }
+}
+
+/**
+ * Balcon V→P : ancres impaires 19 (V) → 15 (P), paires 18 → 14 ; k = 1 (V) … 7 (P).
+ * Voir `SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP` + `SEAT_MAP_BALCONY_VP_WING_OUTWARD_BASE_STEPS` dans constants.
+ */
+function nudgeBalconyVpWingProgressiveFromAisle<T extends SeatLike & { x: number; y: number }>(
+  items: T[]
+): T[] {
+  const progressBase = SEAT_MAP_BALCONY_VP_WING_AISLE_PROGRESS_STEP * SEAT_CELL
+  const extraPerK = SEAT_MAP_BALCONY_VP_WING_OUTWARD_BASE_STEPS * SEAT_CELL
+  if (progressBase === 0 && extraPerK === 0) return items
+  const maxOdd = 55
+  const maxEven = 56
+  return items.map((p) => {
+    const pr = parseTheaterSeatLabel((p.label ?? '').trim())
+    if (!pr || pr.row.length !== 1) return p
+    const idx = balconyVpProgressRowIndex(pr.row)
+    if (idx == null) return p
+    const k = idx + 1
+    const { anchorOdd, anchorEven } = balconyVpWingEffectiveAnchors(pr.row, idx)
+    const n = pr.num
+
+    if (n % 2 === 1 && n >= anchorOdd && n <= maxOdd) {
+      const stepIndex = (n - anchorOdd) / 2
+      if (stepIndex < 0) return p
+      const dx = stepIndex * progressBase * k + extraPerK * k
+      return { ...p, x: p.x + dx }
+    }
+    if (n % 2 === 0 && n >= anchorEven && n <= maxEven) {
+      const stepIndex = (n - anchorEven) / 2
+      if (stepIndex < 0) return p
+      const dx = stepIndex * progressBase * k + extraPerK * k
+      return { ...p, x: p.x - dx }
+    }
+    return p
+  })
+}
+
+/** Balcon W→P : ancre impair **W21 … P15** / pair **20 … 14**. */
+const BALCONY_WP_GLOBAL_ROWS = ['W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P'] as const
+const BALCONY_WP_GLOBAL_LAST = BALCONY_WP_GLOBAL_ROWS.length - 1
+
+function balconyWpGlobalRowIndex(row: string): number | null {
+  const R = row.toUpperCase()
+  const idx = BALCONY_WP_GLOBAL_ROWS.indexOf(R as (typeof BALCONY_WP_GLOBAL_ROWS)[number])
+  return idx === -1 ? null : idx
+}
+
+function balconyWpGlobalAnchorOdd(rowIndex: number): number {
+  const raw = 21 + ((15 - 21) * rowIndex) / BALCONY_WP_GLOBAL_LAST
+  let a = Math.round(raw)
+  if (a % 2 === 0) a -= 1
+  return Math.max(15, Math.min(21, a))
+}
+
+function balconyWpGlobalAnchorEven(rowIndex: number): number {
+  const raw = 20 + ((14 - 20) * rowIndex) / BALCONY_WP_GLOBAL_LAST
+  let a = Math.round(raw)
+  if (a % 2 === 1) a -= 1
+  return Math.max(14, Math.min(20, a))
+}
+
+function balconyWpGlobalEffectiveAnchors(
+  row: string,
+  rowIndex: number
+): { anchorOdd: number; anchorEven: number } {
+  let anchorOdd = balconyWpGlobalAnchorOdd(rowIndex)
+  let anchorEven = balconyWpGlobalAnchorEven(rowIndex)
+  const R = row.toUpperCase()
+  if (R === 'T') anchorEven = 18
+  if (R === 'R') anchorOdd = 15
+  return { anchorOdd, anchorEven }
+}
+
+/**
+ * Offset horizontal **constant** (× `SEAT_CELL`) sur l’aile W→P depuis W21 / P15 (impairs) et symétrie pairs.
+ */
+function nudgeBalconyWpWingGlobalOffset<T extends SeatLike & { x: number; y: number }>(items: T[]): T[] {
+  const dx = SEAT_MAP_BALCONY_WP_WING_GLOBAL_OFFSET_STEPS * SEAT_CELL
+  if (dx === 0) return items
+  const maxOdd = 55
+  const maxEven = 56
+  return items.map((p) => {
+    const pr = parseTheaterSeatLabel((p.label ?? '').trim())
+    if (!pr || pr.row.length !== 1) return p
+    const idx = balconyWpGlobalRowIndex(pr.row)
+    if (idx == null) return p
+    const { anchorOdd, anchorEven } = balconyWpGlobalEffectiveAnchors(pr.row, idx)
+    const n = pr.num
+
+    if (n % 2 === 1 && n >= anchorOdd && n <= maxOdd) {
+      return { ...p, x: p.x + dx }
+    }
+    if (n % 2 === 0 && n >= anchorEven && n <= maxEven) {
+      return { ...p, x: p.x - dx }
+    }
+    return p
   })
 }
 
@@ -477,6 +708,12 @@ function applyRowLetterXAfterCenter<T extends SeatLike & { x: number; y: number 
   })
 }
 
+/** Balcon rangée V : offset dédié sur les ailes (en plus de la rampe V + `outerVp`). */
+const BALCONY_V_WING_LEFT_EVEN_MIN = 18
+const BALCONY_V_WING_LEFT_EVEN_MAX = 48
+const BALCONY_V_WING_RIGHT_ODD_MIN = 19
+const BALCONY_V_WING_RIGHT_ODD_MAX = 49
+
 /** Balcon rangée W : ailes (W20…W48 / W21…W49), amplitude `SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS` seule. */
 const BALCONY_W_WING_LEFT_EVEN_MIN = 20
 const BALCONY_W_WING_LEFT_EVEN_MAX = 48
@@ -486,6 +723,7 @@ const BALCONY_W_WING_RIGHT_ODD_MAX = 49
 function nudgeBalconyWingBlocks<T extends SeatLike & { x: number; y: number }>(items: T[]): T[] {
   const scale = SEAT_MAP_BALCONY_WING_NUDGE_SCALE
   const outerVp = SEAT_MAP_BALCONY_WING_OUTER_OFFSET_STEPS * SEAT_CELL
+  const outerV = SEAT_MAP_BALCONY_V_OUTER_OFFSET_STEPS * SEAT_CELL
   const outerW = SEAT_MAP_BALCONY_W_OUTER_OFFSET_STEPS * SEAT_CELL
   return items.map((p) => {
     const pr = parseTheaterSeatLabel((p.label ?? '').trim())
@@ -505,6 +743,23 @@ function nudgeBalconyWingBlocks<T extends SeatLike & { x: number; y: number }>(i
       return { ...p, x: p.x + dx }
     }
 
+    if (R === 'V') {
+      const thresholds = BALCONY_WING_RAMP_THRESHOLDS.V
+      const mult = balconyWingRampMultiplierSeatCells('V')
+      if (mult == null) return p
+      let dx = 0
+      if (n % 2 === 0 && n >= thresholds.leftEvenMin) dx -= mult * SEAT_CELL * scale + outerVp
+      if (n % 2 === 1 && n >= thresholds.rightOddMin) dx += mult * SEAT_CELL * scale + outerVp
+      if (n % 2 === 0 && n >= BALCONY_V_WING_LEFT_EVEN_MIN && n <= BALCONY_V_WING_LEFT_EVEN_MAX) {
+        dx -= outerV
+      }
+      if (n % 2 === 1 && n >= BALCONY_V_WING_RIGHT_ODD_MIN && n <= BALCONY_V_WING_RIGHT_ODD_MAX) {
+        dx += outerV
+      }
+      if (dx === 0) return p
+      return { ...p, x: p.x + dx }
+    }
+
     const rowVp = R as (typeof BALCONY_WING_RAMP_ROWS_V_TO_P)[number]
     const thresholds = BALCONY_WING_RAMP_THRESHOLDS[rowVp]
     const mult = balconyWingRampMultiplierSeatCells(rowVp)
@@ -512,6 +767,80 @@ function nudgeBalconyWingBlocks<T extends SeatLike & { x: number; y: number }>(i
     let dx = 0
     if (n % 2 === 0 && n >= thresholds.leftEvenMin) dx -= mult * SEAT_CELL * scale + outerVp
     if (n % 2 === 1 && n >= thresholds.rightOddMin) dx += mult * SEAT_CELL * scale + outerVp
+    if (dx === 0) return p
+    return { ...p, x: p.x + dx }
+  })
+}
+
+/**
+ * Balcon P/Q : segments tout à l’extérieur du plan explicite — décalage fixe en « pas » siège.
+ * Impairs (côté droit du schéma) vers +x ; pairs (côté gauche) vers −x.
+ */
+const BALCONY_PQ_OUTER_WING_SHIFT_STEPS = 5
+
+function nudgeBalconyPQOuterWingTips<T extends SeatLike & { x: number; y: number }>(items: T[]): T[] {
+  const dxStep = BALCONY_PQ_OUTER_WING_SHIFT_STEPS * SEAT_CELL
+  return items.map((p) => {
+    const pr = parseTheaterSeatLabel((p.label ?? '').trim())
+    if (!pr || pr.row.length !== 1) return p
+    const R = pr.row.toUpperCase()
+    const n = pr.num
+
+    if (R === 'Q') {
+      if (n % 2 === 1 && n >= 43 && n <= 51) return { ...p, x: p.x + dxStep }
+      if (n % 2 === 0 && n >= 42 && n <= 50) return { ...p, x: p.x - dxStep }
+      return p
+    }
+    if (R === 'P') {
+      if (n % 2 === 1 && n >= 41 && n <= 55) return { ...p, x: p.x + dxStep }
+      if (n % 2 === 0 && n >= 40 && n <= 54) return { ...p, x: p.x - dxStep }
+      return p
+    }
+    return p
+  })
+}
+
+/** Balcon V→P : bloc central — même formule que le parterre ; limites paires / impaires par rangée. */
+const BALCONY_VP_CENTER_RAMP_ROWS = ['V', 'U', 'T', 'S', 'R', 'Q', 'P'] as const
+
+const BALCONY_VP_CENTER_BOUNDS = {
+  V: { maxEven: 16, maxOdd: 17 },
+  U: { maxEven: 16, maxOdd: 17 },
+  T: { maxEven: 16, maxOdd: 15 },
+  S: { maxEven: 14, maxOdd: 15 },
+  R: { maxEven: 14, maxOdd: 13 },
+  Q: { maxEven: 12, maxOdd: 13 },
+  P: { maxEven: 12, maxOdd: 13 }
+} as const satisfies Record<
+  (typeof BALCONY_VP_CENTER_RAMP_ROWS)[number],
+  { maxEven: number; maxOdd: number }
+>
+
+function balconyVpCenterRowK(row: string): number | null {
+  const R = row.toUpperCase() as (typeof BALCONY_VP_CENTER_RAMP_ROWS)[number]
+  const idx = BALCONY_VP_CENTER_RAMP_ROWS.indexOf(R)
+  return idx === -1 ? null : idx + 1
+}
+
+function nudgeBalconyVpCenterAlternatingRamp<T extends SeatLike & { x: number; y: number }>(
+  items: T[]
+): T[] {
+  const tier = SEAT_MAP_BALCONY_VP_CENTER_NUDGE_PER_TIER
+  return items.map((p) => {
+    const pr = parseTheaterSeatLabel((p.label ?? '').trim())
+    if (!pr || pr.row.length !== 1) return p
+    const k = balconyVpCenterRowK(pr.row)
+    if (k == null) return p
+    const R = pr.row.toUpperCase() as (typeof BALCONY_VP_CENTER_RAMP_ROWS)[number]
+    const bounds = BALCONY_VP_CENTER_BOUNDS[R]
+    const n = pr.num
+    const unit = tier * k * SEAT_CELL
+    let dx = 0
+    if (n % 2 === 0 && n >= 2 && n <= bounds.maxEven) {
+      dx -= (n / 2) * unit
+    } else if (n % 2 === 1 && n >= 1 && n <= bounds.maxOdd) {
+      dx += ((n - 1) / 2) * unit
+    }
     if (dx === 0) return p
     return { ...p, x: p.x + dx }
   })
@@ -537,6 +866,17 @@ function nudgeOrchestraNCenterAlternatingRamp<T extends SeatLike & { x: number; 
     }
     if (dx === 0) return p
     return { ...p, x: p.x + dx }
+  })
+}
+
+function shiftBalconyBlockUp<T extends SeatLike & { x: number; y: number }>(items: T[]): T[] {
+  const dy = BALCONY_BLOCK_SHIFT_UP
+  return items.map((p) => {
+    const pr = parseTheaterSeatLabel((p.label ?? '').trim())
+    if (!pr || pr.row.length !== 1) return p
+    const R = pr.row.toUpperCase()
+    if (R >= 'P' && R <= 'X') return { ...p, y: p.y - dy }
+    return p
   })
 }
 
@@ -587,10 +927,24 @@ export function layoutYerresTheaterSeats<T extends SeatLike>(seats: T[]): (T & {
   }
 
   const shifted = translatePositive(
-    nudgeOrchestraNCenterAlternatingRamp(
-      nudgeOrchestraNWingRamp(
-        nudgeBalconyWingBlocks(
-          applyRowLetterXAfterCenter(centerRowsHorizontally(raw), ROW_NUDGE_SEAT_SPACES_AFTER_CENTER)
+    shiftBalconyBlockUp(
+      nudgeOrchestraNCenterAlternatingRamp(
+        nudgeBalconyVpCenterAlternatingRamp(
+          nudgeOrchestraWingProgressiveFromAisle(
+            nudgeBalconyVpWingProgressiveFromAisle(
+              nudgeBalconyWpWingGlobalOffset(
+                nudgeOrchestraOaWingGlobalOffset(
+                  nudgeOrchestraNWingRamp(
+                    nudgeBalconyPQOuterWingTips(
+                      nudgeBalconyWingBlocks(
+                        applyRowLetterXAfterCenter(centerRowsHorizontally(raw), ROW_NUDGE_SEAT_SPACES_AFTER_CENTER)
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
         )
       )
     ),
