@@ -3,7 +3,8 @@ import {
   EVENT_ID,
   MAX_SEATS_PER_ORDER,
   RATE_LIMIT_HOLD_SEATS_PER_MINUTE,
-  MAX_LENGTH
+  MAX_LENGTH,
+  STAFF_RESERVED_SEAT_IDS
 } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
@@ -49,6 +50,14 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       statusMessage: tApiError('tooManySeats')
+    })
+  }
+
+  const seatIdStrs = seatIds.map(id => String(id))
+  if (seatIdStrs.some(id => STAFF_RESERVED_SEAT_IDS.includes(id))) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: tApiError('staffSeatsNotBookable')
     })
   }
 

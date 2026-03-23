@@ -54,8 +54,15 @@ export const ORDER_STATUS = {
 export const SEAT_STATUS = {
   FREE: 'free',
   HOLD: 'hold',
-  PAID: 'paid'
+  PAID: 'paid',
+  STAFF: 'staff'
 } as const
+
+/**
+ * UUID des sièges affichés comme « réservés personnel » (non sélectionnables).
+ * À terme, peut être remplacé par une colonne en base (ex. `seat.staff_only`).
+ */
+export const STAFF_RESERVED_SEAT_IDS: readonly string[] = []
 
 export const CANCEL_REASON = {
   TIMER: 'timer',

@@ -28,7 +28,8 @@
       "ticketLinkExpired": "Ce lien de téléchargement a expiré.",
       "orderNotFoundOrNotPaid": "Commande introuvable ou non payée.",
       "noSeatsForOrder": "Aucune place trouvée pour cette commande.",
-      "loadSeatsTicketPageFailed": "Impossible de charger les places."
+      "loadSeatsTicketPageFailed": "Impossible de charger les places.",
+      "staffSeatsNotBookable": "Une ou plusieurs places sont réservées au personnel et ne peuvent pas être réservées."
     }
   },
   "brand": {
@@ -72,14 +73,52 @@
       "tooltip": {
         "reservationInProgress": "Une réservation est déjà en cours",
         "seatUnavailable": "Siège indisponible",
+        "seatStaffReserved": "Place réservée au personnel",
         "maxSelectionReached": "Maximum {max} places par commande — désélectionnez un siège pour en changer, ou passez une autre commande pour plus de places."
+      },
+      "map": {
+        "hintsTitle": "Contrôles du plan",
+        "hintsRows": [
+          {
+            "label": "Zoom",
+            "textDesktop": "Molette ; touches + et − ; boutons « Dézoomer » <br> et « Zoomer » à droite",
+            "textMobile": "Molette ; touches + et − ; à droite : bouton − et bouton +"
+          },
+          {
+            "label": "Déplacer",
+            "textDesktop": "Clic maintenu, <br> puis glisser sur la carte",
+            "textMobile": "Clic maintenu, <br>puis glisser sur la carte"
+          },
+          {
+            "label": "Tout afficher",
+            "textDesktop": "Touche Échap ou 0 ; <br> bouton « Tout afficher »",
+            "textMobile": "Touche Échap ou 0 ; bouton ⟲"
+          }
+        ],
+        "zoomIn": "Zoom avant",
+        "zoomOut": "Zoom arrière",
+        "resetView": "Réinitialiser la vue de la salle",
+        "zoomInCaption": "Zoomer",
+        "zoomOutCaption": "Dézoomer",
+        "resetViewCaption": "Tout afficher",
+        "zoomPercent": "{n} %",
+        "viewportLabel": "Plan de salle — zoom et déplacement",
+        "toolbarLabel": "Contrôles du zoom sur le plan",
+        "toolbarMenuTrigger": "Contrôles",
+        "legendMenuTrigger": "Sièges",
+        "legendTitle": "Sièges",
+        "legendFree": "Disponible",
+        "legendSelected": "Sélectionné (votre choix)",
+        "legendHold": "Réservation en cours (autre spectateur)",
+        "legendPaid": "Vendu / non disponible",
+        "legendStaff": "Réservé personnel",
+        "legendMaxPerOrder": "Jusqu’à {max} places par commande."
       }
     },
     "selection": {
       "none": "Aucun siège sélectionné",
       "one": "siège sélectionné",
       "multiple": "sièges sélectionnés",
-      "maxPerOrderHint": "Jusqu’à {max} places par réservation.",
       "limitReached": "Vous avez atteint la limite de {max} places par commande. Désélectionnez un siège pour en ajouter une autre, ou effectuez plusieurs commandes si vous avez besoin de plus de places."
     },
     "actions": {

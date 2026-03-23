@@ -1,4 +1,4 @@
-export type SeatStatus = 'free' | 'hold' | 'paid'
+export type SeatStatus = 'free' | 'hold' | 'paid' | 'staff'
 
 export type Seat = {
   id: string

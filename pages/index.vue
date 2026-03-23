@@ -643,7 +643,7 @@ async function pay() {
     justify-content: center;
 
     .wrapper__title {
-      margin: 0 0 20px 0;
+      margin: 0 0 30px 0;
       font-size: 32px;
       font-weight: 600;
       color: #212529;
