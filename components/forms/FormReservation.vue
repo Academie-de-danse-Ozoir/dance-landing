@@ -1,15 +1,26 @@
 <template>
-  <div v-if="show" class="form-reservation_overlay" @click.self="$emit('close')">
-    <div class="form-reservation">
-      <div class="form-reservation_header">
+  <div v-if="show" class="formReservationOverlay" @click.self="$emit('close')">
+    <div class="formReservation">
+      <div class="formReservation__header">
         <h2 class="header__title">{{ step === 1 ? content.home.modal.title : content.home.modal.step2Title }}</h2>
         <button type="button" class="header__close" @click="$emit('close')" :aria-label="content.home.modal.close">
           <span class="close__icon">&times;</span>
         </button>
       </div>
 
-      <div class="form-reservation_body">
-        <!-- Étape 1 : contact + répartition adultes/enfants (Suivant n’envoie pas le formulaire, pas de paiement) -->
+      <div v-if="showReservationTimer" class="formReservation__timer" role="status">
+        <p class="timer__title">{{ content.home.modal.reservationBannerTitle }}</p>
+        <p class="timer__line">
+          <span class="timer__label">{{ content.home.modal.reservationTimeLabel }}</span>
+          <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
+        </p>
+        <button type="button" class="timer__cancel" @click="$emit('cancel-reservation')">
+          {{ content.home.activeOrder.cancelReservation }}
+        </button>
+      </div>
+
+      <div class="formReservation__body">
+        <!-- Étape 1 : coordonnées ; hold + timer déjà créés au clic « Réserver » -->
         <form v-if="step === 1" class="body__form" @submit.prevent="onNext">
           <FormField
             v-for="field in formFields"
@@ -45,8 +56,8 @@
         <!-- Étape 2 : détails par billet (nom, prénom, adulte/enfant, place) -->
         <form v-else class="body__form body__form--step2" @submit.prevent="onSubmitStep2">
           <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
-          <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticket-block">
-            <h3 class="ticket-block__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
+          <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
+            <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
             <FormField
               :field-key="`ticket-${idx}-firstName`"
               :label="content.home.modal.fields.firstName.label"
@@ -65,7 +76,7 @@
               :error="ticketErrors[idx]?.lastName"
               @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
             />
-            <div class="ticket-block__type">
+            <div class="ticketBlock__type">
               <label class="type__label">{{ content.home.modal.ticketType }}</label>
               <select
                 :value="ticket.ticketType"
@@ -78,6 +89,17 @@
             </div>
           </div>
 
+          <div class="priceSummary">
+            <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
+            <template v-if="priceSummary.adultCount > 0">
+              <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
+            </template>
+            <template v-if="priceSummary.childCount > 0">
+              <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
+            </template>
+            <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
+          </div>
+
           <ClientOnly>
             <div v-if="turnstileSiteKey" class="form__turnstile">
               <TurnstileField
@@ -85,20 +107,9 @@
                 :hint="content.home.modal.turnstileHint"
                 @update:token="onTurnstileToken"
               />
-              <p v-if="turnstileError" class="form__turnstile-error">{{ turnstileError }}</p>
+              <p v-if="turnstileError" class="form__turnstileError">{{ turnstileError }}</p>
             </div>
           </ClientOnly>
-
-          <div class="form__price-summary">
-            <p class="price-summary__title">{{ content.home.modal.priceSummary }}</p>
-            <template v-if="priceSummary.adultCount > 0">
-              <p class="price-summary__line">{{ priceSummary.adultsLine }}</p>
-            </template>
-            <template v-if="priceSummary.childCount > 0">
-              <p class="price-summary__line">{{ priceSummary.childrenLine }}</p>
-            </template>
-            <p class="price-summary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
-          </div>
 
           <div class="form__footer">
             <DefaultButton
@@ -154,15 +165,9 @@ const props = defineProps<{
   errors: Record<string, string>
   touched: Record<string, boolean>
   isSubmitting: boolean
-}>()
-
-const emit = defineEmits<{
-  'close': []
-  'next': []
-  'back': []
-  'submit': [payload: { form: FormData; ticketDetails: TicketDetail[]; turnstileToken?: string }]
-  'update:form': [form: FormData]
-  'field-blur': [key: string]
+  /** Bandeau décompte + annulation (hold créé au clic « Réserver »). */
+  showReservationTimer: boolean
+  formattedReservationTime: string
 }>()
 
 const config = useRuntimeConfig()
@@ -175,13 +180,23 @@ function onTurnstileToken(t: string | null) {
   turnstileError.value = null
 }
 
+const emit = defineEmits<{
+  'close': []
+  'next': []
+  'back': []
+  'submit': [payload: { form: FormData; ticketDetails: TicketDetail[]; turnstileToken?: string }]
+  'update:form': [form: FormData]
+  'field-blur': [key: string]
+  'cancel-reservation': []
+}>()
+
 const ticketDetails = ref<TicketDetail[]>([])
 const ticketErrors = ref<Record<number, { firstName?: string; lastName?: string }>>({})
 
 watch(
   () => props.step,
-  (newStep) => {
-    if (newStep === 1) {
+  (s) => {
+    if (s === 1) {
       turnstileToken.value = null
       turnstileError.value = null
     }
@@ -285,7 +300,7 @@ function onSubmitStep2() {
 </script>
 
 <style lang="scss" scoped>
-.form-reservation_overlay {
+.formReservationOverlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -296,7 +311,7 @@ function onSubmitStep2() {
   animation: fadeIn 0.15s ease-out;
 }
 
-.form-reservation {
+.formReservation {
   background: white;
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -309,7 +324,65 @@ function onSubmitStep2() {
   animation: slideDown 0.3s ease-out;
   margin: auto;
 
-  .form-reservation_header {
+  .formReservation__timer {
+    flex-shrink: 0;
+    padding: 14px 20px 16px;
+    background: linear-gradient(180deg, #e7f1ff 0%, #dbeafe 100%);
+    border-bottom: 1px solid #b6d4fe;
+    text-align: center;
+  }
+
+  .timer__title {
+    margin: 0 0 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #1e40af;
+  }
+
+  .timer__line {
+    margin: 0 0 14px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .timer__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e3a8a;
+  }
+
+  .timer__clock {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1d4ed8;
+    line-height: 1;
+  }
+
+  .timer__cancel {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 8px 16px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #991b1b;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: #fff;
+    }
+  }
+
+  .formReservation__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -350,7 +423,7 @@ function onSubmitStep2() {
     }
   }
 
-  .form-reservation_body {
+  .formReservation__body {
     padding: 24px;
     overflow-y: auto;
 
@@ -366,7 +439,7 @@ function onSubmitStep2() {
         }
       }
 
-      .ticket-block {
+      .ticketBlock {
         padding: 16px 0;
         border-bottom: 1px solid #eee;
 
@@ -374,14 +447,14 @@ function onSubmitStep2() {
           border-bottom: none;
         }
 
-        .ticket-block__title {
+        .ticketBlock__title {
           margin: 0 0 12px 0;
           font-size: 16px;
           font-weight: 600;
           color: #212529;
         }
 
-        .ticket-block__type {
+        .ticketBlock__type {
           margin-top: 12px;
 
           .type__label {
@@ -404,23 +477,27 @@ function onSubmitStep2() {
       }
 
       .form__turnstile {
-        margin-top: 8px;
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
-      .form__turnstile-error {
+      .form__turnstileError {
         margin: 8px 0 0;
         font-size: 14px;
         color: #dc3545;
+        text-align: center;
       }
 
-      .form__price-summary {
+      .priceSummary {
         margin-top: 20px;
         padding: 16px;
         background: #f8f9fa;
         border-radius: 8px;
         border: 1px solid #e9ecef;
 
-        .price-summary__title {
+        .priceSummary__title {
           margin: 0 0 10px 0;
           font-size: 13px;
           font-weight: 600;
@@ -429,13 +506,13 @@ function onSubmitStep2() {
           letter-spacing: 0.05em;
         }
 
-        .price-summary__line {
+        .priceSummary__line {
           margin: 4px 0;
           font-size: 14px;
           color: #212529;
         }
 
-        .price-summary__total {
+        .priceSummary__total {
           margin: 12px 0 0 0;
           padding-top: 10px;
           border-top: 1px solid #dee2e6;
@@ -478,16 +555,16 @@ function onSubmitStep2() {
 }
 
 @media (max-width: 575.98px) {
-  .form-reservation {
+  .formReservation {
     width: 95%;
     max-width: none;
     margin: 10px;
 
-    .form-reservation_header {
+    .formReservation__header {
       padding: 16px 20px;
     }
 
-    .form-reservation_body {
+    .formReservation__body {
       padding: 20px;
 
       .body__form .form__footer {

@@ -1,7 +1,7 @@
 <template>
-  <div v-if="siteKey" class="turnstile-field">
-    <div ref="containerRef" class="turnstile-field__widget" />
-    <p v-if="hint" class="turnstile-field__hint">{{ hint }}</p>
+  <div v-if="siteKey" class="turnstileField">
+    <div ref="containerRef" class="turnstileField__widget" />
+    <p v-if="hint" class="turnstileField__hint">{{ hint }}</p>
   </div>
 </template>
 
@@ -116,15 +116,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-.turnstile-field {
+.turnstileField {
   margin-top: 0;
 }
 
-.turnstile-field__widget {
+.turnstileField__widget {
   min-height: 65px;
 }
 
-.turnstile-field__hint {
+.turnstileField__hint {
   margin: 8px 0 0;
   font-size: 13px;
   color: #6c757d;

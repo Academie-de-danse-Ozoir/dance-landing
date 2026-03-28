@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
 import {
   EVENT_ID,
@@ -8,7 +9,6 @@ import {
 } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
-import { verifyTurnstileToken } from '../utils/verifyTurnstile'
 
 function trimStr(s: unknown, max: number): string {
   const str = typeof s === 'string' ? s.trim() : ''
@@ -29,16 +29,8 @@ export default defineEventHandler(async (event) => {
   let lastName: unknown
   let email: unknown
   let phone: unknown
-  let turnstileToken: unknown
-  ;({ seatIds, firstName, lastName, email, phone, turnstileToken } = body)
-
-  if (process.env.TURNSTILE_SECRET_KEY) {
-    const token = typeof turnstileToken === 'string' ? turnstileToken : ''
-    const ok = await verifyTurnstileToken(token)
-    if (!ok) {
-      throw createError({ statusCode: 400, statusMessage: tApiError('captchaTurnstile') })
-    }
-  }
+  let quick: unknown
+  ;({ seatIds, firstName, lastName, email, phone, quick } = body)
 
   if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
     throw createError({
@@ -65,20 +57,37 @@ export default defineEventHandler(async (event) => {
   let lName: string
   let em: string
   let ph: string
-  try {
-    fName = trimStr(firstName, MAX_LENGTH.firstName)
-    lName = trimStr(lastName, MAX_LENGTH.lastName)
-    em = trimStr(email, MAX_LENGTH.email)
-    ph = trimStr(phone, MAX_LENGTH.phone)
-  } catch (e: any) {
-    if (e.statusCode === 400) throw e
-    throw createError({ statusCode: 400, statusMessage: tApiError('missingCustomerInfo') })
-  }
-  if (!fName || !lName || !em || !ph) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: tApiError('missingCustomerInfo')
-    })
+
+  if (quick === true) {
+    fName = 'Réservation'
+    lName = 'en cours'
+    const host = (() => {
+      const base = process.env.PUBLIC_SITE_URL?.trim()
+      if (!base) return 'localhost'
+      try {
+        return new URL(base).hostname || 'localhost'
+      } catch {
+        return 'localhost'
+      }
+    })()
+    em = `en-attente+${randomUUID().replace(/-/g, '')}@${host}`.slice(0, MAX_LENGTH.email)
+    ph = '0612345678'
+  } else {
+    try {
+      fName = trimStr(firstName, MAX_LENGTH.firstName)
+      lName = trimStr(lastName, MAX_LENGTH.lastName)
+      em = trimStr(email, MAX_LENGTH.email)
+      ph = trimStr(phone, MAX_LENGTH.phone)
+    } catch (e: any) {
+      if (e.statusCode === 400) throw e
+      throw createError({ statusCode: 400, statusMessage: tApiError('missingCustomerInfo') })
+    }
+    if (!fName || !lName || !em || !ph) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: tApiError('missingCustomerInfo')
+      })
+    }
   }
 
   const { data, error } = await supabaseAdmin.rpc('hold_seats', {
@@ -126,7 +135,8 @@ export default defineEventHandler(async (event) => {
   console.info('[billetterie:hold-seats] Réservation créée', {
     orderId: String(orderId),
     expiresAt: String(expiresAt),
-    seatCount: Array.isArray(seatIds) ? seatIds.length : 0
+    seatCount: Array.isArray(seatIds) ? seatIds.length : 0,
+    quick: quick === true
   })
 
   return {

@@ -1,12 +1,12 @@
 <template>
-  <div class="selection-info">
-    <p :class="['selection-info_text', { 'selection-info_text--empty': seatCount === 0 }]">
+  <div class="selectionInfo">
+    <p :class="['selectionInfo__text', { 'selectionInfo__text--empty': seatCount === 0 }]">
       <template v-if="seatCount > 0">
         <strong class="text__count">{{ seatCount }}</strong> {{ seatCount > 1 ? content.home.selection.multiple : content.home.selection.one }}
       </template>
       <template v-else>{{ content.home.selection.none }}</template>
     </p>
-    <p v-if="maxSeats > 0 && seatCount >= maxSeats" class="selection-info_limit">
+    <p v-if="maxSeats > 0 && seatCount >= maxSeats" class="selectionInfo__limit">
       {{ atLimitText }}
     </p>
   </div>
@@ -30,11 +30,11 @@ const atLimitText = computed(() =>
 </script>
 
 <style lang="scss" scoped>
-.selection-info {
+.selectionInfo {
   margin-bottom: 24px;
   text-align: center;
 
-  .selection-info_text {
+  .selectionInfo__text {
     margin: 0;
     font-size: 16px;
     color: #212529;
@@ -49,7 +49,7 @@ const atLimitText = computed(() =>
     }
   }
 
-  .selection-info_limit {
+  .selectionInfo__limit {
     max-width: 40rem;
     margin: 6px auto 0;
     font-size: 14px;

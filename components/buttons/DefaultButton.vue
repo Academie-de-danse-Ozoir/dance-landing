@@ -3,9 +3,9 @@
     :type="type"
     :disabled="disabled"
     :class="[
-      'default-button',
-      `default-button--${variant}`,
-      { 'default-button--disabled': disabled }
+      'defaultButton',
+      `defaultButton--${variant}`,
+      { 'defaultButton--disabled': disabled }
     ]"
     @click="$emit('click', $event)"
   >
@@ -31,7 +31,7 @@ defineEmits<{
 </script>
 
 <style lang="scss" scoped>
-.default-button {
+.defaultButton {
   display: inline-block;
   font-weight: 400;
   line-height: 1.5;

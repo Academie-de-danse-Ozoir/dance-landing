@@ -166,6 +166,8 @@
           "label": "Nombre de places enfants"
         }
       },
+      "reservationBannerTitle": "Réservation en cours",
+      "reservationTimeLabel": "Temps restant",
       "turnstileHint": "Vérifiez que vous n’êtes pas un robot avant de payer.",
       "validation": {
         "required": "Champ requis",
@@ -176,7 +178,9 @@
     },
     "errors": {
       "reservationExpired": "Réservation expirée, libération en cours…",
-      "generic": "Une erreur est survenue. Veuillez réessayer."
+      "generic": "Une erreur est survenue. Veuillez réessayer.",
+      "completeContactBeforePay": "Complétez d’abord vos coordonnées et validez avec « Suivant ».",
+      "completeTicketDetailsBeforePay": "Complétez d’abord les informations de chaque billet, puis cliquez sur « Payer »."
     }
   },
   "success": {

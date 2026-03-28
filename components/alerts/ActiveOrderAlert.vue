@@ -1,9 +1,9 @@
 <template>
-  <div v-if="activeOrder" class="alert alert--warning">
-    <strong class="alert_title">{{ content.home.activeOrder.title }}</strong><br />
-    <span class="alert_time">{{ content.home.activeOrder.timeRemaining }} {{ formattedTime }}</span>
+  <div v-if="activeOrder" class="activeOrderAlert activeOrderAlert--warning">
+    <strong class="activeOrderAlert__title">{{ content.home.activeOrder.title }}</strong><br />
+    <span class="activeOrderAlert__time">{{ content.home.activeOrder.timeRemaining }} {{ formattedTime }}</span>
 
-    <div class="alert_actions">
+    <div class="activeOrderAlert__actions">
       <DefaultButton
         variant="primary"
         :label="content.home.activeOrder.resumePayment"
@@ -37,7 +37,7 @@ defineEmits<{
 </script>
 
 <style lang="scss" scoped>
-.alert {
+.activeOrderAlert {
   padding: 12px 16px;
   margin-bottom: 16px;
   border: 1px solid transparent;
@@ -50,15 +50,15 @@ defineEmits<{
     border-color: #b6d4fe;
   }
 
-  .alert_title {
+  .activeOrderAlert__title {
     display: block;
   }
 
-  .alert_time {
+  .activeOrderAlert__time {
     display: block;
   }
 
-  .alert_actions {
+  .activeOrderAlert__actions {
     margin-top: 12px;
     display: flex;
     gap: 12px;

@@ -1,6 +1,6 @@
 <template>
-  <div class="page">
-    <div class="page_card" v-if="isLoaded">
+  <div class="paymentResultPage">
+    <div class="paymentResultPage__card" v-if="isLoaded">
 
       <!-- SUCCESS -->
       <template v-if="isValid">
@@ -35,13 +35,13 @@
 
       <!-- ERROR / EXPIRED -->
       <template v-else>
-        <div class="card__error-icon">
+        <div class="card__errorIcon">
           ❌
         </div>
 
         <h1 class="card__title">Paiement invalide</h1>
 
-        <p class="card__error-message">
+        <p class="card__errorMessage">
           Le paiement a été refusé ou la commande a expiré.
         </p>
 
@@ -59,7 +59,7 @@
     </div>
 
     <!-- LOADING -->
-    <div v-else class="page_card">
+    <div v-else class="paymentResultPage__card">
       Vérification du paiement...
     </div>
   </div>
@@ -133,7 +133,7 @@ onMounted(async () => {
 </script>
 
 <style lang="scss" scoped>
-.page {
+.paymentResultPage {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -143,7 +143,7 @@ onMounted(async () => {
     sans-serif;
   padding: 20px;
 
-  .page_card {
+  .paymentResultPage__card {
     background: white;
     padding: 48px 32px;
     border-radius: 16px;
@@ -191,7 +191,13 @@ onMounted(async () => {
       line-height: 1.6;
     }
 
-    .card__error-message {
+    .card__errorIcon {
+      margin-bottom: 24px;
+      font-size: 48px;
+      line-height: 1;
+    }
+
+    .card__errorMessage {
       margin: 0 0 16px 0;
       font-size: 16px;
       color: #212529;
@@ -223,10 +229,10 @@ onMounted(async () => {
 }
 
 @media (max-width: 575.98px) {
-  .page {
+  .paymentResultPage {
     padding: 15px;
 
-    .page_card {
+    .paymentResultPage__card {
       padding: 32px 20px;
       max-width: 100%;
 
@@ -251,13 +257,13 @@ onMounted(async () => {
 }
 
 @media (min-width: 576px) and (max-width: 767.98px) {
-  .page .page_card {
+  .paymentResultPage .paymentResultPage__card {
     padding: 40px 28px;
   }
 }
 
 @media (min-width: 768px) {
-  .page .page_card {
+  .paymentResultPage .paymentResultPage__card {
     padding: 48px 32px;
   }
 }

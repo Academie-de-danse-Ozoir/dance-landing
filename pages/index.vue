@@ -1,13 +1,13 @@
 <template>
-  <div class="page_container">
-    <div class="page_wrapper">
-      <h1 class="wrapper__title">{{ content.home.title }}</h1>
+  <div class="bookingPage">
+    <div class="bookingPage__inner">
+      <h1 class="bookingPage__title">{{ content.home.title }}</h1>
 
       <ActiveOrderAlert
-        v-if="activeOrder && !showModal"
+        v-if="activeOrder && !showModal && !suppressPageOrderAlert"
         :active-order="activeOrder"
         :formatted-time="formattedTime"
-        @resume-payment="pay"
+        @resume-payment="resumePaymentOrOpenModal"
         @cancel="() => cancelActiveOrder(CANCEL_REASON.USER)"
       />
 
@@ -17,29 +17,33 @@
         :active-order="activeOrder"
         :max-seats-per-order="MAX_SEATS_PER_ORDER"
         @seat-click="toggleSeat"
-        class="wrapper__seat-map"  
+        class="bookingPage__seatMap"
       />
 
       <SelectionInfo :seat-count="displayedSeatCount" :max-seats="MAX_SEATS_PER_ORDER" />
 
       <div
         v-if="selectionLimitMessage"
-        class="wrapper__alert wrapper__alert--warning"
+        class="bookingPage__alert bookingPage__alert--warning"
         role="status"
       >
         {{ selectionLimitMessage }}
       </div>
 
-      <div class="wrapper__actions">
+      <div class="bookingPage__actions">
         <DefaultButton
           variant="primary"
           :label="content.home.actions.reserve"
           @click="openModal"
-          :disabled="selectedSeatIds.length === 0"
+          :disabled="
+            isSubmitting ||
+              (blockNewReserve && !canReopenReservation) ||
+              (!canReopenReservation && selectedSeatIds.length === 0)
+          "
         />
       </div>
 
-      <div v-if="error" class="wrapper__alert wrapper__alert--danger">{{ error }}</div>
+      <div v-if="error" class="bookingPage__alert bookingPage__alert--danger">{{ error }}</div>
     </div>
 
     <FormReservation
@@ -51,11 +55,14 @@
       :errors="errors"
       :touched="touched"
       :is-submitting="isSubmitting"
+      :show-reservation-timer="showModal && !!activeOrder"
+      :formatted-reservation-time="formattedTime"
       @close="closeModal"
       @next="onFormNext"
       @back="formStep = 1"
       @submit="submitStep2"
       @field-blur="handleFieldBlur"
+      @cancel-reservation="onCancelReservationFromModal"
     />
   </div>
 </template>
@@ -119,6 +126,8 @@ const activeOrder = ref<ActiveOrder | null>(null)
 const showModal = ref(false)
 const formStep = ref<1 | 2>(1)
 const isSubmitting = ref(false)
+/** Évite le flash du bandeau timer sur la page entre la création du hold et l’ouverture de la modale. */
+const suppressPageOrderAlert = ref(false)
 
 const step2SeatItems = computed(() => {
   const ids = activeOrder.value?.seatIds ?? selectedSeatIds.value
@@ -167,6 +176,18 @@ function getErrorMessage(err: unknown): string {
 
 const displayedSeatCount = computed(() => {
   return activeOrder.value?.seatCount ?? selectedSeatIds.value.length
+})
+
+/** Nouvelle réservation impossible tant qu’une commande prête pour Stripe n’est pas payée ou annulée. */
+const blockNewReserve = computed(() => {
+  const o = activeOrder.value
+  return !!o && o.contactComplete === true && o.ticketDetailsComplete === true
+})
+
+/** Reprise du formulaire (sans refaire un hold). */
+const canReopenReservation = computed(() => {
+  const o = activeOrder.value
+  return !!o && (o.contactComplete !== true || o.ticketDetailsComplete !== true)
 })
 
 function startTimerFromExpiresAt(expiresAt: string) {
@@ -314,7 +335,9 @@ async function restoreOrderFromStorage() {
         seatCount: res.seatCount,
         adultCount: storedData.adultCount ?? res.seatCount,
         childCount: storedData.childCount ?? 0,
-        seatIds: storedData.seatIds
+        seatIds: storedData.seatIds,
+        contactComplete: storedData.contactComplete ?? true,
+        ticketDetailsComplete: storedData.ticketDetailsComplete ?? true
       }
 
       startTimerFromExpiresAt(res.expiresAt)
@@ -397,19 +420,84 @@ function toggleSeat(id: string) {
    MODAL
 ===================== */
 
-function openModal() {
+async function openModal() {
+  if (canReopenReservation.value && activeOrder.value) {
+    const o = activeOrder.value
+    error.value = null
+    if (o.contactComplete !== true) {
+      formStep.value = 1
+    } else if (o.ticketDetailsComplete !== true) {
+      formStep.value = 2
+    } else {
+      formStep.value = 2
+    }
+    showModal.value = true
+    return
+  }
+
   if (selectedSeatIds.value.length === 0) return
 
   error.value = null
   const n = selectedSeatIds.value.length
-
   form.value = { ...form.value, adultCount: n, childCount: 0 }
 
+  if (!activeOrder.value) {
+    suppressPageOrderAlert.value = true
+    isSubmitting.value = true
+    try {
+      const seatIds = [...selectedSeatIds.value]
+      const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
+        method: 'POST',
+        body: { quick: true, seatIds }
+      })
+      activeOrder.value = {
+        orderId: res.orderId,
+        orderToken: res.orderToken,
+        expiresAt: res.expiresAt,
+        seatCount: n,
+        adultCount: n,
+        childCount: 0,
+        seatIds,
+        contactComplete: false,
+        ticketDetailsComplete: false
+      }
+      localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
+      startTimerFromExpiresAt(res.expiresAt)
+      await loadSeats()
+    } catch (err) {
+      error.value = getErrorMessage(err)
+      suppressPageOrderAlert.value = false
+      return
+    } finally {
+      isSubmitting.value = false
+    }
+  }
+
   showModal.value = true
+  suppressPageOrderAlert.value = false
+}
+
+function resumePaymentOrOpenModal() {
+  const o = activeOrder.value
+  if (!o) return
+  error.value = null
+  if (o.contactComplete !== true) {
+    formStep.value = 1
+  } else if (o.ticketDetailsComplete !== true) {
+    formStep.value = 2
+  } else {
+    formStep.value = 2
+  }
+  showModal.value = true
+}
+
+async function onCancelReservationFromModal() {
+  await cancelActiveOrder(CANCEL_REASON.USER)
 }
 
 function closeModal() {
   showModal.value = false
+  suppressPageOrderAlert.value = false
   formStep.value = 1
   errors.value = {}
   touched.value = {}
@@ -465,9 +553,43 @@ function validateForm() {
    STEP 1
 ===================== */
 
-function onFormNext() {
+async function onFormNext() {
   if (!validateForm()) return
-  formStep.value = 2
+
+  const order = activeOrder.value
+  if (!order) {
+    error.value = content.home.errors.generic
+    return
+  }
+
+  isSubmitting.value = true
+  error.value = null
+
+  try {
+    await $fetch('/api/update-order-contact', {
+      method: 'POST',
+      body: {
+        orderId: order.orderId,
+        orderToken: order.orderToken,
+        firstName: form.value.firstName.trim(),
+        lastName: form.value.lastName.trim(),
+        email: form.value.email.trim(),
+        phone: form.value.phone.replace(/\D/g, '')
+      }
+    })
+
+    activeOrder.value = {
+      ...order,
+      contactComplete: true,
+      ticketDetailsComplete: false
+    }
+    localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
+    formStep.value = 2
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 /* =====================
@@ -486,52 +608,28 @@ async function submitStep2(payload: {
   ticketDetails: TicketDetail[]
   turnstileToken?: string
 }) {
+  const order = activeOrder.value
+  if (!order) {
+    error.value = content.home.errors.generic
+    return
+  }
+  if (order.contactComplete !== true) {
+    error.value = content.home.errors.completeContactBeforePay
+    return
+  }
+
   isSubmitting.value = true
   error.value = null
 
   try {
-    const seatIds = [...selectedSeatIds.value]
-
-    const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
-      method: 'POST',
-      body: {
-        seatIds,
-        firstName: payload.form.firstName,
-        lastName: payload.form.lastName,
-        email: payload.form.email,
-        phone: payload.form.phone.replace(/\D/g, ''),
-        ...(payload.turnstileToken ? { turnstileToken: payload.turnstileToken } : {})
-      }
-    })
-
-    const adultCount = payload.ticketDetails.filter(
-      (t) => t.ticketType === 'adult'
-    ).length
-
-    const childCount = payload.ticketDetails.filter(
-      (t) => t.ticketType === 'child'
-    ).length
-
-    activeOrder.value = {
-      orderId: res.orderId,
-      orderToken: res.orderToken,
-      expiresAt: res.expiresAt,
-      seatCount: seatIds.length,
-      adultCount,
-      childCount,
-      seatIds
-    }
-
-    localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
-
-    closeModal()
-    startTimerFromExpiresAt(res.expiresAt)
+    const adultCount = payload.ticketDetails.filter((t) => t.ticketType === 'adult').length
+    const childCount = payload.ticketDetails.filter((t) => t.ticketType === 'child').length
 
     await $fetch('/api/order-ticket-details', {
       method: 'POST',
       body: {
-        orderId: res.orderId,
-        orderToken: res.orderToken,
+        orderId: order.orderId,
+        orderToken: order.orderToken,
         tickets: payload.ticketDetails.map((t) => ({
           seatId: t.seatId,
           firstName: t.firstName.trim(),
@@ -541,9 +639,22 @@ async function submitStep2(payload: {
       }
     })
 
-    selectedSeatIds.value = []
+    activeOrder.value = {
+      ...order,
+      adultCount,
+      childCount,
+      contactComplete: true,
+      ticketDetailsComplete: true
+    }
+    localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
 
-    await pay()
+    try {
+      await pay(payload.turnstileToken)
+      closeModal()
+      selectedSeatIds.value = []
+    } catch {
+      /* error affichée dans pay() */
+    }
   } catch (err) {
     error.value = getErrorMessage(err)
   } finally {
@@ -580,6 +691,10 @@ async function cancelActiveOrder(
     timerExpiresAt = null
     timerHasExpired = false
 
+    showModal.value = false
+    formStep.value = 1
+    suppressPageOrderAlert.value = false
+
     localStorage.removeItem(STORAGE_ORDER_KEY)
 
     await loadSeats()
@@ -592,11 +707,20 @@ async function cancelActiveOrder(
    STRIPE
 ===================== */
 
-async function pay() {
+async function pay(turnstileToken?: string) {
   const order = activeOrder.value
   const orderId = order?.orderId
 
   if (!orderId || !order) return
+
+  if (order.contactComplete !== true) {
+    error.value = content.home.errors.completeContactBeforePay
+    return
+  }
+  if (order.ticketDetailsComplete !== true) {
+    error.value = content.home.errors.completeTicketDetailsBeforePay
+    return
+  }
 
   try {
     const seatCount = order.seatCount ?? 0
@@ -611,38 +735,42 @@ async function pay() {
 
     const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
       method: 'POST',
-      body: { orderId, orderToken: order.orderToken, adultCount, childCount }
+      body: {
+        orderId,
+        orderToken: order.orderToken,
+        adultCount,
+        childCount,
+        ...(turnstileToken ? { turnstileToken } : {})
+      }
     })
 
     console.info('[billetterie:index] Redirection Stripe Checkout', { hasUrl: !!res.url })
     window.location.href = res.url
   } catch (err) {
     error.value = getErrorMessage(err)
+    throw err
   }
 }
 </script>
 
 
 <style lang="scss" scoped>
-.page_container {
+.bookingPage {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  // padding: 20px 20px;
   margin: 10px 0px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
 
-  .page_wrapper {
+  .bookingPage__inner {
     height: calc(100dvh - 40px);
     margin: 0 auto;
     background: white;
     padding: 20px 20px;
-    // border-radius: 16px;
-    // box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     justify-content: center;
 
-    .wrapper__title {
+    .bookingPage__title {
       margin: 0 0 30px 0;
       font-size: 32px;
       font-weight: 600;
@@ -650,16 +778,16 @@ async function pay() {
       text-align: center;
     }
 
-    .wrapper__actions {
+    .bookingPage__actions {
       display: flex;
       justify-content: center;
     }
 
-    .wrapper__seat-map {
+    .bookingPage__seatMap {
       margin-bottom: 40px;
     }
 
-    .wrapper__alert {
+    .bookingPage__alert {
       padding: 12px 16px;
       margin-bottom: 16px;
       border: 1px solid transparent;

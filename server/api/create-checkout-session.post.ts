@@ -9,6 +9,7 @@ import {
 } from '../../constants'
 import { brand, tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
+import { verifyTurnstileToken } from '../utils/verifyTurnstile'
 
 export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
@@ -17,7 +18,15 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { orderId, orderToken, adultCount: bodyAdult, childCount: bodyChild } = body
+  const { orderId, orderToken, adultCount: bodyAdult, childCount: bodyChild, turnstileToken } = body
+
+  if (process.env.TURNSTILE_SECRET_KEY) {
+    const token = typeof turnstileToken === 'string' ? turnstileToken : ''
+    const ok = await verifyTurnstileToken(token)
+    if (!ok) {
+      throw createError({ statusCode: 400, statusMessage: tApiError('captchaTurnstile') })
+    }
+  }
 
   if (!orderId || !orderToken) {
     throw createError({

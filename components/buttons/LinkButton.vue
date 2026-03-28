@@ -2,9 +2,9 @@
   <NuxtLink
     :to="to"
     :class="[
-      'link-button',
-      `link-button--${variant}`,
-      { 'link-button--disabled': disabled }
+      'linkButton',
+      `linkButton--${variant}`,
+      { 'linkButton--disabled': disabled }
     ]"
   >
     {{ label }}
@@ -24,7 +24,7 @@ withDefaults(defineProps<{
 </script>
 
 <style lang="scss" scoped>
-.link-button {
+.linkButton {
   display: inline-block;
   font-weight: 500;
   line-height: 1.5;
@@ -44,7 +44,7 @@ withDefaults(defineProps<{
     background-color: #0d6efd;
     border-color: #0d6efd;
 
-    &:hover:not(.link-button--disabled) {
+    &:hover:not(.linkButton--disabled) {
       background-color: #0b5ed7;
       border-color: #0a58ca;
       transform: translateY(-1px);
@@ -60,7 +60,7 @@ withDefaults(defineProps<{
     background-color: #6c757d;
     border-color: #6c757d;
 
-    &:hover:not(.link-button--disabled) {
+    &:hover:not(.linkButton--disabled) {
       background-color: #5c636a;
       border-color: #565e64;
       transform: translateY(-1px);
@@ -80,7 +80,7 @@ withDefaults(defineProps<{
 }
 
 @media (max-width: 575.98px) {
-  .link-button {
+  .linkButton {
     width: 100%;
     padding: 14px 24px;
   }

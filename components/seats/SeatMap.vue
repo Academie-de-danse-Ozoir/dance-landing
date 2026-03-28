@@ -1,9 +1,9 @@
 <template>
-  <div class="seat-map_container">
+  <div class="seatMap">
     <div
       ref="viewportRef"
-      class="seat-map_viewport"
-      :class="{ 'seat-map_viewport--is-grabbing': isMapGrabbing }"
+      class="seatMap__viewport"
+      :class="{ 'seatMap__viewport--isGrabbing': isMapGrabbing }"
       tabindex="0"
       role="application"
       :aria-label="mapUi.viewportLabel"
@@ -16,12 +16,12 @@
       <svg
         ref="svgRef"
         :viewBox="svgViewBox"
-        class="container__svg"
+        class="viewport__svg"
         preserveAspectRatio="xMidYMid meet"
       >
         <g :transform="mapNavTransform">
           <rect
-            class="svg__pannable-bg"
+            class="svg__pannableBg"
             :x="viewBoxParsed.x"
             :y="viewBoxParsed.y"
             :width="viewBoxParsed.w"
@@ -36,10 +36,10 @@
           :height="balconyZone.h"
           rx="3"
           ry="3"
-          class="svg__zone-rect svg__zone-rect--balcony"
+          class="svg__zoneRect svg__zoneRect--balcony"
         />
-        <text :x="balconyZone.titleX" :y="balconyZone.titleY" class="svg__zone-title">Balcon</text>
-        <text :x="balconyZone.subtitleX" :y="balconyZone.subtitleY" class="svg__zone-subtitle">
+        <text :x="balconyZone.titleX" :y="balconyZone.titleY" class="svg__zoneTitle">Balcon</text>
+        <text :x="balconyZone.subtitleX" :y="balconyZone.subtitleY" class="svg__zoneSubtitle">
           Rangées P à X
         </text>
       </g>
@@ -51,10 +51,10 @@
           :height="parterreZone.h"
           rx="3"
           ry="3"
-          class="svg__zone-rect svg__zone-rect--parterre"
+          class="svg__zoneRect svg__zoneRect--parterre"
         />
-        <text :x="parterreZone.titleX" :y="parterreZone.titleY" class="svg__zone-title">Parterre</text>
-        <text :x="parterreZone.subtitleX" :y="parterreZone.subtitleY" class="svg__zone-subtitle">
+        <text :x="parterreZone.titleX" :y="parterreZone.titleY" class="svg__zoneTitle">Parterre</text>
+        <text :x="parterreZone.subtitleX" :y="parterreZone.subtitleY" class="svg__zoneSubtitle">
           Rangées O à A
         </text>
       </g>
@@ -66,12 +66,12 @@
           :height="stageBlock.h"
           rx="2"
           ry="2"
-          class="svg__stage-rect"
+          class="svg__stageRect"
         />
         <text
           :x="stageBlock.cx"
           :y="stageBlock.cy"
-          class="svg__stage-label"
+          class="svg__stageLabel"
           dominant-baseline="middle"
         >
           Scène
@@ -94,8 +94,7 @@
           'svg__seat',
           {
             'svg__seat--clickable': isSeatClickable(seat),
-            'svg__seat--disabled': !isSeatClickable(seat),
-            'svg__seat--dimmed': getSeatOpacity(seat) < 1
+            'svg__seat--disabled': !isSeatClickable(seat)
           }
         ]"
         :title="getSeatTitle(seat)"
@@ -114,13 +113,13 @@
         </g>
       </svg>
     </div>
-    <div class="seat-map_overlay" role="region" :aria-label="mapUi.viewportLabel">
+    <div class="seatMap__overlay" role="region" :aria-label="mapUi.viewportLabel">
       <section
-        class="seat-map_hints seat-map_hints--desktop"
+        class="seatMap__hints seatMap__hints--desktop"
         :aria-labelledby="mapHintsTitleId"
       >
-        <h2 :id="mapHintsTitleId" class="seat-map_hints-title">{{ mapUi.hintsTitle }}</h2>
-        <dl class="seat-map_hints-list">
+        <h2 :id="mapHintsTitleId" class="hints__title">{{ mapUi.hintsTitle }}</h2>
+        <dl class="hints__list">
           <template v-for="(row, i) in mapUi.hintsRows" :key="i">
             <dt>{{ row.label }}</dt>
             <dd v-html="seatMapLayoutMobile ? row.textMobile : row.textDesktop" />
@@ -130,27 +129,27 @@
 
       <div
         ref="mapToolbarHostRef"
-        class="seat-map_toolbar-host"
-        :class="{ 'seat-map_toolbar-host--open': mapToolbarMenuOpen }"
+        class="seatMap__toolbarHost"
+        :class="{ 'seatMap__toolbarHost--open': mapToolbarMenuOpen }"
       >
-        <div class="seat-map_mobile-left-stack">
-          <div class="seat-map_toolbar-help">
+        <div class="seatMap__mobileLeftStack">
+          <div class="seatMap__toolbarHelp">
             <button
               type="button"
-              class="seat-map_toolbar-trigger"
+              class="seatMap__toolbarTrigger"
               :aria-expanded="mapToolbarMenuOpen"
               :aria-controls="mapToolbarPanelId"
               @click.stop="toggleMapToolbarMenu"
             >
               {{ mapUi.toolbarMenuTrigger }}
             </button>
-            <div :id="mapToolbarPanelId" class="seat-map_toolbar-hints-panel">
+            <div :id="mapToolbarPanelId" class="seatMap__toolbarHintsPanel">
               <section
-                class="seat-map_hints seat-map_hints--in-popover"
+                class="seatMap__hints seatMap__hints--inPopover"
                 :aria-labelledby="mapHintsTitlePopoverId"
               >
-                <h2 :id="mapHintsTitlePopoverId" class="seat-map_hints-title">{{ mapUi.hintsTitle }}</h2>
-                <dl class="seat-map_hints-list">
+                <h2 :id="mapHintsTitlePopoverId" class="hints__title">{{ mapUi.hintsTitle }}</h2>
+                <dl class="hints__list">
                   <template v-for="(row, i) in mapUi.hintsRows" :key="i">
                     <dt>{{ row.label }}</dt>
                     <dd v-html="seatMapLayoutMobile ? row.textMobile : row.textDesktop" />
@@ -160,102 +159,102 @@
             </div>
           </div>
         </div>
-        <div class="seat-map_toolbar" role="toolbar" :aria-label="mapUi.toolbarLabel">
+        <div class="seatMap__toolbar" role="toolbar" :aria-label="mapUi.toolbarLabel">
           <button
             type="button"
-            class="seat-map_toolbar-row"
+            class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomOut"
             :disabled="mapZoom <= mapZoomMinEffective + 1e-6"
             @click="zoomMapByStep(1 / MAP_ZOOM_STEP)"
           >
-            <span class="seat-map_toolbar-label">{{ mapUi.zoomOutCaption }}</span>
-            <span class="seat-map_toolbar-icon" aria-hidden="true">−</span>
+            <span class="toolbarRow__label">{{ mapUi.zoomOutCaption }}</span>
+            <span class="toolbarRow__icon" aria-hidden="true">−</span>
           </button>
           <button
             type="button"
-            class="seat-map_toolbar-row"
+            class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomIn"
             :disabled="mapZoom >= MAP_ZOOM_MAX - 1e-6"
             @click="zoomMapByStep(MAP_ZOOM_STEP)"
           >
-            <span class="seat-map_toolbar-label">{{ mapUi.zoomInCaption }}</span>
-            <span class="seat-map_toolbar-icon" aria-hidden="true">+</span>
+            <span class="toolbarRow__label">{{ mapUi.zoomInCaption }}</span>
+            <span class="toolbarRow__icon" aria-hidden="true">+</span>
           </button>
           <button
             type="button"
-            class="seat-map_toolbar-row seat-map_toolbar-row--reset"
+            class="seatMap__toolbarRow seatMap__toolbarRow--reset"
             :aria-label="mapUi.resetView"
             @click="resetMapView"
           >
-            <span class="seat-map_toolbar-label">{{ mapUi.resetViewCaption }}</span>
-            <span class="seat-map_toolbar-icon" aria-hidden="true">⟲</span>
+            <span class="toolbarRow__label">{{ mapUi.resetViewCaption }}</span>
+            <span class="toolbarRow__icon" aria-hidden="true">⟲</span>
           </button>
         </div>
         <div
-          class="seat-map_legend-help"
-          :class="{ 'seat-map_legend-help--open': mapLegendMenuOpen }"
+          class="seatMap__legendHelp"
+          :class="{ 'seatMap__legendHelp--open': mapLegendMenuOpen }"
         >
           <button
             type="button"
-            class="seat-map_toolbar-trigger seat-map_legend-menu-trigger"
+            class="seatMap__toolbarTrigger seatMap__legendMenuTrigger"
             :aria-expanded="mapLegendMenuOpen"
             :aria-controls="mapLegendPanelId"
             @click.stop="toggleMapLegendMenu"
           >
             {{ mapUi.legendMenuTrigger }}
           </button>
-          <div :id="mapLegendPanelId" class="seat-map_legend-popover-panel">
+          <div :id="mapLegendPanelId" class="seatMap__legendPopoverPanel">
             <div
-              class="seat-map_legend seat-map_legend--in-popover"
+              class="seatMap__legend seatMap__legend--inPopover"
               role="group"
               :aria-labelledby="mapLegendPopoverTitleId"
             >
-              <h2 :id="mapLegendPopoverTitleId" class="seat-map_hints-title">{{ mapUi.legendTitle }}</h2>
-              <ul class="seat-map_legend-list">
+              <h2 :id="mapLegendPopoverTitleId" class="hints__title">{{ mapUi.legendTitle }}</h2>
+              <ul class="legend__list">
                 <li
                   v-for="row in seatStatusLegendRows"
                   :key="'p-' + row.key"
-                  class="seat-map_legend-item"
+                  class="legend__item"
                 >
                   <span
-                    class="seat-map_legend-swatch"
-                    :class="{ 'seat-map_legend-swatch--border': row.border }"
+                    class="legend__swatch"
+                    :class="{ 'legend__swatch--border': row.border }"
                     :style="row.swatchStyle"
                     aria-hidden="true"
                   />
-                  <span class="seat-map_legend-label">{{ row.label }}</span>
+                  <span class="legend__label">{{ row.label }}</span>
                 </li>
               </ul>
-              <p class="seat-map_legend-foot seat-map_legend-foot--strong">
+              <p class="legend__foot legend__foot--strong">
                 {{ legendMaxPerOrderLine }}
               </p>
             </div>
           </div>
         </div>
       </div>
-      <div v-if="mapZoomPercent > 100" class="seat-map_zoom-badge">{{ mapZoomBadgeText }}</div>
+      <div v-if="mapZoomPercent > 100" class="seatMap__zoomBadge">{{ mapZoomBadgeText }}</div>
       <div
-        class="seat-map_legend seat-map_legend--desktop"
+        class="seatMap__legend seatMap__legend--desktop"
         role="group"
         :aria-labelledby="mapLegendTitleId"
       >
-        <h2 :id="mapLegendTitleId" class="seat-map_hints-title">{{ mapUi.legendTitle }}</h2>
-        <ul class="seat-map_legend-list">
+        <h2 :id="mapLegendTitleId" class="hints__title">{{ mapUi.legendTitle }}</h2>
+        <ul class="legend__list">
           <li
             v-for="row in seatStatusLegendRows"
             :key="row.key"
-            class="seat-map_legend-item"
+            class="legend__item"
           >
             <span
-              class="seat-map_legend-swatch"
-              :class="{ 'seat-map_legend-swatch--border': row.border }"
+              class="legend__swatch"
+              :class="{ 'legend__swatch--border': row.border }"
               :style="row.swatchStyle"
               aria-hidden="true"
             />
-            <span class="seat-map_legend-label">{{ row.label }}</span>
+            <span class="legend__label">{{ row.label }}</span>
           </li>
         </ul>
-        <p class="seat-map_legend-foot seat-map_legend-foot--strong">
+        <p class="legend__foot legend__foot--strong">
           {{ legendMaxPerOrderLine }}
         </p>
       </div>
@@ -1347,10 +1346,6 @@ function isSeatClickable(seat: Seat) {
   return props.selectedSeatIds.length < props.maxSeatsPerOrder
 }
 
-function getSeatOpacity(seat: Seat) {
-  return seat.status === 'free' && props.activeOrder ? 0.4 : 1
-}
-
 function getSeatTitle(seat: Seat) {
   if (seat.status === 'staff') return content.home.seats.tooltip.seatStaffReserved
   if (props.activeOrder && seat.status === 'free') return content.home.seats.tooltip.reservationInProgress
@@ -1369,7 +1364,7 @@ function handleSeatClick(seat: Seat) {
 </script>
 
 <style lang="scss" scoped>
-.seat-map_container {
+.seatMap {
   position: relative;
   display: flex;
   justify-content: center;
@@ -1377,7 +1372,7 @@ function handleSeatClick(seat: Seat) {
   overflow: hidden;
   height: 100dvh;
 
-  .seat-map_viewport {
+  .seatMap__viewport {
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -1393,28 +1388,28 @@ function handleSeatClick(seat: Seat) {
   /*
    * Pendant le pan, le curseur est celui du nœud sous le pointeur : les sièges imposent `pointer` plus bas
    * dans la feuille (même spécificité → cascade). `inherit !important` depuis le <svg> impose le mode grab.
-   * Personnaliser : --seat-map-pan-cursor (ex. url(...) 16 16, grabbing) sur .seat-map_container ou parent.
+   * Personnaliser : --seat-map-pan-cursor (ex. url(...) 16 16, grabbing) sur .seatMap ou parent.
    */
-  .seat-map_viewport--is-grabbing {
+  .seatMap__viewport--isGrabbing {
     --seat-map-pan-cursor: grabbing;
   }
 
-  .seat-map_viewport--is-grabbing .container__svg {
+  .seatMap__viewport--isGrabbing .viewport__svg {
     cursor: var(--seat-map-pan-cursor);
   }
 
-  .seat-map_viewport--is-grabbing .container__svg * {
+  .seatMap__viewport--isGrabbing .viewport__svg * {
     cursor: inherit !important;
   }
 
-  .seat-map_overlay {
+  .seatMap__overlay {
     position: absolute;
     inset: 0;
     z-index: 2;
     pointer-events: none;
   }
 
-  .seat-map_hints {
+  .seatMap__hints {
     position: absolute;
     top: 10px;
     left: 12px;
@@ -1427,12 +1422,12 @@ function handleSeatClick(seat: Seat) {
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
     pointer-events: none;
 
-    .seat-map_hints-title {
+    .hints__title {
       margin-bottom: 1rem;
     }
   }
 
-  .seat-map_hints-title {
+  .hints__title {
     margin: 0 0 0.55em;
     padding: 0;
     border: none;
@@ -1444,7 +1439,7 @@ function handleSeatClick(seat: Seat) {
     line-height: 1.3;
   }
 
-  .seat-map_hints-list {
+  .hints__list {
     margin: 0;
     padding: 0;
     display: grid;
@@ -1471,19 +1466,19 @@ function handleSeatClick(seat: Seat) {
   }
 
   $seat-map-mobile-bp: 640px;
-  /** Même retrait que `.seat-map_hints` (gauche) et colonne d’icônes (droite). */
+  /** Même retrait que `.seatMap__hints` (gauche) et colonne d’icônes (droite). */
   $seat-map-controls-inset: 12px;
   /** Largeur réservée aux boutons icône empilés (≈ 40px + bordure). */
   $seat-map-mobile-icons-column: 44px;
   $seat-map-mobile-popup-icons-gap: 10px;
 
-  .seat-map_hints--desktop {
+  .seatMap__hints--desktop {
     @media (max-width: $seat-map-mobile-bp) {
       display: none !important;
     }
   }
 
-  .seat-map_hints--in-popover {
+  .seatMap__hints--inPopover {
     display: none !important;
 
     @media (max-width: $seat-map-mobile-bp) {
@@ -1499,7 +1494,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_legend--in-popover {
+  .seatMap__legend--inPopover {
     display: none !important;
 
     @media (max-width: $seat-map-mobile-bp) {
@@ -1516,7 +1511,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_toolbar-host {
+  .seatMap__toolbarHost {
     position: absolute;
     top: 10px;
     right: $seat-map-controls-inset;
@@ -1538,7 +1533,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_mobile-left-stack {
+  .seatMap__mobileLeftStack {
     display: none;
 
     @media (max-width: $seat-map-mobile-bp) {
@@ -1554,7 +1549,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_toolbar-help {
+  .seatMap__toolbarHelp {
     display: none;
     flex-direction: column;
     align-items: flex-start;
@@ -1566,12 +1561,12 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_toolbar-help .seat-map_toolbar-trigger,
-  .seat-map_toolbar-help .seat-map_toolbar-hints-panel {
+  .seatMap__toolbarHelp .seatMap__toolbarTrigger,
+  .seatMap__toolbarHelp .seatMap__toolbarHintsPanel {
     pointer-events: auto;
   }
 
-  .seat-map_legend-help {
+  .seatMap__legendHelp {
     display: none;
     flex-direction: column-reverse;
     align-items: flex-end;
@@ -1587,12 +1582,12 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_legend-help .seat-map_toolbar-trigger,
-  .seat-map_legend-help .seat-map_legend-popover-panel {
+  .seatMap__legendHelp .seatMap__toolbarTrigger,
+  .seatMap__legendHelp .seatMap__legendPopoverPanel {
     pointer-events: auto;
   }
 
-  .seat-map_toolbar-trigger {
+  .seatMap__toolbarTrigger {
     display: none;
     align-items: center;
     justify-content: center;
@@ -1620,7 +1615,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_toolbar-hints-panel {
+  .seatMap__toolbarHintsPanel {
     display: none;
 
     @media (max-width: $seat-map-mobile-bp) {
@@ -1647,7 +1642,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_legend-popover-panel {
+  .seatMap__legendPopoverPanel {
     display: none;
 
     @media (max-width: $seat-map-mobile-bp) {
@@ -1673,14 +1668,14 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_toolbar-host--open .seat-map_toolbar-hints-panel,
-  .seat-map_legend-help--open .seat-map_legend-popover-panel {
+  .seatMap__toolbarHost--open .seatMap__toolbarHintsPanel,
+  .seatMap__legendHelp--open .seatMap__legendPopoverPanel {
     @media (max-width: $seat-map-mobile-bp) {
       display: block;
     }
   }
 
-  .seat-map_toolbar {
+  .seatMap__toolbar {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1698,7 +1693,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_toolbar-row {
+  .seatMap__toolbarRow {
     pointer-events: auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 36px;
@@ -1726,14 +1721,14 @@ function handleSeatClick(seat: Seat) {
       cursor: not-allowed;
       opacity: 0.55;
 
-      .seat-map_toolbar-label,
-      .seat-map_toolbar-icon {
+      .toolbarRow__label,
+      .toolbarRow__icon {
         opacity: 0.65;
       }
     }
   }
 
-  .seat-map_toolbar-label {
+  .toolbarRow__label {
     font-size: 0.68rem;
     font-weight: 600;
     line-height: 1.25;
@@ -1741,7 +1736,7 @@ function handleSeatClick(seat: Seat) {
     justify-self: start;
   }
 
-  .seat-map_toolbar-icon {
+  .toolbarRow__icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1753,24 +1748,24 @@ function handleSeatClick(seat: Seat) {
     justify-self: end;
   }
 
-  .seat-map_toolbar-row--reset .seat-map_toolbar-icon {
+  .seatMap__toolbarRow--reset .toolbarRow__icon {
     font-size: 1.05rem;
   }
 
   @media (max-width: $seat-map-mobile-bp) {
-    .seat-map_toolbar-row {
+    .seatMap__toolbarRow {
       grid-template-columns: 36px;
       width: 40px;
       padding: 0;
       justify-items: center;
 
-      .seat-map_toolbar-label {
+      .toolbarRow__label {
         display: none !important;
       }
     }
   }
 
-  .seat-map_zoom-badge {
+  .seatMap__zoomBadge {
     position: absolute;
     bottom: 14px;
     left: 12px;
@@ -1784,7 +1779,7 @@ function handleSeatClick(seat: Seat) {
     pointer-events: none;
   }
 
-  .seat-map_legend--desktop {
+  .seatMap__legend--desktop {
     position: absolute;
     right: 12px;
     bottom: 14px;
@@ -1801,12 +1796,12 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_legend {
-    .seat-map_hints-title {
+  .seatMap__legend {
+    .hints__title {
       margin-bottom: 1rem;
     }
 
-    .seat-map_legend-foot {
+    .legend__foot {
       margin-top: 1rem;
 
       &--strong {
@@ -1815,13 +1810,13 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_legend-list {
+  .legend__list {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .seat-map_legend-item {
+  .legend__item {
     display: flex;
     align-items: center;
     gap: 7px;
@@ -1832,7 +1827,7 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_legend-swatch {
+  .legend__swatch {
     flex-shrink: 0;
     width: 11px;
     height: 11px;
@@ -1843,14 +1838,14 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seat-map_legend-label {
+  .legend__label {
     font-size: 0.62rem;
     font-weight: 500;
     line-height: 1.35;
     color: #3d454d;
   }
 
-  .seat-map_legend-foot {
+  .legend__foot {
     margin: 0.55em 0 0;
     font-size: 0.58rem;
     font-weight: 500;
@@ -1865,12 +1860,12 @@ function handleSeatClick(seat: Seat) {
   }
 
   @media (max-width: $seat-map-mobile-bp) {
-    .seat-map_legend--in-popover .seat-map_legend-label {
+    .seatMap__legend--inPopover .legend__label {
       font-size: 0.6rem;
     }
   }
 
-  .container__svg {
+  .viewport__svg {
     width: 100%;
     height: 100%;
     display: block;
@@ -1890,9 +1885,6 @@ function handleSeatClick(seat: Seat) {
         cursor: not-allowed;
       }
 
-      &--dimmed {
-        opacity: 0.4;
-      }
     }
 
     .svg__label {
@@ -1903,14 +1895,14 @@ function handleSeatClick(seat: Seat) {
       pointer-events: none;
     }
 
-    .svg__stage-rect {
+    .svg__stageRect {
       fill: rgba(72, 62, 56, 0.1);
       stroke: rgba(30, 30, 30, 0.14);
       stroke-width: 0.5;
       pointer-events: none;
     }
 
-    .svg__stage-label {
+    .svg__stageLabel {
       text-anchor: middle;
       font-size: 9px;
       font-weight: 700;
@@ -1919,7 +1911,7 @@ function handleSeatClick(seat: Seat) {
       pointer-events: none;
     }
 
-    .svg__zone-rect {
+    .svg__zoneRect {
       stroke: none;
       pointer-events: none;
 
@@ -1932,7 +1924,7 @@ function handleSeatClick(seat: Seat) {
       }
     }
 
-    .svg__zone-title {
+    .svg__zoneTitle {
       text-anchor: start;
       dominant-baseline: hanging;
       font-size: 6.5px;
@@ -1942,7 +1934,7 @@ function handleSeatClick(seat: Seat) {
       pointer-events: none;
     }
 
-    .svg__zone-subtitle {
+    .svg__zoneSubtitle {
       text-anchor: start;
       dominant-baseline: hanging;
       font-size: 4.25px;
@@ -1951,7 +1943,7 @@ function handleSeatClick(seat: Seat) {
       pointer-events: none;
     }
 
-    .svg__pannable-bg {
+    .svg__pannableBg {
       cursor: grab;
     }
   }

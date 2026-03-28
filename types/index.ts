@@ -18,6 +18,10 @@ export type ActiveOrder = {
   childCount?: number
   /** IDs des places réservées (pour l’étape 2 du formulaire) */
   seatIds?: string[]
+  /** Coordonnées enregistrées (POST update-order-contact après étape 1). */
+  contactComplete?: boolean
+  /** Détails par billet enregistrés (POST order-ticket-details avant Stripe). */
+  ticketDetailsComplete?: boolean
 }
 
 export type TicketDetail = {

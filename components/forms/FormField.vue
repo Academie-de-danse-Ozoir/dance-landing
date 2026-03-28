@@ -1,22 +1,22 @@
 <template>
-  <div class="form-field">
-    <label :for="fieldKey" class="form-field_label">
+  <div class="formField">
+    <label :for="fieldKey" class="formField__label">
       {{ label }} <span class="label__required">*</span>
     </label>
     <input
       :id="fieldKey"
       :value="modelValue"
       :type="type"
-      class="form-field_input"
+      class="formField__input"
       :class="{
-        'form-field_input--invalid': error,
-        'form-field_input--valid': touched && !error
+        'formField__input--invalid': error,
+        'formField__input--valid': touched && !error
       }"
       :placeholder="placeholder"
       @blur="$emit('blur')"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
-    <div class="form-field_feedback">
+    <div class="formField__feedback">
       <span v-if="error" class="feedback__error">{{ error }}</span>
       <span v-else class="feedback__placeholder">&nbsp;</span>
     </div>
@@ -41,10 +41,10 @@ defineEmits<{
 </script>
 
 <style lang="scss" scoped>
-.form-field {
+.formField {
   margin-bottom: 20px;
 
-  .form-field_label {
+  .formField__label {
     display: block;
     margin-bottom: 6px;
     font-size: 14px;
@@ -56,7 +56,7 @@ defineEmits<{
     }
   }
 
-  .form-field_input {
+  .formField__input {
     display: block;
     width: 100%;
     padding: 10px 12px;
@@ -110,7 +110,7 @@ defineEmits<{
     }
   }
 
-  .form-field_feedback {
+  .formField__feedback {
     display: block;
     width: 100%;
     margin-top: 6px;
