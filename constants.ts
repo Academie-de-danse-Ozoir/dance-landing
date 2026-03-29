@@ -21,6 +21,15 @@ export const PRICE_CHILD_CENTS = 50
 /** Nombre max de sièges par réservation */
 export const MAX_SEATS_PER_ORDER = 10
 
+/** Id DOM du bloc plan de salle (aucun `#` dans l’URL — scroll via Lenis ou sessionStorage). */
+export const SEAT_SELECTION_SECTION_ID = 'seat-selection'
+
+/** Footer « Choisir mes places » depuis une autre page : après `router.push('/')`, scroll ici. */
+export const PENDING_SCROLL_TO_SEATS_KEY = 'billetterie:pending-seat-scroll'
+
+/** ms après arrivée sur / — aligné sur le fade (app/router.options PAGE_TRANSITION_MS + marge). */
+export const SCROLL_TO_SEATS_AFTER_NAV_MS = 360
+
 // =============================================================================
 // API — rate limits & validation (voir server/utils/rateLimit.ts, hold-seats)
 // =============================================================================

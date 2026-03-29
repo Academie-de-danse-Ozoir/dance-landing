@@ -1,0 +1,19 @@
+/**
+ * Fade page seulement (nuxt.config app.pageTransition : page-opacity, mode out-in).
+ * Durée = app/router.options.ts → PAGE_TRANSITION_MS.
+ */
+
+.page-opacity-enter-active,
+.page-opacity-leave-active {
+  transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-opacity-enter-from,
+.page-opacity-leave-to {
+  opacity: 0;
+}
+
+.page-opacity-enter-to,
+.page-opacity-leave-from {
+  opacity: 1;
+}

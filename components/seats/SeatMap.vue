@@ -7,7 +7,6 @@
       tabindex="0"
       role="application"
       :aria-label="mapUi.viewportLabel"
-      @wheel.prevent="onMapWheel"
       @pointerdown="onMapPointerDown"
       @pointermove="onMapPointerMove"
       @pointerup="onMapPointerUp"
@@ -273,6 +272,7 @@ import {
   watch,
   type Ref
 } from 'vue'
+import { useRoute } from 'vue-router'
 import type { Seat, ActiveOrder } from '../../types'
 import content from '../../locales/fr.json'
 import {
@@ -911,6 +911,8 @@ const mapZoomMinEffective = computed(() => {
   return isSeatMapMobileViewport() ? MAP_ZOOM_MIN_MOBILE : MAP_ZOOM_MIN
 })
 
+const route = useRoute()
+
 const svgRef = ref<SVGSVGElement | null>(null)
 const viewportRef = ref<HTMLElement | null>(null)
 /** Affichage (interpolé). */
@@ -1151,13 +1153,6 @@ function setMapZoomAtPoint(z1: number, focusX: number, focusY: number) {
   requestMapNavSmoothingFrame()
 }
 
-function onMapWheel(e: WheelEvent) {
-  const z0 = mapTargetZoom.value
-  const factor = Math.exp(-e.deltaY * 0.0012)
-  const p = clientToSvgPoint(e.clientX, e.clientY)
-  setMapZoomAtPoint(z0 * factor, p.x, p.y)
-}
-
 function zoomMapByStep(mult: number) {
   const svg = svgRef.value
   if (!svg) return
@@ -1210,6 +1205,27 @@ function onDocumentPointerDownCloseMenu(e: PointerEvent) {
 }
 
 let teardownMapToolbarMenuListeners: (() => void) | undefined
+let removeViewportPinchListeners: (() => void) | undefined
+
+/** Safari (Mac / iOS) : événements `gesture*` ; Chrome / Firefox Mac : molette + ctrl (pincement trackpad). */
+let safariGestureBaseZoom = 1
+
+function touchPinchDistance(t: TouchList) {
+  const a = t.item(0)
+  const b = t.item(1)
+  if (!a || !b) return 0
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+}
+
+function touchPinchMidClient(t: TouchList) {
+  const a = t.item(0)
+  const b = t.item(1)
+  if (!a || !b) return { x: 0, y: 0 }
+  return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }
+}
+
+let touchPinchStartDist = 0
+let touchPinchStartZoom = 1
 
 onMounted(() => {
   if (!import.meta.client) return
@@ -1224,6 +1240,85 @@ onMounted(() => {
   onMq()
   mq.addEventListener('change', onMq)
   document.addEventListener('pointerdown', onDocumentPointerDownCloseMenu, true)
+  void nextTick(() => {
+    const vp = viewportRef.value
+    if (!vp) return
+    const nonPassive: AddEventListenerOptions = { passive: false }
+
+    const onGestureStart = (e: Event) => {
+      ;(e as unknown as { preventDefault(): void }).preventDefault()
+      safariGestureBaseZoom = mapTargetZoom.value
+    }
+    const onGestureChange = (e: Event) => {
+      const ev = e as unknown as {
+        preventDefault(): void
+        scale: number
+        clientX: number
+        clientY: number
+      }
+      ev.preventDefault()
+      const z = safariGestureBaseZoom * ev.scale
+      const p = clientToSvgPoint(ev.clientX, ev.clientY)
+      setMapZoomAtPoint(z, p.x, p.y)
+    }
+    const onGestureEnd = (e: Event) => {
+      ;(e as unknown as { preventDefault(): void }).preventDefault()
+    }
+
+    /** Chrome / Firefox (Mac) : pincement trackpad = molette + ctrlKey (Safari utilise gesture*). */
+    const onWheelPinch = (e: WheelEvent) => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      const mult = e.deltaY < 0 ? MAP_ZOOM_STEP : 1 / MAP_ZOOM_STEP
+      const p = clientToSvgPoint(e.clientX, e.clientY)
+      setMapZoomAtPoint(mapTargetZoom.value * mult, p.x, p.y)
+    }
+
+    vp.addEventListener('gesturestart', onGestureStart, nonPassive)
+    vp.addEventListener('gesturechange', onGestureChange, nonPassive)
+    vp.addEventListener('gestureend', onGestureEnd, nonPassive)
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        stopMapNavRaf()
+        isMapPanning.value = false
+        mapPanAwaitingThreshold.value = false
+        touchPinchStartDist = touchPinchDistance(e.touches)
+        touchPinchStartZoom = mapTargetZoom.value
+        if (touchPinchStartDist > 1) e.preventDefault()
+      }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchPinchStartDist > 1) {
+        const d = touchPinchDistance(e.touches)
+        const z = touchPinchStartZoom * (d / touchPinchStartDist)
+        const { x, y } = touchPinchMidClient(e.touches)
+        const p = clientToSvgPoint(x, y)
+        setMapZoomAtPoint(z, p.x, p.y)
+        e.preventDefault()
+      }
+    }
+    const onTouchEndOrCancel = (e: TouchEvent) => {
+      if (e.touches.length < 2) touchPinchStartDist = 0
+    }
+
+    vp.addEventListener('wheel', onWheelPinch, nonPassive)
+    vp.addEventListener('touchstart', onTouchStart, nonPassive)
+    vp.addEventListener('touchmove', onTouchMove, nonPassive)
+    vp.addEventListener('touchend', onTouchEndOrCancel)
+    vp.addEventListener('touchcancel', onTouchEndOrCancel)
+
+    removeViewportPinchListeners = () => {
+      vp.removeEventListener('gesturestart', onGestureStart, nonPassive)
+      vp.removeEventListener('gesturechange', onGestureChange, nonPassive)
+      vp.removeEventListener('gestureend', onGestureEnd, nonPassive)
+      vp.removeEventListener('wheel', onWheelPinch, nonPassive)
+      vp.removeEventListener('touchstart', onTouchStart, nonPassive)
+      vp.removeEventListener('touchmove', onTouchMove, nonPassive)
+      vp.removeEventListener('touchend', onTouchEndOrCancel)
+      vp.removeEventListener('touchcancel', onTouchEndOrCancel)
+    }
+  })
   teardownMapToolbarMenuListeners = () => {
     window.removeEventListener('keydown', onWindowMapKeydownCapture, true)
     mq.removeEventListener('change', onMq)
@@ -1233,6 +1328,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopMapNavRaf()
+  removeViewportPinchListeners?.()
   teardownMapToolbarMenuListeners?.()
 })
 
@@ -1304,17 +1400,47 @@ function onMapPointerUp(e: PointerEvent) {
   }, 0)
 }
 
-/** Raccourcis clavier : le focus doit être sur le viewport (fait au pointerdown sur la carte). */
+/** Cible clavier où saisir + / − ne doit pas piloter le plan (email, etc.). */
+function isEditableFieldKeyTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  if (!el?.closest) return false
+  return !!el.closest('input, textarea, select, [contenteditable]')
+}
+
+/**
+ * Zoom avant : uniquement le caractère tapé (+, =) ou pavé num. « + ».
+ * On évite `code === 'Equal'` : selon clavier / OS le code physique ne correspond pas au caractère
+ * et peut se chevaucher avec d’autres touches (surtout AZERTY / ISO).
+ */
+function isMapZoomInKeyEvent(e: KeyboardEvent): boolean {
+  return e.code === 'NumpadAdd' || e.key === '+' || e.key === '='
+}
+
+/**
+ * Zoom arrière : uniquement les caractères « moins » / underscore, ou pavé num. « − ».
+ * Ne pas matcher `code === 'Minus'` seul : sur AZERTY la même position physique peut produire « ) »,
+ * ce qui déclenchait un dézoom intempestif ; inversement « - » est souvent sur `Digit6` (key = '-').
+ */
+function isMapZoomOutKeyEvent(e: KeyboardEvent): boolean {
+  const k = e.key
+  if (k === '-' || k === '−' || k === '_') return true
+  return e.code === 'NumpadSubtract'
+}
+
+/**
+ * Raccourcis avec focus sur le viewport : + / − / = / _, 0, Échap.
+ * Les boutons (sièges, toolbar) sont exclus pour laisser le comportement natif si besoin.
+ */
 function applyMapKeyboardShortcuts(e: KeyboardEvent) {
   const el = e.target as HTMLElement
   if (el.closest?.('button, input, textarea, select, [contenteditable]')) return
   if (e.ctrlKey || e.metaKey || e.altKey) return
-  if (e.key === '+' || e.key === '=') {
-    e.preventDefault()
-    zoomMapByStep(MAP_ZOOM_STEP)
-  } else if (e.key === '-' || e.key === '_') {
+  if (isMapZoomOutKeyEvent(e)) {
     e.preventDefault()
     zoomMapByStep(1 / MAP_ZOOM_STEP)
+  } else if (isMapZoomInKeyEvent(e)) {
+    e.preventDefault()
+    zoomMapByStep(MAP_ZOOM_STEP)
   } else if (e.key === '0' || e.code === 'Numpad0' || e.code === 'Digit0') {
     e.preventDefault()
     resetMapView()
@@ -1324,9 +1450,35 @@ function applyMapKeyboardShortcuts(e: KeyboardEvent) {
   }
 }
 
+/**
+ * Accueil : + / − (et =, _, pavé num.) zooment le plan partout sur la page,
+ * sans focus sur le viewport — sauf si le focus est dans un champ de saisie.
+ */
+function tryHomeGlobalMapZoom(e: KeyboardEvent): boolean {
+  if (e.ctrlKey || e.metaKey || e.altKey) return false
+  const path = route.path
+  if (path !== '/' && path !== '') return false
+  if (isEditableFieldKeyTarget(e.target)) return false
+
+  if (isMapZoomOutKeyEvent(e)) {
+    e.preventDefault()
+    zoomMapByStep(1 / MAP_ZOOM_STEP)
+    return true
+  }
+  if (isMapZoomInKeyEvent(e)) {
+    e.preventDefault()
+    zoomMapByStep(MAP_ZOOM_STEP)
+    return true
+  }
+  return false
+}
+
 function onWindowMapKeydownCapture(e: KeyboardEvent) {
   const vp = viewportRef.value
   if (!vp) return
+
+  if (tryHomeGlobalMapZoom(e)) return
+
   const ae = document.activeElement
   if (ae !== vp && !(ae instanceof Node && vp.contains(ae))) return
   applyMapKeyboardShortcuts(e)

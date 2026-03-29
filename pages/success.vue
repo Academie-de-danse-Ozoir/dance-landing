@@ -1,67 +1,70 @@
 <template>
-  <div class="paymentResultPage">
-    <div class="paymentResultPage__card" v-if="isLoaded">
+  <div class="paymentResultLayout">
+    <div class="paymentResultPage">
+      <div class="paymentResultPage__card" v-if="isLoaded">
 
-      <!-- SUCCESS -->
-      <template v-if="isValid">
-        <div class="card__icon">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            class="icon__svg"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" fill="#198754" />
-            <path
-              d="M7 12l3 3 6-6"
+        <!-- SUCCESS -->
+        <template v-if="isValid">
+          <div class="card__icon">
+            <svg
+              viewBox="0 0 24 24"
               fill="none"
-              stroke="#fff"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
+              xmlns="http://www.w3.org/2000/svg"
+              class="icon__svg"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" fill="#198754" />
+              <path
+                d="M7 12l3 3 6-6"
+                fill="none"
+                stroke="#fff"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
 
-        <h1 class="card__title">{{ content.success.title }}</h1>
+          <h1 class="card__title">{{ content.success.title }}</h1>
 
-        <p class="card__message" v-html="formattedMessage"></p>
+          <p class="card__message" v-html="formattedMessage"></p>
 
-        <p class="card__text">
-          {{ content.success.info }}
-        </p>
-      </template>
+          <p class="card__text">
+            {{ content.success.info }}
+          </p>
+        </template>
 
-      <!-- ERROR / EXPIRED -->
-      <template v-else>
-        <div class="card__errorIcon">
-          ❌
-        </div>
+        <!-- ERROR / EXPIRED -->
+        <template v-else>
+          <div class="card__errorIcon">
+            ❌
+          </div>
 
-        <h1 class="card__title">Paiement invalide</h1>
+          <h1 class="card__title">Paiement invalide</h1>
 
-        <p class="card__errorMessage">
-          Le paiement a été refusé ou la commande a expiré.
-        </p>
+          <p class="card__errorMessage">
+            Le paiement a été refusé ou la commande a expiré.
+          </p>
 
-        <p class="card__text">
-          Si le paiement a été effectué après expiration,
-          il a été automatiquement remboursé.
-        </p>
-      </template>
+          <p class="card__text">
+            Si le paiement a été effectué après expiration,
+            il a été automatiquement remboursé.
+          </p>
+        </template>
 
-      <LinkButton
-        to="/"
-        variant="primary"
-        :label="content.success.backToSeats"
-      />
+        <LinkButton
+          to="/"
+          variant="primary"
+          :label="content.success.backToSeats"
+        />
+      </div>
+
+      <!-- LOADING -->
+      <div v-else class="paymentResultPage__card">
+        Vérification du paiement...
+      </div>
     </div>
-
-    <!-- LOADING -->
-    <div v-else class="paymentResultPage__card">
-      Vérification du paiement...
-    </div>
+    <SiteFooter />
   </div>
 </template>
 
@@ -71,6 +74,7 @@ import { useRoute } from 'vue-router'
 import { STORAGE_ORDER_KEY, ORDER_STATUS } from '../constants'
 import content from '../locales/fr.json'
 import LinkButton from '../components/buttons/LinkButton.vue'
+import SiteFooter from '../components/layout/SiteFooter.vue'
 
 const route = useRoute()
 
@@ -133,12 +137,22 @@ onMounted(async () => {
 </script>
 
 <style lang="scss" scoped>
-.paymentResultPage {
+.paymentResultLayout {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.paymentResultPage {
+  flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
   padding: 20px;

@@ -31,8 +31,12 @@ html {
   /* Améliore le rendu des polices sur macOS */
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
-  /* Scroll fluide */
-  scroll-behavior: smooth;
+  /*
+   * Ne pas mettre scroll-behavior: smooth sur html : au changement de route, le navigateur
+   * remonte le document et ça devient une translation verticale visible en parallèle du fade.
+   * Les scrolls voulus « smooth » passent par scrollIntoView / Lenis côté composants.
+   */
+  scroll-behavior: auto;
   /* Hauteur de ligne de base */
   line-height: 1.15;
 }

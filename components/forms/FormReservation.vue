@@ -1,5 +1,10 @@
 <template>
-  <div v-if="show" class="formReservationOverlay" @click.self="$emit('close')">
+  <div
+    v-if="show"
+    class="formReservationOverlay"
+    data-lenis-prevent
+    @click.self="$emit('close')"
+  >
     <div class="formReservation">
       <div class="formReservation__header">
         <h2 class="header__title">{{ step === 1 ? content.home.modal.title : content.home.modal.step2Title }}</h2>
@@ -19,7 +24,13 @@
         </button>
       </div>
 
-      <div class="formReservation__body">
+      <VueLenis
+        :root="false"
+        :auto-raf="true"
+        :options="modalLenisOptions"
+        :props="{ class: 'formReservation__scroll', 'aria-label': content.home.modal.scrollRegionLabel }"
+      >
+        <div class="formReservation__body">
         <!-- Étape 1 : coordonnées ; hold + timer déjà créés au clic « Réserver » -->
         <form v-if="step === 1" class="body__form" @submit.prevent="onNext">
           <FormField
@@ -126,13 +137,15 @@
             />
           </div>
         </form>
-      </div>
+        </div>
+      </VueLenis>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch, ref } from 'vue'
+import { computed, watch, ref, onBeforeUnmount } from 'vue'
+import type { LenisOptions } from 'lenis'
 import content from '../../locales/fr.json'
 import { PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
 import FormField from './FormField.vue'
@@ -171,6 +184,34 @@ const props = defineProps<{
 }>()
 
 const config = useRuntimeConfig()
+const rootLenis = useLenis()
+
+/** Lenis dans la modale : même esprit que la page (léger lissage molette / touch). */
+const modalLenisOptions: LenisOptions = {
+  smoothWheel: true,
+  syncTouch: true,
+  lerp: 0.12,
+  overscroll: true
+}
+
+function lockDocumentScroll(lock: boolean) {
+  if (import.meta.server) return
+  document.documentElement.style.overflow = lock ? 'hidden' : ''
+}
+
+watch(
+  () => props.show,
+  (open) => {
+    lockDocumentScroll(open)
+    if (open) rootLenis.value?.resize()
+  }
+)
+
+onBeforeUnmount(() => {
+  lockDocumentScroll(false)
+  rootLenis.value?.resize()
+})
+
 const turnstileSiteKey = computed(() => (config.public.turnstileSiteKey as string) || '')
 const turnstileToken = ref<string | null>(null)
 const turnstileError = ref<string | null>(null)
@@ -318,7 +359,7 @@ function onSubmitStep2() {
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   animation: slideDown 0.3s ease-out;
@@ -423,9 +464,15 @@ function onSubmitStep2() {
     }
   }
 
+  /** Conteneur Lenis (wrapper du composant VueLenis) : occupe l’espace sous l’en-tête / timer. */
+  :deep(.formReservation__scroll) {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .formReservation__body {
     padding: 24px;
-    overflow-y: auto;
 
     .body__form {
       display: flex;

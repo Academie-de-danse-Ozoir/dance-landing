@@ -81,18 +81,18 @@
         "hintsRows": [
           {
             "label": "Zoom",
-            "textDesktop": "Molette ; touches + et − ; boutons « Dézoomer » <br> et « Zoomer » à droite",
-            "textMobile": "Molette ; touches + et − ; à droite : bouton − et bouton +"
+            "textDesktop": "<strong>Pincement</strong> avec deux doigts sur la carte ; boutons <strong>+</strong> / <strong>−</strong> à droite ou sur le clavier",
+            "textMobile": "<strong>Pincement</strong> avec deux doigts sur la carte ; boutons <strong>+</strong> / <strong>−</strong> à droite"
           },
           {
             "label": "Déplacer",
-            "textDesktop": "Clic maintenu, <br> puis glisser sur la carte",
-            "textMobile": "Clic maintenu, <br>puis glisser sur la carte"
+            "textDesktop": "<strong>Clic maintenu</strong>, <br>puis <strong>glisser</strong> sur la carte",
+            "textMobile": "<strong>Clic maintenu</strong>, <br>puis <strong>glisser</strong> sur la carte"
           },
           {
             "label": "Tout afficher",
-            "textDesktop": "Touche Échap ou 0 ; <br> bouton « Tout afficher »",
-            "textMobile": "Touche Échap ou 0 ; bouton ⟲"
+            "textDesktop": "<strong>Échap</strong> ou <strong>0</strong> ; <br>bouton <strong>Tout afficher</strong>",
+            "textMobile": "<strong>Échap</strong> ou <strong>0</strong> ; bouton <strong>⟲</strong>"
           }
         ],
         "zoomIn": "Zoom avant",
@@ -126,6 +126,7 @@
     },
     "modal": {
       "title": "Informations de réservation",
+      "scrollRegionLabel": "Contenu du formulaire de réservation",
       "close": "Fermer",
       "cancel": "Annuler",
       "next": "Suivant",
@@ -181,6 +182,29 @@
       "generic": "Une erreur est survenue. Veuillez réessayer.",
       "completeContactBeforePay": "Complétez d’abord vos coordonnées et validez avec « Suivant ».",
       "completeTicketDetailsBeforePay": "Complétez d’abord les informations de chaque billet, puis cliquez sur « Payer »."
+    },
+    "hero": {
+      "kicker": "Billetterie en ligne",
+      "title": "Spectacle de Danse d’Ozoir",
+      "subtitle": "Samedi 24 mai 2026 — Salle des fêtes – Ozoir-la-Ferrière. Choisissez vos sièges sur le plan, payez en toute sécurité et recevez vos billets par email.",
+      "ctaScroll": "Accéder à la réservation"
+    },
+    "intro": {
+      "title": "Une soirée à vivre ensemble",
+      "lead": "Retrouvez nos élèves sur scène pour un moment de danse et de partage. Cette billetterie est le seul canal officiel pour acheter vos places : vous sélectionnez vos sièges en direct sur le plan de salle, puis finalisez votre commande en ligne.",
+      "blocks": [
+        {
+          "title": "Comment réserver ?",
+          "text": "Cliquez sur les places disponibles, puis sur « Réserver ». Après validation de vos coordonnées et du détail par billet, le paiement s’effectue via Stripe. Un email de confirmation récapitule votre commande ; les billets (PDF) sont envoyés après paiement réussi."
+        },
+        {
+          "title": "Bon à savoir",
+          "text": "Les tarifs et conditions d’accès (horaires, âge, retard) figurent sur cette page et dans nos conditions générales de vente. En cas de question, écrivez-nous à l’adresse indiquée en bas de page."
+        }
+      ],
+      "visualAlt1": "Salle de spectacle — ambiance lumières (visuel d’illustration).",
+      "visualAlt2": "Danse sur scène — mouvement et costumes (visuel d’illustration).",
+      "noteUnderVisuals": "Images non contractuelles — visuels promotionnels du spectacle peuvent être communiqués séparément (affiche, réseaux sociaux)."
     }
   },
   "success": {
@@ -188,5 +212,230 @@
     "message": "Merci pour votre achat !\nVos billets ont été réservés avec succès.",
     "info": "Vous recevrez un email de confirmation avec tous les détails de votre réservation.",
     "backToSeats": "Retour à la sélection des sièges"
+  },
+  "footer": {
+    "tagline": "Billetterie officielle pour le spectacle — réservation en ligne, paiement sécurisé, billets par email.",
+    "navAria": "Pied de page",
+    "copyright": "© {year} — Spectacle de Danse d’Ozoir. Tous droits réservés.",
+    "columns": {
+      "bookingTitle": "Réservation",
+      "legalTitle": "Informations légales",
+      "contactTitle": "Contact"
+    },
+    "links": {
+      "home": "Accueil",
+      "booking": "Choisir mes places",
+      "cgv": "Conditions générales de vente",
+      "legalNotice": "Mentions légales",
+      "privacy": "Politique de confidentialité"
+    }
+  },
+  "legal": {
+    "cgv": {
+      "metaTitle": "CGV — Spectacle de Danse d’Ozoir",
+      "title": "Conditions générales de vente",
+      "updatedAt": "Dernière mise à jour : à compléter (date)",
+      "intro": "Les présentes conditions générales de vente (CGV) régissent la vente de billets de spectacle en ligne pour l’événement « Spectacle de Danse d’Ozoir » organisé par l’association ou l’entité éditrice désignée aux mentions légales. Toute commande implique l’acceptation sans réserve des présentes CGV.",
+      "sections": [
+        {
+          "title": "1. Objet",
+          "paragraphs": [
+            "Le service proposé sur ce site est la vente de billets d’entrée à un spectacle à date fixe, en ligne, pour le compte de l’organisateur identifié aux mentions légales.",
+            "Le vendeur au sens des présentes CGV est l’éditeur du site / l’organisateur (association ou société — voir mentions légales pour la dénomination exacte, le siège et les coordonnées). La plateforme de paiement est fournie par un prestataire tiers (Stripe) ; le contrat de vente du billet est conclu entre vous et l’organisateur lors de la validation du paiement."
+          ]
+        },
+        {
+          "title": "2. Produits / billets",
+          "paragraphs": [
+            "Les billets sont délivrés sous forme électronique (fichier PDF ou équivalent) envoyé à l’adresse email communiquée lors de la commande, sauf mention contraire sur le site ou dans l’email de confirmation.",
+            "Sauf indication expresse sur le billet ou sur le site, le billet peut être nominatif ou non nominatif selon les choix techniques et organisationnels de l’événement ; le détail figure sur le document remis après achat.",
+            "Chaque billet est valable pour la date, l’horaire et le lieu indiqués sur le billet et dans la confirmation de commande. Un billet valide donne droit à une entrée pour une personne, sauf disposition particulière affichée (par ex. billet groupe)."
+          ]
+        },
+        {
+          "title": "3. Prix",
+          "paragraphs": [
+            "Les prix sont indiqués en euros (€), toutes taxes comprises (TTC), sauf mention contraire explicite sur la page de commande.",
+            "Des frais de service ou de traitement peuvent s’ajouter au prix des places ; le montant total TTC avant paiement est toujours affiché avant validation. Les taux de TVA et le détail des taxes applicables peuvent être précisés sur demande auprès de l’organisateur ou sur facture lorsque la réglementation l’exige.",
+            "L’organisateur se réserve le droit de modifier les tarifs à tout moment avant toute commande ; le prix facturé est celui affiché au moment de la validation du paiement."
+          ]
+        },
+        {
+          "title": "4. Paiement",
+          "paragraphs": [
+            "Le règlement s’effectue en ligne par carte bancaire et, le cas échéant, par les moyens proposés par Stripe (par exemple Apple Pay, Google Pay selon disponibilité du terminal et du navigateur).",
+            "Le paiement est exigible immédiatement à la commande. Aucune réservation définitive n’est constituée tant que le paiement n’a pas été accepté par le prestataire de paiement. La vente n’est définitive qu’après confirmation du paiement et réception de l’email de confirmation."
+          ]
+        },
+        {
+          "title": "5. Confirmation de commande",
+          "paragraphs": [
+            "Un email de confirmation est envoyé à l’adresse fournie par l’acheteur après paiement réussi. Il récapitule les informations essentielles de la commande (événement, nombre de places, montant).",
+            "Les billets sont transmis après paiement (pièce jointe ou lien sécurisé selon configuration). Il appartient à l’acheteur de vérifier l’exactitude des informations (noms, date, nombre de billets) et de signaler toute erreur sans délai à l’adresse de contact indiquée en bas de page.",
+            "L’acheteur est responsable de la conservation de ses billets et de l’accès à sa boîte email ; en cas de non-réception, il doit contacter le service client en indiquant la référence de commande."
+          ]
+        },
+        {
+          "title": "6. Droit de rétractation",
+          "paragraphs": [
+            "Conformément à l’article L. 221-28 du Code de la consommation, le droit de rétractation ne s’applique pas aux prestations de services de loisirs fournis à une date déterminée. L’achat d’un billet pour un spectacle à date fixe est donc ferme et définitif dès la conclusion de la vente, sauf disposition légale impérative ou clause plus favorable prévue par l’organisateur (report, avoir) dans les conditions de la section 7."
+          ]
+        },
+        {
+          "title": "7. Remboursement et annulation",
+          "paragraphs": [
+            "Sauf politique commerciale plus favorable publiée sur le site ou communiquée par l’organisateur, les billets ne sont ni repris ni échangés une fois la vente conclue.",
+            "Lorsqu’une politique de remboursement ou d’échange est proposée (par exemple jusqu’à 48 h avant la représentation), les modalités (délai, frais éventuels, canal de demande) sont précisées sur le site ou dans l’email de confirmation. À défaut de précision, contacter le service client à l’adresse indiquée en section 10.",
+            "En cas d’annulation ou de report du spectacle par l’organisateur, les spectateurs en sont informés dans les meilleurs délais. Le billet peut faire l’objet d’un remboursement intégral du prix d’achat ou d’un report sur une nouvelle date, selon les options proposées par l’organisateur et la réglementation applicable."
+          ]
+        },
+        {
+          "title": "8. Accès au spectacle",
+          "paragraphs": [
+            "Les horaires d’ouverture des portes et le début du spectacle sont communiqués sur le billet, l’email de confirmation ou les communications de l’organisateur. Il est recommandé d’arriver suffisamment tôt.",
+            "Tout retard peut entraîner un refus d’entrée ou une placement différent selon le règlement intérieur du lieu, sans que cela ouvre droit à remboursement.",
+            "Des conditions spécifiques peuvent s’appliquer (âge minimum recommandé ou obligatoire, accompagnement des mineurs, conditions sanitaires ou de sécurité du lieu). L’organisateur et le lieu se réservent le droit d’refuser l’accès en cas de non-respect de ces règles ou de trouble à l’ordre public."
+          ]
+        },
+        {
+          "title": "9. Responsabilité",
+          "paragraphs": [
+            "L’organisateur met en œuvre les moyens raisonnables pour assurer le bon fonctionnement du site et du processus de réservation. Sa responsabilité ne saurait être engagée en cas de dysfonctionnement indépendant de sa volonté (panne Internet, indisponibilité du prestataire de paiement, force majeure) ou de perte de billet imputable à l’acheteur.",
+            "L’acheteur est seul responsable de l’usage qu’il fait de ses billets (revente non autorisée, reproduction frauduleuse interdite). Toute fraude peut entraîner l’exclusion du spectacle et des poursuites.",
+            "Le spectateur demeure responsable de son comportement pendant l’événement ; l’organisateur et le lieu peuvent exclure toute personne portant atteinte à la sécurité ou au bon déroulement du spectacle."
+          ]
+        },
+        {
+          "title": "10. Service client",
+          "paragraphs": [
+            "Pour toute question relative à une commande, un billet ou une réclamation, vous pouvez contacter l’organisateur à l’adresse email indiquée sur le site (voir pied de page et mentions légales).",
+            "Un délai de réponse habituel peut être indiqué ici à titre indicatif : sous 5 jours ouvrés en moyenne (à adapter selon votre organisation réelle)."
+          ]
+        },
+        {
+          "title": "11. Droit applicable et litiges",
+          "paragraphs": [
+            "Les présentes CGV sont soumises au droit français.",
+            "En cas de litige, et après tentative de résolution amiable, les tribunaux compétents sont ceux du ressort du siège social de l’éditeur / organisateur (à préciser aux mentions légales), sous réserve des dispositions impératives applicables aux consommateurs."
+          ]
+        }
+      ]
+    },
+    "mentions": {
+      "metaTitle": "Mentions légales — Spectacle de Danse d’Ozoir",
+      "title": "Mentions légales",
+      "updatedAt": "Dernière mise à jour : à compléter (date)",
+      "intro": "Conformément aux obligations légales, les informations ci-dessous identifient l’éditeur du site, l’hébergeur et les principaux interlocuteurs. Certaines données sont des exemples à remplacer par vos informations définitives (SIRET, adresse complète, etc.).",
+      "sections": [
+        {
+          "title": "1. Éditeur du site",
+          "paragraphs": [
+            "Dénomination : Association [Nom légal à compléter — ex. Académie de danse d’Ozoir] ou [forme juridique exacte].",
+            "Statut : association loi 1901 (à adapter si autre statut).",
+            "Siège social : [Adresse complète du siège à compléter], France.",
+            "Email : spectacle.academiedanseozoir@gmail.com",
+            "Téléphone : [Numéro à compléter — facultatif]."
+          ]
+        },
+        {
+          "title": "2. Identifiants",
+          "paragraphs": [
+            "Numéro SIRET : [000 000 000 00000 — à compléter].",
+            "Numéro RNA (si association) : [à compléter si applicable].",
+            "TVA intracommunautaire : [FR XX XXX XXX XXX — à compléter si assujetti]."
+          ]
+        },
+        {
+          "title": "3. Responsable de la publication",
+          "paragraphs": [
+            "Nom et prénom : [Prénom Nom — à compléter].",
+            "Fonction : [Président(e) / Responsable communication / autre — à compléter]."
+          ]
+        },
+        {
+          "title": "4. Hébergement",
+          "paragraphs": [
+            "Le site est hébergé par Vercel Inc., société de droit américain.",
+            "Adresse : 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis.",
+            "Site web : https://vercel.com — contact : https://vercel.com/legal/contact"
+          ]
+        },
+        {
+          "title": "5. Données personnelles",
+          "paragraphs": [
+            "Des données personnelles peuvent être collectées lors de la navigation et de la réservation. Le traitement est décrit dans la politique de confidentialité, accessible depuis le pied de page du site (Politique de confidentialité / RGPD)."
+          ]
+        },
+        {
+          "title": "6. Propriété intellectuelle",
+          "paragraphs": [
+            "L’ensemble des contenus du site (textes, images, graphismes, logo, structure) est protégé par le droit d’auteur et, le cas échéant, par le droit des marques. Toute reproduction, représentation ou exploitation non autorisée est interdite hors cadre légal des exceptions."
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "metaTitle": "Politique de confidentialité — Spectacle de Danse d’Ozoir",
+      "title": "Politique de confidentialité (RGPD)",
+      "updatedAt": "Dernière mise à jour : à compléter (date)",
+      "intro": "La présente politique décrit comment sont collectées et utilisées les données personnelles dans le cadre du site de billetterie du « Spectacle de Danse d’Ozoir ». Elle s’inscrit dans le respect du Règlement (UE) 2016/679 (RGPD) et de la loi Informatique et Libertés.",
+      "sections": [
+        {
+          "title": "1. Données collectées",
+          "paragraphs": [
+            "Dans le cadre d’une réservation et du fonctionnement du site, peuvent notamment être collectés : nom et prénom, adresse email, numéro de téléphone, informations relatives à la commande (nombre de places, sièges, détail par billet), données techniques de connexion (logs, adresse IP, navigateur) et, le cas échéant, données issues de vérifications anti-fraude.",
+            "Les données de carte bancaire ne sont pas stockées sur nos serveurs : elles sont traitées de manière sécurisée par notre prestataire de paiement Stripe, conformément à sa propre politique de confidentialité et aux normes PCI-DSS."
+          ]
+        },
+        {
+          "title": "2. Finalités",
+          "bullets": [
+            "Gestion des réservations et des commandes de billets.",
+            "Émission et envoi des billets et emails de confirmation.",
+            "Support client et traitement des réclamations.",
+            "Obligations légales et comptables (conservation des preuves de transaction, lutte contre la fraude).",
+            "Amélioration du service et sécurité du site (mesures techniques et statistiques agrégées lorsque applicable)."
+          ]
+        },
+        {
+          "title": "3. Outils et sous-traitants",
+          "paragraphs": [
+            "Les données peuvent être traitées via les outils suivants (liste indicative, à ajuster selon votre configuration réelle) :",
+            "Supabase (hébergement base de données et, le cas échéant, authentification / temps réel) pour le stockage des informations de réservation et d’événement.",
+            "Stripe pour le paiement en ligne et la gestion des transactions.",
+            "Mailjet (ou équivalent) pour l’envoi des emails transactionnels (confirmation, billets).",
+            "Vercel pour l’hébergement du site et la diffusion des pages.",
+            "Les sous-traitants sont choisis pour leurs garanties de sécurité ; des clauses de traitement des données conformes au RGPD encadrent ces relations lorsque requis."
+          ]
+        },
+        {
+          "title": "4. Durée de conservation",
+          "paragraphs": [
+            "Les données liées aux clients et aux commandes sont conservées pendant la durée nécessaire aux finalités ci-dessus, et notamment pendant [X mois / années — à compléter] après la dernière interaction ou le spectacle, sauf obligation légale de conservation plus longue (comptabilité, fiscalité, preuve en cas de litige).",
+            "Les données de paiement brutes ne sont pas conservées par l’organisateur ; Stripe conserve les données nécessaires à la gestion des paiements selon ses propres durées."
+          ]
+        },
+        {
+          "title": "5. Sécurité",
+          "paragraphs": [
+            "Des mesures techniques et organisationnelles appropriées sont mises en œuvre : connexions chiffrées (HTTPS), accès aux données restreint au personnel autorisé, hébergement sur infrastructure sécurisée, sauvegardes et journalisation selon les possibilités du projet."
+          ]
+        },
+        {
+          "title": "6. Droits des utilisateurs",
+          "paragraphs": [
+            "Conformément au RGPD, vous disposez d’un droit d’accès, de rectification, d’effacement, de limitation du traitement, d’opposition et, le cas échéant, de portabilité des données vous concernant.",
+            "Pour exercer ces droits, adressez une demande à : spectacle.academiedanseozoir@gmail.com en précisant votre identité et le motif de votre demande. Vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr) si vous estimez que vos droits ne sont pas respectés."
+          ]
+        },
+        {
+          "title": "7. Transferts hors Union européenne",
+          "paragraphs": [
+            "Certains prestataires (notamment Stripe, Vercel, Mailjet) peuvent traiter des données depuis des pays situés en dehors de l’Espace économique européen. Le cas échéant, ces transferts reposent sur les mécanismes prévus par le RGPD (clauses contractuelles types de la Commission européenne, décisions d’adéquation, ou autres garanties appropriées).",
+            "Nous vous invitons à consulter les politiques de confidentialité de ces prestataires pour le détail de leurs pratiques."
+          ]
+        }
+      ]
+    }
   }
 }
