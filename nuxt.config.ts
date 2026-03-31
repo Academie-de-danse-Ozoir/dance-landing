@@ -4,7 +4,7 @@ import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  css: ['~/assets/styles/reset.scss', '~/assets/styles/page-transitions.scss'],
+  css: ['~/assets/styles/reset.scss', '~/assets/styles/page-transitions.scss', '~/assets/styles/error-fade.scss'],
   /* Transition sur NuxtPage (évite le flash : le <slot> du layout ne duplique pas l’ancienne page). */
   app: {
     pageTransition: { name: 'page-opacity', mode: 'out-in' }

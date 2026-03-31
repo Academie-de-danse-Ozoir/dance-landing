@@ -17,8 +17,10 @@
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
     <div class="formField__feedback">
-      <span v-if="error" class="feedback__error">{{ error }}</span>
-      <span v-else class="feedback__placeholder">&nbsp;</span>
+      <Transition name="errorFade" mode="out-in">
+        <span v-if="error" key="err" class="feedback__error">{{ error }}</span>
+        <span v-else key="ph" class="feedback__placeholder">&nbsp;</span>
+      </Transition>
     </div>
   </div>
 </template>
@@ -67,13 +69,17 @@ defineEmits<{
     background-color: #fff;
     border: 1px solid #ced4da;
     border-radius: 6px;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
     box-sizing: border-box;
+
+    &:hover:not(:focus):not(.formField__input--invalid):not(.formField__input--valid) {
+      border-color: #adb5bd;
+    }
 
     &:focus {
       outline: 0;
       border-color: #86b7fe;
-      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+      box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.22);
     }
 
     &::placeholder {
@@ -83,29 +89,19 @@ defineEmits<{
 
     &--invalid {
       border-color: #dc3545;
-      padding-right: calc(1.5em + 0.75rem);
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6 .4.4.4-.4m0 4.8-.4-.4-.4.4'/%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right calc(0.375em + 0.1875rem) center;
-      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 
       &:focus {
         border-color: #dc3545;
-        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+        box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.22);
       }
     }
 
     &--valid {
       border-color: #198754;
-      padding-right: calc(1.5em + 0.75rem);
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.98-.98-.98-.98-.98.98.98.98zm1.4-3.46L2.3 4.77l-.7-.7L3.7 2.27l.7.7z'/%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right calc(0.375em + 0.1875rem) center;
-      background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 
       &:focus {
         border-color: #198754;
-        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+        box-shadow: 0 0 0 1px rgba(25, 135, 84, 0.22);
       }
     }
   }

@@ -3,6 +3,7 @@ import { stripe } from '../lib/stripe'
 import { RATE_LIMIT_CANCEL_ORDER_PER_MINUTE, ORDER_STATUS, CANCEL_REASON } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
+import { updateOrderStatusAndClearContact } from '../utils/updateOrderStatusAndClearContact'
 
 export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
@@ -56,10 +57,7 @@ export default defineEventHandler(async (event) => {
       : order.status === ORDER_STATUS.EXPIRED
         ? ORDER_STATUS.EXPIRED
         : ORDER_STATUS.CANCELED
-  await supabaseAdmin
-    .from('order')
-    .update({ status: newStatus })
-    .eq('id', orderId)
+  await updateOrderStatusAndClearContact(orderId, newStatus)
 
   console.info('[billetterie:cancel-order] Statut mis à jour', {
     orderId,

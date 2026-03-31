@@ -117,15 +117,11 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .turnstileField {
-  margin-top: 0;
-}
-
-.turnstileField__widget {
-  min-height: 65px;
+  margin-top: 10px;
 }
 
 .turnstileField__hint {
-  margin: 8px 0 0;
+  margin: 10px 0 20px;
   font-size: 13px;
   color: #6c757d;
 }

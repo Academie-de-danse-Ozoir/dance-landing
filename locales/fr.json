@@ -29,7 +29,8 @@
       "orderNotFoundOrNotPaid": "Commande introuvable ou non payée.",
       "noSeatsForOrder": "Aucune place trouvée pour cette commande.",
       "loadSeatsTicketPageFailed": "Impossible de charger les places.",
-      "staffSeatsNotBookable": "Une ou plusieurs places sont réservées au personnel et ne peuvent pas être réservées."
+      "staffSeatsNotBookable": "Une ou plusieurs places sont réservées au personnel et ne peuvent pas être réservées.",
+      "orderUpdateFailed": "Impossible de mettre à jour la commande."
     }
   },
   "brand": {

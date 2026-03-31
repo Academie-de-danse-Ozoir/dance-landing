@@ -1,0 +1,10 @@
+/* Transition globale : messages d’erreur / avertissements (name="errorFade" sur <Transition>). */
+.errorFade-enter-active,
+.errorFade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.errorFade-enter-from,
+.errorFade-leave-to {
+  opacity: 0;
+}

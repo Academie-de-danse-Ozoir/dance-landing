@@ -10,6 +10,7 @@ import {
 import { brand, tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 import { verifyTurnstileToken } from '../utils/verifyTurnstile'
+import { updateOrderStatusAndClearContact } from '../utils/updateOrderStatusAndClearContact'
 
 export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
   ===================== */
   const { data: order, error: orderError } = await supabaseAdmin
     .from('order')
-    .select('id, email, status')
+    .select('id, email, status, stripe_session_id')
     .eq('id', orderId)
     .eq('order_token', orderToken)
     .single()
@@ -63,6 +64,19 @@ export default defineEventHandler(async (event) => {
     .eq('status', SEAT_STATUS.HOLD)
 
   if (resError || !reservations || reservations.length === 0) {
+    await supabaseAdmin
+      .from('seat_reservation')
+      .delete()
+      .eq('order_id', orderId)
+      .eq('status', SEAT_STATUS.HOLD)
+    if (order.stripe_session_id) {
+      try {
+        await stripe.checkout.sessions.expire(order.stripe_session_id)
+      } catch (e) {
+        console.info('[billetterie:create-checkout-session] expire Stripe (pas de holds)', e)
+      }
+    }
+    await updateOrderStatusAndClearContact(orderId, ORDER_STATUS.EXPIRED)
     throw createError({
       statusCode: 409,
       statusMessage: tApiError('reservationExpired')
@@ -79,12 +93,21 @@ export default defineEventHandler(async (event) => {
   )
 
   if (hasExpired) {
-    // Nettoyage sécurité
     await supabaseAdmin
       .from('seat_reservation')
       .delete()
       .eq('order_id', orderId)
       .eq('status', SEAT_STATUS.HOLD)
+
+    if (order.stripe_session_id) {
+      try {
+        await stripe.checkout.sessions.expire(order.stripe_session_id)
+      } catch (e) {
+        console.info('[billetterie:create-checkout-session] expire Stripe (hold expiré)', e)
+      }
+    }
+
+    await updateOrderStatusAndClearContact(orderId, ORDER_STATUS.EXPIRED)
 
     throw createError({
       statusCode: 409,

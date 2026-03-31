@@ -139,6 +139,37 @@ export default defineEventHandler(async (event) => {
     quick: quick === true
   })
 
+  /** Hold « rapide » : le RPC pose des valeurs factices ; on les efface tant que le client n’a pas rempli l’étape 1. */
+  if (quick === true) {
+    const id = String(orderId)
+    let { error: clearError } = await supabaseAdmin
+      .from('order')
+      .update({
+        first_name: null,
+        last_name: null,
+        email: null,
+        phone: null,
+        ticket_attendees: null
+      })
+      .eq('id', id)
+    if (clearError) {
+      console.warn('[billetterie:hold-seats] NULL refusé, repli sur chaînes vides pour effacer les placeholders RPC', clearError)
+      ;({ error: clearError } = await supabaseAdmin
+        .from('order')
+        .update({
+          first_name: '',
+          last_name: '',
+          email: '',
+          phone: '',
+          ticket_attendees: null
+        })
+        .eq('id', id))
+    }
+    if (clearError) {
+      console.warn('[billetterie:hold-seats] Impossible d’effacer le contact factice', clearError)
+    }
+  }
+
   return {
     orderId: String(orderId),
     orderToken,

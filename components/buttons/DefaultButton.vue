@@ -44,8 +44,8 @@ defineEmits<{
   padding: 10px 16px;
   font-size: 14px;
   border-radius: 6px;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
-    border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease, opacity 0.3s ease;
 
   &--primary {
     color: #fff;

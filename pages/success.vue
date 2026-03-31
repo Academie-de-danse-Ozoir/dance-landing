@@ -36,20 +36,24 @@
 
         <!-- ERROR / EXPIRED -->
         <template v-else>
-          <div class="card__errorIcon">
-            ❌
-          </div>
+          <Transition name="errorFade" appear>
+            <div class="card__errorState" key="payment-error">
+              <div class="card__errorIcon">
+                ❌
+              </div>
 
-          <h1 class="card__title">Paiement invalide</h1>
+              <h1 class="card__title">Paiement invalide</h1>
 
-          <p class="card__errorMessage">
-            Le paiement a été refusé ou la commande a expiré.
-          </p>
+              <p class="card__errorMessage">
+                Le paiement a été refusé ou la commande a expiré.
+              </p>
 
-          <p class="card__text">
-            Si le paiement a été effectué après expiration,
-            il a été automatiquement remboursé.
-          </p>
+              <p class="card__text">
+                Si le paiement a été effectué après expiration,
+                il a été automatiquement remboursé.
+              </p>
+            </div>
+          </Transition>
         </template>
 
         <LinkButton

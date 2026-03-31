@@ -6,9 +6,11 @@
       </template>
       <template v-else>{{ content.home.selection.none }}</template>
     </p>
-    <p v-if="maxSeats > 0 && seatCount >= maxSeats" class="selectionInfo__limit">
-      {{ atLimitText }}
-    </p>
+    <Transition name="errorFade">
+      <p v-if="maxSeats > 0 && seatCount >= maxSeats" key="at-limit" class="selectionInfo__limit">
+        {{ atLimitText }}
+      </p>
+    </Transition>
   </div>
 </template>
 

@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { sendPaidOrderTicketEmailIfNeeded } from '../utils/paidOrderTicketEmail'
+import { updateOrderStatusAndClearContact } from '../utils/updateOrderStatusAndClearContact'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -177,6 +178,25 @@ export default defineEventHandler(async (event) => {
             ? 'ticket_sent déjà true'
             : 'inconnu'
       })
+    }
+  }
+
+  if (stripeEvent.type === 'checkout.session.expired') {
+    const session = stripeEvent.data.object as Stripe.Checkout.Session
+    const orderId = session.metadata?.order_id
+    if (orderId) {
+      const { data: ord } = await supabaseAdmin.from('order').select('status').eq('id', orderId).single()
+      if (ord?.status === ORDER_STATUS.PENDING) {
+        await supabaseAdmin
+          .from('seat_reservation')
+          .delete()
+          .eq('order_id', orderId)
+          .eq('status', SEAT_STATUS.HOLD)
+        await updateOrderStatusAndClearContact(orderId, ORDER_STATUS.EXPIRED)
+        console.info('[billetterie:stripe-webhook] checkout.session.expired → holds supprimés, contact effacé', {
+          orderId
+        })
+      }
     }
   }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="seatMap">
+  <div class="seatMap" :class="{ 'seatMap--fillHeight': fillHeight }">
     <div
       ref="viewportRef"
       class="seatMap__viewport"
@@ -86,11 +86,11 @@
         :rx="SEAT_RADIUS"
         :ry="SEAT_RADIUS"
         :transform="seatArcTransform(seat)"
-        :fill="getSeatFill(seat)"
         stroke="rgba(30, 30, 30, 0.35)"
         stroke-width="0.45"
         :class="[
           'svg__seat',
+          seatVisualClass(seat),
           {
             'svg__seat--clickable': isSeatClickable(seat),
             'svg__seat--disabled': !isSeatClickable(seat)
@@ -393,13 +393,21 @@ const seatStatusLegendRows = computed((): LegendRow[] => [
   }
 ])
 
-const props = defineProps<{
-  seats: Seat[]
-  selectedSeatIds: string[]
-  activeOrder: ActiveOrder | null
-  /** Aligné sur `MAX_SEATS_PER_ORDER` (API hold-seats). */
-  maxSeatsPerOrder: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    seats: Seat[]
+    selectedSeatIds: string[]
+    activeOrder: ActiveOrder | null
+    /** Aligné sur `MAX_SEATS_PER_ORDER` (API hold-seats). */
+    maxSeatsPerOrder: number
+    /**
+     * Hauteur pilotée par le parent (px + transition) au lieu de 100dvh —
+     * utilisé sur la page réservation quand le bandeau commande modifie l’espace.
+     */
+    fillHeight?: boolean
+  }>(),
+  { fillHeight: false }
+)
 
 const emit = defineEmits<{
   'seat-click': [seatId: string]
@@ -1484,12 +1492,13 @@ function onWindowMapKeydownCapture(e: KeyboardEvent) {
   applyMapKeyboardShortcuts(e)
 }
 
-function getSeatFill(seat: Seat) {
-  if (seat.status === 'paid') return SEAT_COLORS.paid
-  if (seat.status === 'hold') return SEAT_COLORS.hold
-  if (seat.status === 'staff') return SEAT_COLORS.staff
-  if (selectedSet.value.has(seat.id)) return SEAT_COLORS.selected
-  return SEAT_COLORS.free
+/** Classe CSS pour `fill` animé (évite l’attribut `:fill` qui ne transitionne pas bien). */
+function seatVisualClass(seat: Seat) {
+  if (seat.status === 'paid') return 'svg__seat--paid'
+  if (seat.status === 'hold') return 'svg__seat--hold'
+  if (seat.status === 'staff') return 'svg__seat--staff'
+  if (selectedSet.value.has(seat.id)) return 'svg__seat--selected'
+  return 'svg__seat--free'
 }
 
 function isSeatClickable(seat: Seat) {
@@ -1523,6 +1532,12 @@ function handleSeatClick(seat: Seat) {
   margin-bottom: 24px;
   overflow: hidden;
   height: 100dvh;
+
+  &--fillHeight {
+    height: 100%;
+    min-height: 0;
+    margin-bottom: 0;
+  }
 
   .seatMap__viewport {
     width: 100%;
@@ -2029,6 +2044,24 @@ function handleSeatClick(seat: Seat) {
     cursor: grab;
 
     .svg__seat {
+      transition: fill 0.35s ease;
+
+      &--free {
+        fill: rgba(250, 250, 250, 0.78);
+      }
+      &--selected {
+        fill: #43a047;
+      }
+      &--hold {
+        fill: #ffb300;
+      }
+      &--paid {
+        fill: #e53935;
+      }
+      &--staff {
+        fill: #6d4bae;
+      }
+
       &--clickable {
         cursor: pointer;
       }
@@ -2036,7 +2069,6 @@ function handleSeatClick(seat: Seat) {
       &--disabled {
         cursor: not-allowed;
       }
-
     }
 
     .svg__label {

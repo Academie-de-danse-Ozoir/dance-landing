@@ -103,7 +103,7 @@ defineProps<{
 .figure__placeholder {
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: 10px;
+  border-radius: 4px;
   background-size: cover;
   background-position: center;
   box-shadow: 0 8px 28px rgba(33, 37, 41, 0.12);

@@ -1,150 +1,185 @@
 <template>
-  <div
-    v-if="show"
-    class="formReservationOverlay"
-    data-lenis-prevent
-    @click.self="$emit('close')"
-  >
-    <div class="formReservation">
-      <div class="formReservation__header">
-        <h2 class="header__title">{{ step === 1 ? content.home.modal.title : content.home.modal.step2Title }}</h2>
-        <button type="button" class="header__close" @click="$emit('close')" :aria-label="content.home.modal.close">
-          <span class="close__icon">&times;</span>
-        </button>
-      </div>
-
-      <div v-if="showReservationTimer" class="formReservation__timer" role="status">
-        <p class="timer__title">{{ content.home.modal.reservationBannerTitle }}</p>
-        <p class="timer__line">
-          <span class="timer__label">{{ content.home.modal.reservationTimeLabel }}</span>
-          <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
-        </p>
-        <button type="button" class="timer__cancel" @click="$emit('cancel-reservation')">
-          {{ content.home.activeOrder.cancelReservation }}
-        </button>
-      </div>
-
-      <VueLenis
-        :root="false"
-        :auto-raf="true"
-        :options="modalLenisOptions"
-        :props="{ class: 'formReservation__scroll', 'aria-label': content.home.modal.scrollRegionLabel }"
-      >
-        <div class="formReservation__body">
-        <!-- Étape 1 : coordonnées ; hold + timer déjà créés au clic « Réserver » -->
-        <form v-if="step === 1" class="body__form" @submit.prevent="onNext">
-          <FormField
-            v-for="field in formFields"
-            :key="field.key"
-            :field-key="field.key"
-            :label="field.label"
-            :type="field.type"
-            :placeholder="field.placeholder"
-            :model-value="form[field.key]"
-            :error="errors[field.key]"
-            :touched="touched[field.key]"
-            @update:model-value="updateField(field.key as keyof FormData, $event)"
-            @blur="handleFieldBlur(field.key)"
-          />
-
-          <div class="form__footer">
-            <DefaultButton
-              variant="secondary"
-              :label="content.home.modal.cancel"
-              type="button"
-              @click="$emit('close')"
-            />
-            <DefaultButton
-              variant="primary"
-              type="button"
-              :label="isSubmitting ? content.home.modal.submitting : content.home.modal.next"
-              :disabled="isSubmitting"
-              @click="onNext"
-            />
+  <Transition name="formReservationOverlay" appear>
+    <div
+      v-if="show"
+      class="formReservationOverlay"
+      data-lenis-prevent
+      role="presentation"
+      @click.self="$emit('close')"
+    >
+        <div
+          class="formReservation"
+          :class="{ 'formReservation--stepHidden': stepCardHidden }"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="dialogTitleId"
+          :aria-hidden="stepCardHidden ? 'true' : undefined"
+        >
+          <div class="formReservation__header">
+            <h2 :id="dialogTitleId" class="header__title">
+              {{ displayedStep === 1 ? content.home.modal.title : content.home.modal.step2Title }}
+            </h2>
+            <button type="button" class="header__close" @click="$emit('close')" :aria-label="content.home.modal.close">
+              <span class="close__icon">&times;</span>
+            </button>
           </div>
-        </form>
 
-        <!-- Étape 2 : détails par billet (nom, prénom, adulte/enfant, place) -->
-        <form v-else class="body__form body__form--step2" @submit.prevent="onSubmitStep2">
-          <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
-          <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
-            <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
-            <FormField
-              :field-key="`ticket-${idx}-firstName`"
-              :label="content.home.modal.fields.firstName.label"
-              type="text"
-              :placeholder="content.home.modal.fields.firstName.placeholder"
-              :model-value="ticket.firstName"
-              :error="ticketErrors[idx]?.firstName"
-              @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
-            />
-            <FormField
-              :field-key="`ticket-${idx}-lastName`"
-              :label="content.home.modal.fields.lastName.label"
-              type="text"
-              :placeholder="content.home.modal.fields.lastName.placeholder"
-              :model-value="ticket.lastName"
-              :error="ticketErrors[idx]?.lastName"
-              @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
-            />
-            <div class="ticketBlock__type">
-              <label class="type__label">{{ content.home.modal.ticketType }}</label>
-              <select
-                :value="ticket.ticketType"
-                class="type__select"
-                @change="updateTicketDetail(idx, 'ticketType', ($event.target as HTMLSelectElement).value as 'adult' | 'child')"
-              >
-                <option value="adult">{{ content.home.modal.adult }}</option>
-                <option value="child">{{ content.home.modal.child }}</option>
-              </select>
+          <Transition name="formReservationBanner">
+            <div v-if="showReservationTimer" key="reservation-timer" class="formReservation__timer" role="status">
+              <p class="timer__title">{{ content.home.modal.reservationBannerTitle }}</p>
+              <p class="timer__line">
+                <span class="timer__label">{{ content.home.modal.reservationTimeLabel }}</span>
+                <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
+              </p>
+              <button type="button" class="timer__cancel" @click="$emit('cancel-reservation')">
+                {{ content.home.activeOrder.cancelReservation }}
+              </button>
             </div>
-          </div>
+          </Transition>
 
-          <div class="priceSummary">
-            <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
-            <template v-if="priceSummary.adultCount > 0">
-              <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
-            </template>
-            <template v-if="priceSummary.childCount > 0">
-              <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
-            </template>
-            <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
-          </div>
+          <VueLenis
+            :root="false"
+            :auto-raf="true"
+            :options="modalLenisOptions"
+            :props="{ class: 'formReservation__scroll', 'aria-label': content.home.modal.scrollRegionLabel }"
+          >
+            <div class="formReservation__body">
+                <!-- Étape 1 : coordonnées ; hold + timer déjà créés au clic « Réserver » -->
+                <form v-if="displayedStep === 1" key="step-1" class="body__form" @submit.prevent="onNext">
+                  <div class="form__row form__row--namePair">
+                    <FormField
+                      v-for="field in formFieldsNameRow"
+                      :key="field.key"
+                      :field-key="field.key"
+                      :label="field.label"
+                      :type="field.type"
+                      :placeholder="field.placeholder"
+                      :model-value="form[field.key]"
+                      :error="errors[field.key]"
+                      :touched="touched[field.key]"
+                      @update:model-value="updateField(field.key as keyof FormData, $event)"
+                      @blur="handleFieldBlur(field.key)"
+                    />
+                  </div>
+                  <FormField
+                    v-for="field in formFieldsAfterNames"
+                    :key="field.key"
+                    :field-key="field.key"
+                    :label="field.label"
+                    :type="field.type"
+                    :placeholder="field.placeholder"
+                    :model-value="form[field.key]"
+                    :error="errors[field.key]"
+                    :touched="touched[field.key]"
+                    @update:model-value="updateField(field.key as keyof FormData, $event)"
+                    @blur="handleFieldBlur(field.key)"
+                  />
 
-          <ClientOnly>
-            <div v-if="turnstileSiteKey" class="form__turnstile">
-              <TurnstileField
-                :site-key="turnstileSiteKey"
-                :hint="content.home.modal.turnstileHint"
-                @update:token="onTurnstileToken"
-              />
-              <p v-if="turnstileError" class="form__turnstileError">{{ turnstileError }}</p>
+                  <div class="form__footer">
+                    <DefaultButton
+                      variant="secondary"
+                      :label="content.home.modal.cancel"
+                      type="button"
+                      @click="$emit('close')"
+                    />
+                    <DefaultButton
+                      variant="primary"
+                      type="button"
+                      :label="isSubmitting ? content.home.modal.submitting : content.home.modal.next"
+                      :disabled="isSubmitting"
+                      @click="onNext"
+                    />
+                  </div>
+                </form>
+
+                <!-- Étape 2 : détails par billet (nom, prénom, adulte/enfant, place) -->
+                <form v-else key="step-2" class="body__form body__form--step2" @submit.prevent="onSubmitStep2">
+                  <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
+                  <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
+                    <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
+                    <div class="ticketBlock__namePair">
+                      <FormField
+                        :field-key="`ticket-${idx}-firstName`"
+                        :label="content.home.modal.fields.firstName.label"
+                        type="text"
+                        :placeholder="content.home.modal.fields.firstName.placeholder"
+                        :model-value="ticket.firstName"
+                        :error="ticketErrors[idx]?.firstName"
+                        @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
+                      />
+                      <FormField
+                        :field-key="`ticket-${idx}-lastName`"
+                        :label="content.home.modal.fields.lastName.label"
+                        type="text"
+                        :placeholder="content.home.modal.fields.lastName.placeholder"
+                        :model-value="ticket.lastName"
+                        :error="ticketErrors[idx]?.lastName"
+                        @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
+                      />
+                    </div>
+                    <div class="ticketBlock__type">
+                      <label class="type__label">{{ content.home.modal.ticketType }}</label>
+                      <select
+                        :value="ticket.ticketType"
+                        class="type__select"
+                        @change="
+                          updateTicketDetail(idx, 'ticketType', ($event.target as HTMLSelectElement).value as 'adult' | 'child')
+                        "
+                      >
+                        <option value="adult">{{ content.home.modal.adult }}</option>
+                        <option value="child">{{ content.home.modal.child }}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="priceSummary">
+                    <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
+                    <template v-if="priceSummary.adultCount > 0">
+                      <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
+                    </template>
+                    <template v-if="priceSummary.childCount > 0">
+                      <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
+                    </template>
+                    <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
+                  </div>
+
+                  <ClientOnly>
+                    <div v-if="turnstileSiteKey" class="form__turnstile">
+                      <TurnstileField
+                        :site-key="turnstileSiteKey"
+                        :hint="content.home.modal.turnstileHint"
+                        @update:token="onTurnstileToken"
+                      />
+                      <Transition name="errorFade">
+                        <p v-if="turnstileError" key="turnstile-err" class="form__turnstileError">{{ turnstileError }}</p>
+                      </Transition>
+                    </div>
+                  </ClientOnly>
+
+                  <div class="form__footer">
+                    <DefaultButton
+                      variant="secondary"
+                      :label="content.home.modal.back"
+                      type="button"
+                      @click="$emit('back')"
+                    />
+                    <DefaultButton
+                      variant="primary"
+                      type="submit"
+                      :label="isSubmitting ? content.home.modal.submitting : content.home.modal.submit"
+                      :disabled="isSubmitting"
+                    />
+                  </div>
+                </form>
             </div>
-          </ClientOnly>
-
-          <div class="form__footer">
-            <DefaultButton
-              variant="secondary"
-              :label="content.home.modal.back"
-              type="button"
-              @click="$emit('back')"
-            />
-            <DefaultButton
-              variant="primary"
-              type="submit"
-              :label="isSubmitting ? content.home.modal.submitting : content.home.modal.submit"
-              :disabled="isSubmitting"
-            />
-          </div>
-        </form>
+          </VueLenis>
         </div>
-      </VueLenis>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
-import { computed, watch, ref, onBeforeUnmount } from 'vue'
+import { computed, watch, ref, onBeforeUnmount, useId, nextTick } from 'vue'
 import type { LenisOptions } from 'lenis'
 import content from '../../locales/fr.json'
 import { PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
@@ -199,11 +234,62 @@ function lockDocumentScroll(lock: boolean) {
   document.documentElement.style.overflow = lock ? 'hidden' : ''
 }
 
+/** Affichage réel après fondu complet de la carte (toute la popup, pas seulement le body). */
+const displayedStep = ref<1 | 2>(props.step)
+const stepCardHidden = ref(false)
+const STEP_CARD_FADE_MS = 260
+/** Après swap d’étape : laisser le layout se stabiliser avant le fade-in (évite le saut). */
+const STEP_REVEAL_DELAY_MS = 100
+let stepChangeGeneration = 0
+
+const BANNER_TRANSITION_MS = 400
+
 watch(
   () => props.show,
   (open) => {
     lockDocumentScroll(open)
-    if (open) rootLenis.value?.resize()
+    if (open) {
+      displayedStep.value = props.step
+      rootLenis.value?.resize()
+    } else {
+      stepCardHidden.value = false
+      displayedStep.value = props.step
+    }
+  }
+)
+
+watch(
+  () => [props.show, props.showReservationTimer] as const,
+  () => {
+    if (!props.show) return
+    void nextTick().then(() => {
+      window.setTimeout(() => rootLenis.value?.resize(), BANNER_TRANSITION_MS)
+    })
+  },
+  { flush: 'post', immediate: true }
+)
+
+watch(
+  () => props.step,
+  async (next, prev) => {
+    if (next === prev) return
+    if (!props.show) {
+      displayedStep.value = next
+      return
+    }
+    const gen = ++stepChangeGeneration
+    stepCardHidden.value = true
+    await new Promise((r) => setTimeout(r, STEP_CARD_FADE_MS))
+    if (gen !== stepChangeGeneration || !props.show) {
+      stepCardHidden.value = false
+      displayedStep.value = props.step
+      return
+    }
+    displayedStep.value = next
+    await nextTick()
+    await new Promise((r) => setTimeout(r, STEP_REVEAL_DELAY_MS))
+    rootLenis.value?.resize()
+    stepCardHidden.value = false
   }
 )
 
@@ -288,6 +374,10 @@ const formFields = [
   { key: 'phone' as const, label: content.home.modal.fields.phone.label, type: 'tel' as const, placeholder: content.home.modal.fields.phone.placeholder }
 ]
 
+const dialogTitleId = useId()
+const formFieldsNameRow = formFields.filter((f) => f.key === 'firstName' || f.key === 'lastName')
+const formFieldsAfterNames = formFields.filter((f) => f.key !== 'firstName' && f.key !== 'lastName')
+
 function updateField(key: keyof FormData, value: string) {
   emit('update:form', { ...props.form, [key]: value })
 }
@@ -341,6 +431,45 @@ function onSubmitStep2() {
 </script>
 
 <style lang="scss" scoped>
+/* Une seule couche d’animation à l’ouverture / fermeture (fond + carte en même temps). */
+.formReservationOverlay-enter-active,
+.formReservationOverlay-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.formReservationOverlay-enter-from,
+.formReservationOverlay-leave-to {
+  opacity: 0;
+}
+
+/* Bandeau réservation : hauteur + opacité (évite le saut brutal de la carte). */
+.formReservationBanner-enter-active,
+.formReservationBanner-leave-active {
+  overflow: hidden;
+  transition:
+    max-height 0.38s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.3s ease;
+}
+
+.formReservationBanner-enter-from,
+.formReservationBanner-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.formReservationBanner-enter-to,
+.formReservationBanner-leave-from {
+  max-height: 380px;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formReservationBanner-enter-active,
+  .formReservationBanner-leave-active {
+    transition-duration: 0.01ms;
+  }
+}
+
 .formReservationOverlay {
   position: fixed;
   inset: 0;
@@ -349,7 +478,6 @@ function onSubmitStep2() {
   align-items: center;
   justify-content: center;
   z-index: 1050;
-  animation: fadeIn 0.15s ease-out;
 }
 
 .formReservation {
@@ -357,13 +485,18 @@ function onSubmitStep2() {
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
+  max-width: 650px;
+  max-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: slideDown 0.3s ease-out;
   margin: auto;
+  transition: opacity 0.26s ease;
+
+  &.formReservation--stepHidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 
   .formReservation__timer {
     flex-shrink: 0;
@@ -416,7 +549,7 @@ function onSubmitStep2() {
     border: 1px solid #fecaca;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 
     &:hover {
       background: #fff;
@@ -427,10 +560,13 @@ function onSubmitStep2() {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     padding: 20px 24px;
     border-bottom: 1px solid #dee2e6;
 
     .header__title {
+      flex: 1;
+      min-width: 0;
       margin: 0;
       font-size: 20px;
       font-weight: 600;
@@ -438,6 +574,7 @@ function onSubmitStep2() {
     }
 
     .header__close {
+      flex-shrink: 0;
       background: none;
       border: none;
       font-size: 28px;
@@ -451,7 +588,7 @@ function onSubmitStep2() {
       align-items: center;
       justify-content: center;
       border-radius: 4px;
-      transition: all 0.2s;
+      transition: background-color 0.3s ease, color 0.3s ease;
 
       &:hover {
         background-color: #f8f9fa;
@@ -478,6 +615,17 @@ function onSubmitStep2() {
       display: flex;
       flex-direction: column;
 
+      .form__row--namePair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 12px;
+        margin-bottom: 20px;
+
+        :deep(.formField) {
+          margin-bottom: 0;
+        }
+      }
+
       &--step2 {
         .form__intro {
           margin: 0 0 20px 0;
@@ -501,8 +649,19 @@ function onSubmitStep2() {
           color: #212529;
         }
 
+        .ticketBlock__namePair {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0 12px;
+          margin-bottom: 8px;
+
+          :deep(.formField) {
+            margin-bottom: 12px;
+          }
+        }
+
         .ticketBlock__type {
-          margin-top: 12px;
+          margin-top: 4px;
 
           .type__label {
             display: block;
@@ -519,6 +678,18 @@ function onSubmitStep2() {
             border: 1px solid #dee2e6;
             border-radius: 6px;
             background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+
+            &:hover {
+              border-color: #adb5bd;
+            }
+
+            &:focus {
+              outline: 0;
+              border-color: #86b7fe;
+              box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.22);
+            }
           }
         }
       }
@@ -581,26 +752,6 @@ function onSubmitStep2() {
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 @media (max-width: 575.98px) {
   .formReservation {
     width: 95%;
@@ -614,10 +765,17 @@ function onSubmitStep2() {
     .formReservation__body {
       padding: 20px;
 
-      .body__form .form__footer {
-        padding: 12px 20px;
-        flex-direction: column;
-        gap: 8px;
+      .body__form {
+        .form__row--namePair,
+        .ticketBlock__namePair {
+          grid-template-columns: 1fr;
+        }
+
+        .form__footer {
+          padding: 12px 20px;
+          flex-direction: column;
+          gap: 8px;
+        }
       }
     }
   }
