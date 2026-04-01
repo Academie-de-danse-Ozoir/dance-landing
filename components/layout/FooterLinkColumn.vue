@@ -7,7 +7,7 @@
           v-if="!link.external"
           :to="link.to"
           class="list__link"
-          @click="(e) => onInternalLinkClick(e, link)"
+          @click.capture="(e) => onBookingScrollLinkClick(e, link)"
         >
           {{ link.label }}
         </NuxtLink>
@@ -33,7 +33,7 @@ export type FooterColumnLink = {
   to: string
   label: string
   external?: boolean
-  /** Sur la home : même scroll Lenis que le CTA hero (évite router + délai). */
+  /** Sur la home : même scroll que le CTA hero (`useScrollToBooking`). */
   sameAsBookingScroll?: boolean
 }
 
@@ -46,7 +46,11 @@ const route = useRoute()
 const router = useRouter()
 const { scrollToBookingSection } = useScrollToBooking()
 
-function onInternalLinkClick(e: MouseEvent, link: FooterColumnLink) {
+/**
+ * Phase capture : avant le onClick interne de RouterLink, sinon `preventDefault`
+ * arrive trop tard et la navigation / « reload » part quand même (souvent sur mobile).
+ */
+function onBookingScrollLinkClick(e: MouseEvent, link: FooterColumnLink) {
   if (!link.sameAsBookingScroll) return
   e.preventDefault()
   const path = route.path

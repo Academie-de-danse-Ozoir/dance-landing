@@ -113,7 +113,8 @@
         "legendHold": "Réservation en cours (autre spectateur)",
         "legendPaid": "Vendu / non disponible",
         "legendStaff": "Réservé personnel",
-        "legendMaxPerOrder": "Jusqu’à {max} places par commande."
+        "legendMaxPerOrder": "Jusqu’à {max} places par commande.",
+        "mapLoading": "Chargement du plan de salle…"
       }
     },
     "selection": {

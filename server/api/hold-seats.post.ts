@@ -4,8 +4,7 @@ import {
   EVENT_ID,
   MAX_SEATS_PER_ORDER,
   RATE_LIMIT_HOLD_SEATS_PER_MINUTE,
-  MAX_LENGTH,
-  STAFF_RESERVED_SEAT_IDS
+  MAX_LENGTH
 } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
@@ -46,7 +45,21 @@ export default defineEventHandler(async (event) => {
   }
 
   const seatIdStrs = seatIds.map(id => String(id))
-  if (seatIdStrs.some(id => STAFF_RESERVED_SEAT_IDS.includes(id))) {
+  const uniqueSeatIds = [...new Set(seatIdStrs)]
+
+  const { data: seatRows, error: seatLookupError } = await supabaseAdmin
+    .from('seat')
+    .select('id, reserved_for_staff')
+    .in('id', uniqueSeatIds)
+
+  if (seatLookupError || !seatRows || seatRows.length !== uniqueSeatIds.length) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: tApiError('seatsUnavailable')
+    })
+  }
+
+  if (seatRows.some((r: { reserved_for_staff?: boolean }) => r.reserved_for_staff === true)) {
     throw createError({
       statusCode: 400,
       statusMessage: tApiError('staffSeatsNotBookable')

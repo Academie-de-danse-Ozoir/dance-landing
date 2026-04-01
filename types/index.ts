@@ -1,3 +1,4 @@
+/** `staff` = place `reserved_for_staff` en base (personnel), non réservable. */
 export type SeatStatus = 'free' | 'hold' | 'paid' | 'staff'
 
 export type Seat = {

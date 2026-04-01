@@ -21,8 +21,11 @@ export const PRICE_CHILD_CENTS = 50
 /** Nombre max de sièges par réservation */
 export const MAX_SEATS_PER_ORDER = 10
 
-/** Id DOM du bloc plan de salle (aucun `#` dans l’URL — scroll via Lenis ou sessionStorage). */
+/** Id DOM du bloc plan de salle (aucun `#` dans l’URL — scroll Lenis desktop ou natif ≤1024px). */
 export const SEAT_SELECTION_SECTION_ID = 'seat-selection'
+
+/** ≤1024px : pas de Lenis racine (`app.vue`), scroll page via `scrollIntoView` dans `useScrollToBooking`. */
+export const NATIVE_SCROLL_VIEWPORT_MQ = '(max-width: 1024px)'
 
 /** Footer « Choisir mes places » depuis une autre page : après `router.push('/')`, scroll ici. */
 export const PENDING_SCROLL_TO_SEATS_KEY = 'billetterie:pending-seat-scroll'
@@ -69,10 +72,30 @@ export const SEAT_STATUS = {
 } as const
 
 /**
- * UUID des sièges affichés comme « réservés personnel » (non sélectionnables).
- * À terme, peut être remplacé par une colonne en base (ex. `seat.staff_only`).
+ * Sièges `reserved_for_staff` affichés sur le plan comme « vendus / indisponibles » (`--paid`),
+ * pas comme « personnel » (`--staff`). Autres places personnel : visuel staff inchangé.
  */
-export const STAFF_RESERVED_SEAT_IDS: readonly string[] = []
+export const STAFF_SEAT_LABELS_VISUAL_AS_PAID: readonly string[] = [
+  'G38',
+  'G36',
+  'G34',
+  'G32',
+  'G30',
+  'G28',
+  'G26',
+  'G24',
+  'G22',
+  'H40',
+  'H38',
+  'H36',
+  'H34',
+  'H32',
+  'H30',
+  'H28',
+  'H26',
+  'H24',
+  'H22'
+]
 
 export const CANCEL_REASON = {
   TIMER: 'timer',

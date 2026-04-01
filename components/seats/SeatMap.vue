@@ -291,7 +291,8 @@ import {
   SEAT_MAP_BALCONY_ARC_REF_OFFSET_Y,
   SEAT_MAP_BALCONY_ARC_ROTATION_SIGN,
   SEAT_MAP_BALCONY_ARC_SCALE_X_CURVE_POWER,
-  SEAT_MAP_BALCONY_ARC_SCALE_X_MIN
+  SEAT_MAP_BALCONY_ARC_SCALE_X_MIN,
+  STAFF_SEAT_LABELS_VISUAL_AS_PAID
 } from '../../constants'
 import {
   parseTheaterSeatLabel,
@@ -1492,11 +1493,18 @@ function onWindowMapKeydownCapture(e: KeyboardEvent) {
   applyMapKeyboardShortcuts(e)
 }
 
+function isStaffSeatVisualAsPaid(seat: Seat) {
+  return seat.status === 'staff' && STAFF_SEAT_LABELS_VISUAL_AS_PAID.includes(seat.label)
+}
+
 /** Classe CSS pour `fill` animé (évite l’attribut `:fill` qui ne transitionne pas bien). */
 function seatVisualClass(seat: Seat) {
   if (seat.status === 'paid') return 'svg__seat--paid'
   if (seat.status === 'hold') return 'svg__seat--hold'
-  if (seat.status === 'staff') return 'svg__seat--staff'
+  if (seat.status === 'staff') {
+    if (isStaffSeatVisualAsPaid(seat)) return 'svg__seat--paid'
+    return 'svg__seat--staff'
+  }
   if (selectedSet.value.has(seat.id)) return 'svg__seat--selected'
   return 'svg__seat--free'
 }
@@ -1508,7 +1516,10 @@ function isSeatClickable(seat: Seat) {
 }
 
 function getSeatTitle(seat: Seat) {
-  if (seat.status === 'staff') return content.home.seats.tooltip.seatStaffReserved
+  if (seat.status === 'staff') {
+    if (isStaffSeatVisualAsPaid(seat)) return content.home.seats.tooltip.seatUnavailable
+    return content.home.seats.tooltip.seatStaffReserved
+  }
   if (props.activeOrder && seat.status === 'free') return content.home.seats.tooltip.reservationInProgress
   if (seat.status !== 'free') return content.home.seats.tooltip.seatUnavailable
   return ''

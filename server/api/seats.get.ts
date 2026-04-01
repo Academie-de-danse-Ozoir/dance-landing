@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { EVENT_ID, SEAT_STATUS, STAFF_RESERVED_SEAT_IDS } from '../../constants'
+import { EVENT_ID, SEAT_STATUS } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 
 type SeatStatus = 'free' | 'hold' | 'paid' | 'staff'
@@ -8,7 +8,7 @@ export default defineEventHandler(async () => {
   // 1️⃣ Tous les sièges
   const { data: seats, error: seatError } = await supabaseAdmin
     .from('seat')
-    .select('id, label')
+    .select('id, label, reserved_for_staff')
 
   if (seatError) {
     throw createError({
@@ -39,16 +39,17 @@ export default defineEventHandler(async () => {
   })
 
   return seats.map(seat => {
-    const reserved = reservationMap.get(seat.id)
+    const row = seat as { id: string; label: string; reserved_for_staff?: boolean }
+    const reserved = reservationMap.get(row.id)
     let status: SeatStatus = SEAT_STATUS.FREE
     if (reserved === SEAT_STATUS.HOLD || reserved === SEAT_STATUS.PAID) {
       status = reserved
-    } else if (STAFF_RESERVED_SEAT_IDS.includes(seat.id)) {
+    } else if (row.reserved_for_staff === true) {
       status = SEAT_STATUS.STAFF
     }
     return {
-      id: seat.id,
-      label: seat.label,
+      id: row.id,
+      label: row.label,
       status
     }
   })

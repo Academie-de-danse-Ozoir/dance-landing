@@ -37,32 +37,12 @@
             </div>
           </Transition>
 
-          <VueLenis
-            :root="false"
-            :auto-raf="true"
-            :options="modalLenisOptions"
-            :props="{ class: 'formReservation__scroll', 'aria-label': content.home.modal.scrollRegionLabel }"
-          >
+          <div class="formReservation__scroll" :aria-label="content.home.modal.scrollRegionLabel">
             <div class="formReservation__body">
-                <!-- Étape 1 : coordonnées ; hold + timer déjà créés au clic « Réserver » -->
-                <form v-if="displayedStep === 1" key="step-1" class="body__form" @submit.prevent="onNext">
-                  <div class="form__row form__row--namePair">
-                    <FormField
-                      v-for="field in formFieldsNameRow"
-                      :key="field.key"
-                      :field-key="field.key"
-                      :label="field.label"
-                      :type="field.type"
-                      :placeholder="field.placeholder"
-                      :model-value="form[field.key]"
-                      :error="errors[field.key]"
-                      :touched="touched[field.key]"
-                      @update:model-value="updateField(field.key as keyof FormData, $event)"
-                      @blur="handleFieldBlur(field.key)"
-                    />
-                  </div>
+              <form v-if="displayedStep === 1" key="step-1" class="body__form" @submit.prevent="onNext">
+                <div class="form__row form__row--namePair">
                   <FormField
-                    v-for="field in formFieldsAfterNames"
+                    v-for="field in formFieldsNameRow"
                     :key="field.key"
                     :field-key="field.key"
                     :label="field.label"
@@ -74,105 +54,108 @@
                     @update:model-value="updateField(field.key as keyof FormData, $event)"
                     @blur="handleFieldBlur(field.key)"
                   />
-
-                  <div class="form__footer">
-                    <DefaultButton
-                      variant="secondary"
-                      :label="content.home.modal.cancel"
-                      type="button"
-                      @click="$emit('close')"
+                </div>
+                <FormField
+                  v-for="field in formFieldsAfterNames"
+                  :key="field.key"
+                  :field-key="field.key"
+                  :label="field.label"
+                  :type="field.type"
+                  :placeholder="field.placeholder"
+                  :model-value="form[field.key]"
+                  :error="errors[field.key]"
+                  :touched="touched[field.key]"
+                  @update:model-value="updateField(field.key as keyof FormData, $event)"
+                  @blur="handleFieldBlur(field.key)"
+                />
+                <div class="form__footer">
+                  <DefaultButton
+                    variant="secondary"
+                    :label="content.home.modal.cancel"
+                    type="button"
+                    @click="emit('close')"
+                  />
+                  <DefaultButton
+                    variant="primary"
+                    type="button"
+                    :label="isSubmitting ? content.home.modal.submitting : content.home.modal.next"
+                    :disabled="isSubmitting"
+                    @click="onNext"
+                  />
+                </div>
+              </form>
+              <form v-else key="step-2" class="body__form body__form--step2" @submit.prevent="onSubmitStep2">
+                <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
+                <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
+                  <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
+                  <div class="ticketBlock__namePair">
+                    <FormField
+                      :field-key="`ticket-${idx}-firstName`"
+                      :label="content.home.modal.fields.firstName.label"
+                      type="text"
+                      :placeholder="content.home.modal.fields.firstName.placeholder"
+                      :model-value="ticket.firstName"
+                      :error="ticketErrors[idx]?.firstName"
+                      @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
                     />
-                    <DefaultButton
-                      variant="primary"
-                      type="button"
-                      :label="isSubmitting ? content.home.modal.submitting : content.home.modal.next"
-                      :disabled="isSubmitting"
-                      @click="onNext"
-                    />
-                  </div>
-                </form>
-
-                <!-- Étape 2 : détails par billet (nom, prénom, adulte/enfant, place) -->
-                <form v-else key="step-2" class="body__form body__form--step2" @submit.prevent="onSubmitStep2">
-                  <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
-                  <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
-                    <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
-                    <div class="ticketBlock__namePair">
-                      <FormField
-                        :field-key="`ticket-${idx}-firstName`"
-                        :label="content.home.modal.fields.firstName.label"
-                        type="text"
-                        :placeholder="content.home.modal.fields.firstName.placeholder"
-                        :model-value="ticket.firstName"
-                        :error="ticketErrors[idx]?.firstName"
-                        @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
-                      />
-                      <FormField
-                        :field-key="`ticket-${idx}-lastName`"
-                        :label="content.home.modal.fields.lastName.label"
-                        type="text"
-                        :placeholder="content.home.modal.fields.lastName.placeholder"
-                        :model-value="ticket.lastName"
-                        :error="ticketErrors[idx]?.lastName"
-                        @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
-                      />
-                    </div>
-                    <div class="ticketBlock__type">
-                      <label class="type__label">{{ content.home.modal.ticketType }}</label>
-                      <select
-                        :value="ticket.ticketType"
-                        class="type__select"
-                        @change="
-                          updateTicketDetail(idx, 'ticketType', ($event.target as HTMLSelectElement).value as 'adult' | 'child')
-                        "
-                      >
-                        <option value="adult">{{ content.home.modal.adult }}</option>
-                        <option value="child">{{ content.home.modal.child }}</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="priceSummary">
-                    <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
-                    <template v-if="priceSummary.adultCount > 0">
-                      <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
-                    </template>
-                    <template v-if="priceSummary.childCount > 0">
-                      <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
-                    </template>
-                    <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
-                  </div>
-
-                  <ClientOnly>
-                    <div v-if="turnstileSiteKey" class="form__turnstile">
-                      <TurnstileField
-                        :site-key="turnstileSiteKey"
-                        :hint="content.home.modal.turnstileHint"
-                        @update:token="onTurnstileToken"
-                      />
-                      <Transition name="errorFade">
-                        <p v-if="turnstileError" key="turnstile-err" class="form__turnstileError">{{ turnstileError }}</p>
-                      </Transition>
-                    </div>
-                  </ClientOnly>
-
-                  <div class="form__footer">
-                    <DefaultButton
-                      variant="secondary"
-                      :label="content.home.modal.back"
-                      type="button"
-                      @click="$emit('back')"
-                    />
-                    <DefaultButton
-                      variant="primary"
-                      type="submit"
-                      :label="isSubmitting ? content.home.modal.submitting : content.home.modal.submit"
-                      :disabled="isSubmitting"
+                    <FormField
+                      :field-key="`ticket-${idx}-lastName`"
+                      :label="content.home.modal.fields.lastName.label"
+                      type="text"
+                      :placeholder="content.home.modal.fields.lastName.placeholder"
+                      :model-value="ticket.lastName"
+                      :error="ticketErrors[idx]?.lastName"
+                      @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
                     />
                   </div>
-                </form>
+                  <div class="ticketBlock__type">
+                    <label class="type__label">{{ content.home.modal.ticketType }}</label>
+                    <select
+                      :value="ticket.ticketType"
+                      class="type__select"
+                      @change="
+                        updateTicketDetail(idx, 'ticketType', ($event.target as HTMLSelectElement).value as 'adult' | 'child')
+                      "
+                    >
+                      <option value="adult">{{ content.home.modal.adult }}</option>
+                      <option value="child">{{ content.home.modal.child }}</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="priceSummary">
+                  <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
+                  <template v-if="priceSummary.adultCount > 0">
+                    <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
+                  </template>
+                  <template v-if="priceSummary.childCount > 0">
+                    <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
+                  </template>
+                  <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
+                </div>
+                <ClientOnly>
+                  <div v-if="turnstileSiteKey" class="form__turnstile">
+                    <TurnstileField
+                      :site-key="turnstileSiteKey"
+                      :hint="content.home.modal.turnstileHint"
+                      @update:token="onTurnstileToken"
+                    />
+                    <Transition name="errorFade">
+                      <p v-if="turnstileError" key="turnstile-err" class="form__turnstileError">{{ turnstileError }}</p>
+                    </Transition>
+                  </div>
+                </ClientOnly>
+                <div class="form__footer">
+                  <DefaultButton variant="secondary" :label="content.home.modal.back" type="button" @click="emit('back')" />
+                  <DefaultButton
+                    variant="primary"
+                    type="submit"
+                    :label="isSubmitting ? content.home.modal.submitting : content.home.modal.submit"
+                    :disabled="isSubmitting"
+                  />
+                </div>
+              </form>
             </div>
-          </VueLenis>
+          </div>
         </div>
     </div>
   </Transition>
@@ -180,7 +163,6 @@
 
 <script setup lang="ts">
 import { computed, watch, ref, onBeforeUnmount, useId, nextTick } from 'vue'
-import type { LenisOptions } from 'lenis'
 import content from '../../locales/fr.json'
 import { PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
 import FormField from './FormField.vue'
@@ -220,14 +202,6 @@ const props = defineProps<{
 
 const config = useRuntimeConfig()
 const rootLenis = useLenis()
-
-/** Lenis dans la modale : même esprit que la page (léger lissage molette / touch). */
-const modalLenisOptions: LenisOptions = {
-  smoothWheel: true,
-  syncTouch: true,
-  lerp: 0.12,
-  overscroll: true
-}
 
 function lockDocumentScroll(lock: boolean) {
   if (import.meta.server) return
@@ -601,11 +575,12 @@ function onSubmitStep2() {
     }
   }
 
-  /** Conteneur Lenis (wrapper du composant VueLenis) : occupe l’espace sous l’en-tête / timer. */
-  :deep(.formReservation__scroll) {
+  .formReservation__scroll {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .formReservation__body {

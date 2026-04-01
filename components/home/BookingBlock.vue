@@ -1,6 +1,18 @@
 <template>
   <section :id="SEAT_SELECTION_SECTION_ID" class="bookingBlock" aria-label="Réservation">
-    <div ref="bookingInnerRef" class="bookingBlock__inner">
+    <div
+      v-if="!seatsReady"
+      class="bookingBlock__loader"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="bookingBlock__loaderSpinner" aria-hidden="true" />
+      <span class="bookingBlock__visuallyHidden">{{ content.home.seats.map.mapLoading }}</span>
+    </div>
+
+    <Transition name="bookingBlockReveal" appear>
+      <div v-if="seatsReady">
+        <div ref="bookingInnerRef" class="bookingBlock__inner">
       <h1 class="bookingBlock__title">{{ content.home.title }}</h1>
 
       <Transition
@@ -68,26 +80,28 @@
       <Transition name="errorFade">
         <div v-if="error" key="booking-error" class="bookingBlock__alert bookingBlock__alert--danger">{{ error }}</div>
       </Transition>
-    </div>
+        </div>
 
-    <FormReservation
-      v-model:form="form"
-      :show="showModal"
-      :seat-count="formStep === 1 ? selectedSeatIds.length : (activeOrder?.seatCount ?? selectedSeatIds.length)"
-      :step="formStep"
-      :seat-items="step2SeatItems"
-      :errors="errors"
-      :touched="touched"
-      :is-submitting="isSubmitting"
-      :show-reservation-timer="showModal && !!activeOrder"
-      :formatted-reservation-time="formattedTime"
-      @close="closeModal"
-      @next="onFormNext"
-      @back="formStep = 1"
-      @submit="submitStep2"
-      @field-blur="handleFieldBlur"
-      @cancel-reservation="onCancelReservationFromModal"
-    />
+        <FormReservation
+          v-model:form="form"
+          :show="showModal"
+          :seat-count="formStep === 1 ? selectedSeatIds.length : (activeOrder?.seatCount ?? selectedSeatIds.length)"
+          :step="formStep"
+          :seat-items="step2SeatItems"
+          :errors="errors"
+          :touched="touched"
+          :is-submitting="isSubmitting"
+          :show-reservation-timer="showModal && !!activeOrder"
+          :formatted-reservation-time="formattedTime"
+          @close="closeModal"
+          @next="onFormNext"
+          @back="formStep = 1"
+          @submit="submitStep2"
+          @field-blur="handleFieldBlur"
+          @cancel-reservation="onCancelReservationFromModal"
+        />
+      </div>
+    </Transition>
   </section>
 </template>
 
@@ -136,6 +150,8 @@ type SeatApiResponse = {
 }
 
 const seats = ref<Seat[]>([])
+/** Plan : loader jusqu’au premier chargement `/api/seats`, puis fade-in du SeatMap. */
+const seatsReady = ref(false)
 const selectedSeatIds = ref<string[]>([])
 const selectionLimitMessage = ref<string | null>(null)
 const error = ref<string | null>(null)
@@ -507,8 +523,12 @@ function startTimerFromExpiresAt(expiresAt: string) {
 }
 
 async function loadSeats() {
-  const data = await $fetch<SeatApiResponse[]>('/api/seats')
-  seats.value = layoutYerresTheaterSeats(data)
+  try {
+    const data = await $fetch<SeatApiResponse[]>('/api/seats')
+    seats.value = layoutYerresTheaterSeats(data)
+  } finally {
+    seatsReady.value = true
+  }
 }
 
 function startSeatsRealtime() {
@@ -1083,9 +1103,68 @@ $booking-layout-ms: 0.42s;
   transition: height $booking-layout-ms $booking-layout-ease;
 }
 
+.bookingBlock__loader {
+  min-height: 935px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.bookingBlock__loaderSpinner {
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  border: 3px solid #e9ecef;
+  border-top-color: #0d6efd;
+  border-radius: 50%;
+  animation: bookingBlockSeatMapSpin 0.75s linear infinite;
+}
+
+@keyframes bookingBlockSeatMapSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bookingBlock__visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.bookingBlockReveal-enter-active {
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.bookingBlockReveal-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.bookingBlockReveal-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bookingBlock__seatMapSizer {
     transition: none;
+  }
+
+  .bookingBlock__loaderSpinner {
+    animation: none;
+    border-top-color: #dee2e6;
+  }
+
+  .bookingBlockReveal-enter-active {
+    transition-duration: 0.01ms;
   }
 }
 
