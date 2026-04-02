@@ -19,16 +19,28 @@ export const PRICE_CHILD_CENTS = 50
 // =============================================================================
 
 /** Nombre max de sièges par réservation */
-export const MAX_SEATS_PER_ORDER = 10
+export const MAX_SEATS_PER_ORDER = 20
 
-/** Id DOM du bloc plan de salle (aucun `#` dans l’URL — scroll Lenis desktop ou natif ≤1024px). */
+/** Id DOM du bloc plan de salle (aucun `#` dans l’URL — scroll Lenis ou natif selon `NARROW_VIEWPORT_MQ`). */
 export const SEAT_SELECTION_SECTION_ID = 'seat-selection'
 
-/** ≤1024px : pas de Lenis racine (`app.vue`), scroll page via `scrollIntoView` dans `useScrollToBooking`. */
-export const NATIVE_SCROLL_VIEWPORT_MQ = '(max-width: 1024px)'
+/** Id DOM du hero en tête de page d’accueil (lien footer « Accueil » — scroll Lenis ou natif). */
+export const HOME_TOP_SECTION_ID = 'home-top'
+
+/**
+ * Largeur max (px) du viewport « étroit » : pas de Lenis racine, scroll page natif, UI SeatMap mobile (zoom, popovers), etc.
+ * Aligné sur `$bp-lg` / `@include media-down(lg)` dans `assets/styles/global/_breakpoints.scss`.
+ */
+export const NARROW_VIEWPORT_MAX_WIDTH_PX = 1025
+
+/** `matchMedia` partagée pour tout le front (équivalent à `max-width: NARROW_VIEWPORT_MAX_WIDTH_PX`). */
+export const NARROW_VIEWPORT_MQ = `(max-width: ${NARROW_VIEWPORT_MAX_WIDTH_PX}px)`
 
 /** Footer « Choisir mes places » depuis une autre page : après `router.push('/')`, scroll ici. */
 export const PENDING_SCROLL_TO_SEATS_KEY = 'billetterie:pending-seat-scroll'
+
+/** Footer « Accueil » depuis une autre page : après `router.push('/')`, scroll en tête de page. */
+export const PENDING_SCROLL_TO_HOME_KEY = 'billetterie:pending-home-scroll'
 
 /** ms après arrivée sur / — aligné sur le fade (app/router.options PAGE_TRANSITION_MS + marge). */
 export const SCROLL_TO_SEATS_AFTER_NAV_MS = 360

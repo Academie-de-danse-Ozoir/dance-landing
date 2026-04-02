@@ -10,13 +10,9 @@
 </template>
 
 <script setup lang="ts">
-import content from '~/locales/fr.json'
-import LegalPageShell from '~/components/legal/LegalPageShell.vue'
-import LegalDocument from '~/components/legal/LegalDocument.vue'
+import content from '../locales/fr.json'
+import LegalPageShell from '../components/legal/LegalPageShell.vue'
+import LegalDocument from '../components/legal/LegalDocument.vue'
 
 const doc = content.legal.cgv
-
-useHead({
-  title: doc.metaTitle
-})
 </script>

@@ -48,6 +48,7 @@
           :max-seats-per-order="MAX_SEATS_PER_ORDER"
           class="bookingBlock__seatMap"
           @seat-click="toggleSeat"
+          @booking-section-scroll-if-needed="onSeatMapBookingScrollIfNeeded"
         />
       </div>
 
@@ -126,7 +127,11 @@ import SelectionInfo from '../seats/SelectionInfo.vue'
 import FormReservation from '../forms/FormReservation.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
 import { useScrollToBooking } from '../../composables/useScrollToBooking'
-const { scrollToBookingSection } = useScrollToBooking()
+const { scrollToBookingSection, scrollToBookingSectionIfMisaligned } = useScrollToBooking()
+
+function onSeatMapBookingScrollIfNeeded() {
+  void scrollToBookingSectionIfMisaligned()
+}
 
 const supabase = useSupabaseClient()
 let realtimeChannel: any = null
@@ -1068,21 +1073,26 @@ async function pay(turnstileToken?: string) {
 
 .bookingBlock__inner {
   box-sizing: border-box;
-  height: 935px;
+  height: 100dvh;
   max-width: 100%;
   margin: 0 auto;
-  background: white;
+  background: $color-surface-page;
   padding: 20px 20px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+
+  @include media-down(lg) {
+    height: 85dvh;
+  }
+
 }
 
 .bookingBlock__title {
   margin: 0 0 30px 0;
   font-size: 32px;
   font-weight: 600;
-  color: #212529;
+  color: $color-text-primary;
   text-align: center;
 }
 
@@ -1104,19 +1114,23 @@ $booking-layout-ms: 0.42s;
 }
 
 .bookingBlock__loader {
-  min-height: 935px;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: $color-surface-page;
+
+  @include media-down(lg) {
+    min-height: 85dvh;
+  }
 }
 
 .bookingBlock__loaderSpinner {
   box-sizing: border-box;
   width: 44px;
   height: 44px;
-  border: 3px solid #e9ecef;
-  border-top-color: #0d6efd;
+  border: 3px solid $color-gray-200;
+  border-top-color: $color-primary;
   border-radius: 50%;
   animation: bookingBlockSeatMapSpin 0.75s linear infinite;
 }
@@ -1160,7 +1174,7 @@ $booking-layout-ms: 0.42s;
 
   .bookingBlock__loaderSpinner {
     animation: none;
-    border-top-color: #dee2e6;
+    border-top-color: $color-border-subtle;
   }
 
   .bookingBlockReveal-enter-active {
@@ -1191,9 +1205,9 @@ $booking-layout-ms: 0.42s;
   transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 
   &.bookingBlock__alert--danger {
-    color: #842029;
-    background-color: #f8d7da;
-    border-color: #f5c2c7;
+    color: $color-danger-text;
+    background-color: $color-danger-bg;
+    border-color: $color-danger-border;
   }
 
   &.bookingBlock__alert--warning {
@@ -1201,13 +1215,13 @@ $booking-layout-ms: 0.42s;
     margin-left: auto;
     margin-right: auto;
     text-align: center;
-    color: #664d03;
-    background-color: #fff3cd;
-    border-color: #ffecb5;
+    color: $color-warning-text;
+    background-color: $color-warning-bg;
+    border-color: $color-warning-border;
   }
 }
 
-@media (max-width: 575.98px) {
+@include media-down(xs) {
   .bookingBlock__title {
     font-size: 24px;
   }

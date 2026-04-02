@@ -27,14 +27,16 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useScrollToBooking } from '../../composables/useScrollToBooking'
-import { PENDING_SCROLL_TO_SEATS_KEY } from '../../constants'
+import { PENDING_SCROLL_TO_HOME_KEY, PENDING_SCROLL_TO_SEATS_KEY } from '../../constants'
 
 export type FooterColumnLink = {
   to: string
   label: string
   external?: boolean
-  /** Sur la home : même scroll que le CTA hero (`useScrollToBooking`). */
+  /** Sur la home : scroll vers le bloc réservation (`useScrollToBooking`). */
   sameAsBookingScroll?: boolean
+  /** Sur la home : scroll vers le hero / haut de page. */
+  sameAsHomeScroll?: boolean
 }
 
 defineProps<{
@@ -44,13 +46,28 @@ defineProps<{
 
 const route = useRoute()
 const router = useRouter()
-const { scrollToBookingSection } = useScrollToBooking()
+const { scrollToBookingSection, scrollToHomeTop } = useScrollToBooking()
 
 /**
  * Phase capture : avant le onClick interne de RouterLink, sinon `preventDefault`
  * arrive trop tard et la navigation / « reload » part quand même (souvent sur mobile).
  */
 function onBookingScrollLinkClick(e: MouseEvent, link: FooterColumnLink) {
+  if (link.sameAsHomeScroll) {
+    e.preventDefault()
+    const path = route.path
+    if (path === '/' || path === '') {
+      void scrollToHomeTop()
+      return
+    }
+    try {
+      sessionStorage.setItem(PENDING_SCROLL_TO_HOME_KEY, '1')
+    } catch {
+      /* quota / private */
+    }
+    void router.push('/')
+    return
+  }
   if (!link.sameAsBookingScroll) return
   e.preventDefault()
   const path = route.path

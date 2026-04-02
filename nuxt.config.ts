@@ -5,6 +5,15 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/styles/reset.scss', '~/assets/styles/page-transitions.scss', '~/assets/styles/error-fade.scss'],
+  vite: {
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: '@use "~/assets/styles/global/index.scss" as *;\n'
+        }
+      }
+    }
+  },
   /* Transition sur NuxtPage (évite le flash : le <slot> du layout ne duplique pas l’ancienne page). */
   app: {
     pageTransition: { name: 'page-opacity', mode: 'out-in' }

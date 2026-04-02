@@ -35,7 +35,7 @@ import content from '~/locales/fr.json'
 import FooterLinkColumn from '~/components/layout/FooterLinkColumn.vue'
 
 const bookingLinks = [
-  { to: '/', label: content.footer.links.home },
+  { to: '/', label: content.footer.links.home, sameAsHomeScroll: true },
   { to: '/', label: content.footer.links.booking, sameAsBookingScroll: true }
 ]
 

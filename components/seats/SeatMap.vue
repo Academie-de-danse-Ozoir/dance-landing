@@ -86,8 +86,6 @@
         :rx="SEAT_RADIUS"
         :ry="SEAT_RADIUS"
         :transform="seatArcTransform(seat)"
-        stroke="rgba(30, 30, 30, 0.35)"
-        stroke-width="0.45"
         :class="[
           'svg__seat',
           seatVisualClass(seat),
@@ -217,8 +215,7 @@
                 >
                   <span
                     class="legend__swatch"
-                    :class="{ 'legend__swatch--border': row.border }"
-                    :style="row.swatchStyle"
+                    :class="[`legend__swatch--${row.key}`, { 'legend__swatch--border': row.border }]"
                     aria-hidden="true"
                   />
                   <span class="legend__label">{{ row.label }}</span>
@@ -246,8 +243,7 @@
           >
             <span
               class="legend__swatch"
-              :class="{ 'legend__swatch--border': row.border }"
-              :style="row.swatchStyle"
+              :class="[`legend__swatch--${row.key}`, { 'legend__swatch--border': row.border }]"
               aria-hidden="true"
             />
             <span class="legend__label">{{ row.label }}</span>
@@ -292,6 +288,7 @@ import {
   SEAT_MAP_BALCONY_ARC_ROTATION_SIGN,
   SEAT_MAP_BALCONY_ARC_SCALE_X_CURVE_POWER,
   SEAT_MAP_BALCONY_ARC_SCALE_X_MIN,
+  NARROW_VIEWPORT_MQ,
   STAFF_SEAT_LABELS_VISUAL_AS_PAID
 } from '../../constants'
 import {
@@ -334,7 +331,7 @@ const mapLegendPopoverTitleId = useId()
 const mapToolbarHostRef = ref<HTMLElement | null>(null)
 const mapToolbarMenuOpen = ref(false)
 const mapLegendMenuOpen = ref(false)
-/** Synchronisé avec le breakpoint 640px (aide desktop vs mobile dans les hints). */
+/** Aligné sur `NARROW_VIEWPORT_MQ` (constants.ts) / `$bp-lg` — UI plan mobile + zoom par défaut. */
 const seatMapLayoutMobile = ref(false)
 
 function closeMobileMapPopovers() {
@@ -345,53 +342,18 @@ function closeMobileMapPopovers() {
 const SEAT_SIZE = 13
 const SEAT_RADIUS = 1.2
 
-const SEAT_COLORS = {
-  paid: '#e53935',
-  hold: '#ffb300',
-  selected: '#43a047',
-  /** Violet : lisible sur fond gris, distinct vendu / réservation / dispo */
-  staff: '#6d4bae',
-  free: 'rgba(250, 250, 250, 0.78)'
-} as const
-
 type LegendRow = {
-  key: string
+  key: 'free' | 'selected' | 'hold' | 'paid' | 'staff'
   label: string
   border: boolean
-  swatchStyle: Record<string, string>
 }
 
 const seatStatusLegendRows = computed((): LegendRow[] => [
-  {
-    key: 'free',
-    label: mapUi.legendFree,
-    border: true,
-    swatchStyle: { background: SEAT_COLORS.free }
-  },
-  {
-    key: 'selected',
-    label: mapUi.legendSelected,
-    border: false,
-    swatchStyle: { background: SEAT_COLORS.selected }
-  },
-  {
-    key: 'hold',
-    label: mapUi.legendHold,
-    border: false,
-    swatchStyle: { background: SEAT_COLORS.hold }
-  },
-  {
-    key: 'paid',
-    label: mapUi.legendPaid,
-    border: false,
-    swatchStyle: { background: SEAT_COLORS.paid }
-  },
-  {
-    key: 'staff',
-    label: mapUi.legendStaff,
-    border: false,
-    swatchStyle: { background: SEAT_COLORS.staff }
-  }
+  { key: 'free', label: mapUi.legendFree, border: true },
+  { key: 'selected', label: mapUi.legendSelected, border: false },
+  { key: 'hold', label: mapUi.legendHold, border: false },
+  { key: 'paid', label: mapUi.legendPaid, border: false },
+  { key: 'staff', label: mapUi.legendStaff, border: false }
 ])
 
 const props = withDefaults(
@@ -412,6 +374,8 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'seat-click': [seatId: string]
+  /** Mobile : interaction sur le viewport carte — le parent peut rescroller vers #seat-selection si besoin. */
+  'booking-section-scroll-if-needed': []
 }>()
 
 const selectedSet = computed(() => new Set(props.selectedSeatIds))
@@ -891,7 +855,7 @@ const mapOverlayRects = computed(() => {
 const svgViewBox = computed(() => seatMapViewBoxString(props.seats, SEAT_SIZE, 18, mapOverlayRects.value))
 
 const MAP_ZOOM_MIN = 1
-/** Sur mobile : on ne peut pas dézoomer en dessous (évite la carte trop petite dans le viewport). */
+/** Sous `NARROW_VIEWPORT_MQ` : zoom mini > 1 (carte lisible sur petits viewports). */
 const MAP_ZOOM_MIN_MOBILE = 1.32
 /** 15 = 1500 % dans le badge et les contrôles */
 const MAP_ZOOM_MAX = 15
@@ -899,22 +863,19 @@ const MAP_ZOOM_STEP = 1.25
 /** En px écran : au-delà, un geste commencé sur un siège devient un pan (sinon = clic siège). */
 const MAP_PAN_DRAG_THRESHOLD_PX = 6
 
-/** Breakpoint aligné sur le SCSS du plan (mobile). */
-const SEAT_MAP_MOBILE_MAX_PX = 640
-
 function isSeatMapMobileViewport() {
   if (!import.meta.client) return false
-  return window.matchMedia(`(max-width: ${SEAT_MAP_MOBILE_MAX_PX}px)`).matches
+  return window.matchMedia(NARROW_VIEWPORT_MQ).matches
 }
 
-/** Zoom initial sur mobile après chargement / recalcul du viewBox (132 %). */
+/** Zoom initial si `NARROW_VIEWPORT_MQ` après chargement / recalcul du viewBox (132 %). */
 const MAP_ZOOM_DEFAULT_MOBILE = MAP_ZOOM_MIN_MOBILE
 
 function defaultMapZoomForViewport(): number {
   return isSeatMapMobileViewport() ? MAP_ZOOM_DEFAULT_MOBILE : 1
 }
 
-/** Min zoom effectif (réactif au breakpoint 640px via seatMapLayoutMobile). */
+/** Min zoom effectif (réactif à `NARROW_VIEWPORT_MQ` via seatMapLayoutMobile). */
 const mapZoomMinEffective = computed(() => {
   void seatMapLayoutMobile.value
   return isSeatMapMobileViewport() ? MAP_ZOOM_MIN_MOBILE : MAP_ZOOM_MIN
@@ -1104,22 +1065,29 @@ const mapNavTransform = computed(() => {
 const mapZoomPercent = computed(() => Math.round(mapZoom.value * 100))
 const mapZoomBadgeText = computed(() => mapUi.zoomPercent.replace('{n}', String(mapZoomPercent.value)))
 
-watch(svgViewBox, () => {
-  stopMapNavRaf()
-  mapPanX.value = 0
-  mapPanY.value = 0
-  mapZoom.value = defaultMapZoomForViewport()
-  mapTargetPanX.value = mapPanX.value
-  mapTargetPanY.value = mapPanY.value
-  mapTargetZoom.value = mapZoom.value
-  if (import.meta.client) {
-    nextTick(() => {
-      clampTargetMapPan()
-      clampMapPan()
-      syncMapNavTargetsFromDisplay()
-    })
-  }
-})
+watch(
+  svgViewBox,
+  () => {
+    if (import.meta.client) {
+      stopMapNavRaf()
+    }
+    mapPanX.value = 0
+    mapPanY.value = 0
+    // SSR : pas de `matchMedia` — ne pas figer le zoom à 1 puis omettre de relancer le watch à l’hydratation.
+    mapZoom.value = import.meta.client ? defaultMapZoomForViewport() : 1
+    mapTargetPanX.value = mapPanX.value
+    mapTargetPanY.value = mapPanY.value
+    mapTargetZoom.value = mapZoom.value
+    if (import.meta.client) {
+      nextTick(() => {
+        clampTargetMapPan()
+        clampMapPan()
+        syncMapNavTargetsFromDisplay()
+      })
+    }
+  },
+  { immediate: true }
+)
 
 if (import.meta.client) {
   watch(
@@ -1163,6 +1131,7 @@ function setMapZoomAtPoint(z1: number, focusX: number, focusY: number) {
 }
 
 function zoomMapByStep(mult: number) {
+  emit('booking-section-scroll-if-needed')
   const svg = svgRef.value
   if (!svg) return
   const r = svg.getBoundingClientRect()
@@ -1171,6 +1140,7 @@ function zoomMapByStep(mult: number) {
 }
 
 function resetMapView() {
+  emit('booking-section-scroll-if-needed')
   stopMapNavRaf()
   const z = defaultMapZoomForViewport()
   mapTargetPanX.value = 0
@@ -1239,7 +1209,7 @@ let touchPinchStartZoom = 1
 onMounted(() => {
   if (!import.meta.client) return
   window.addEventListener('keydown', onWindowMapKeydownCapture, true)
-  const mq = window.matchMedia(`(max-width: ${SEAT_MAP_MOBILE_MAX_PX}px)`)
+  const mq = window.matchMedia(NARROW_VIEWPORT_MQ)
   const onMq = () => {
     seatMapLayoutMobile.value = mq.matches
     if (!mq.matches) {
@@ -1256,6 +1226,7 @@ onMounted(() => {
 
     const onGestureStart = (e: Event) => {
       ;(e as unknown as { preventDefault(): void }).preventDefault()
+      emit('booking-section-scroll-if-needed')
       safariGestureBaseZoom = mapTargetZoom.value
     }
     const onGestureChange = (e: Event) => {
@@ -1277,6 +1248,7 @@ onMounted(() => {
     /** Chrome / Firefox (Mac) : pincement trackpad = molette + ctrlKey (Safari utilise gesture*). */
     const onWheelPinch = (e: WheelEvent) => {
       if (!e.ctrlKey) return
+      emit('booking-section-scroll-if-needed')
       e.preventDefault()
       const mult = e.deltaY < 0 ? MAP_ZOOM_STEP : 1 / MAP_ZOOM_STEP
       const p = clientToSvgPoint(e.clientX, e.clientY)
@@ -1289,6 +1261,7 @@ onMounted(() => {
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
+        emit('booking-section-scroll-if-needed')
         stopMapNavRaf()
         isMapPanning.value = false
         mapPanAwaitingThreshold.value = false
@@ -1342,6 +1315,7 @@ onBeforeUnmount(() => {
 })
 
 function beginMapPan(e: PointerEvent) {
+  emit('booking-section-scroll-if-needed')
   e.preventDefault()
   stopMapNavRaf()
   syncMapNavTargetsFromDisplay()
@@ -1354,6 +1328,9 @@ function beginMapPan(e: PointerEvent) {
 
 function onMapPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
+  if (isSeatMapMobileViewport()) {
+    emit('booking-section-scroll-if-needed')
+  }
   viewportRef.value?.focus({ preventScroll: true })
   const target = e.target as Element | null
   if (target?.closest?.('.svg__seat')) {
@@ -1558,7 +1535,7 @@ function handleSeatClick(seat: Seat) {
     outline: none;
 
     &:focus-visible {
-      outline: 2px solid rgba(74, 144, 217, 0.55);
+      outline: 2px solid $seat-map-focus-outline;
       outline-offset: 2px;
     }
   }
@@ -1595,9 +1572,9 @@ function handleSeatClick(seat: Seat) {
     max-width: min(calc(100% - 120px), 16.5rem);
     margin: 0;
     padding: 9px 12px 10px;
-    background: rgba(255, 255, 255, 0.92);
+    background: $color-surface-panel;
     border-radius: 8px;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 1px 6px $seat-map-ui-shadow-soft;
     pointer-events: none;
 
     .hints__title {
@@ -1613,7 +1590,7 @@ function handleSeatClick(seat: Seat) {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #6b7580;
+    color: $seat-map-ui-text-muted;
     line-height: 1.3;
   }
 
@@ -1630,7 +1607,7 @@ function handleSeatClick(seat: Seat) {
       margin: 0;
       font-size: 0.68rem;
       font-weight: 600;
-      color: #2a3138;
+      color: $seat-map-ui-text-strong;
       line-height: 1.35;
     }
 
@@ -1639,19 +1616,12 @@ function handleSeatClick(seat: Seat) {
       font-size: 0.68rem;
       font-weight: 500;
       line-height: 1.4;
-      color: #4d5660;
+      color: $seat-map-ui-text-soft;
     }
   }
 
-  $seat-map-mobile-bp: 640px;
-  /** Même retrait que `.seatMap__hints` (gauche) et colonne d’icônes (droite). */
-  $seat-map-controls-inset: 12px;
-  /** Largeur réservée aux boutons icône empilés (≈ 40px + bordure). */
-  $seat-map-mobile-icons-column: 44px;
-  $seat-map-mobile-popup-icons-gap: 10px;
-
   .seatMap__hints--desktop {
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: none !important;
     }
   }
@@ -1659,7 +1629,7 @@ function handleSeatClick(seat: Seat) {
   .seatMap__hints--inPopover {
     display: none !important;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: block !important;
       position: static;
       margin: 0;
@@ -1675,7 +1645,7 @@ function handleSeatClick(seat: Seat) {
   .seatMap__legend--inPopover {
     display: none !important;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: block !important;
       position: static;
       margin: 0;
@@ -1692,7 +1662,7 @@ function handleSeatClick(seat: Seat) {
   .seatMap__toolbarHost {
     position: absolute;
     top: 10px;
-    right: $seat-map-controls-inset;
+    right: 12px;
     z-index: 3;
     display: flex;
     flex-direction: column;
@@ -1700,7 +1670,7 @@ function handleSeatClick(seat: Seat) {
     gap: 0;
     pointer-events: none;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       left: 0;
       right: 0;
       top: 0;
@@ -1714,13 +1684,13 @@ function handleSeatClick(seat: Seat) {
   .seatMap__mobileLeftStack {
     display: none;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       gap: 6px;
       position: absolute;
-      left: $seat-map-controls-inset;
+      left: 12px;
       top: 10px;
       z-index: 1;
       pointer-events: none;
@@ -1732,7 +1702,7 @@ function handleSeatClick(seat: Seat) {
     flex-direction: column;
     align-items: flex-start;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: flex;
       position: static;
       pointer-events: none;
@@ -1750,10 +1720,10 @@ function handleSeatClick(seat: Seat) {
     align-items: flex-end;
     gap: 6px;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: flex;
       position: absolute;
-      right: $seat-map-controls-inset;
+      right: 12px;
       bottom: 14px;
       z-index: 2;
       pointer-events: none;
@@ -1775,20 +1745,20 @@ function handleSeatClick(seat: Seat) {
     font: inherit;
     font-size: 0.72rem;
     font-weight: 600;
-    color: #2c333a;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #ced4da;
+    color: $seat-map-ui-text;
+    background: $seat-map-ui-surface;
+    border: 1px solid $seat-map-ui-border;
     border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
 
     &:hover {
-      background: #fff;
-      border-color: #adb5bd;
+      background: $seat-map-ui-surface-solid;
+      border-color: $color-border-strong;
     }
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: inline-flex;
     }
   }
@@ -1796,23 +1766,17 @@ function handleSeatClick(seat: Seat) {
   .seatMap__toolbarHintsPanel {
     display: none;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       margin-top: 6px;
       margin-left: 0;
       padding: 10px 11px;
-      background: rgba(255, 255, 255, 0.97);
-      border: 1px solid #ced4da;
+      background: $seat-map-ui-surface-elevated;
+      border: 1px solid $seat-map-ui-border;
       border-radius: 10px;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+      box-shadow: $seat-map-ui-shadow-popover-up;
       min-width: 0;
       /* Gauche : inset · droite : inset + colonne icônes + marge — évite le chevauchement */
-      max-width: min(
-        calc(
-          100vw - #{$seat-map-controls-inset} - #{$seat-map-mobile-icons-column} - #{$seat-map-controls-inset} -
-            #{$seat-map-mobile-popup-icons-gap}
-        ),
-        16.77rem
-      );
+      max-width: min(calc(100vw - 12px - 44px - 12px - 10px), 16.77rem);
       box-sizing: border-box;
       max-height: min(52dvh, 22rem);
       overflow-y: auto;
@@ -1823,22 +1787,16 @@ function handleSeatClick(seat: Seat) {
   .seatMap__legendPopoverPanel {
     display: none;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       margin: 0;
       padding: 10px 11px;
-      background: rgba(255, 255, 255, 0.97);
-      border: 1px solid #ced4da;
+      background: $seat-map-ui-surface-elevated;
+      border: 1px solid $seat-map-ui-border;
       border-radius: 10px;
-      box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.1);
+      box-shadow: $seat-map-ui-shadow-popover-down;
       min-width: 0;
       width: max-content;
-      max-width: min(
-        calc(
-          100vw - #{$seat-map-controls-inset} - #{$seat-map-mobile-icons-column} - #{$seat-map-controls-inset} -
-            #{$seat-map-mobile-popup-icons-gap}
-        ),
-        14rem
-      );
+      max-width: min(calc(100vw - 12px - 44px - 12px - 10px), 14rem);
       box-sizing: border-box;
       max-height: min(48dvh, 20rem);
       overflow-y: auto;
@@ -1848,7 +1806,7 @@ function handleSeatClick(seat: Seat) {
 
   .seatMap__toolbarHost--open .seatMap__toolbarHintsPanel,
   .seatMap__legendHelp--open .seatMap__legendPopoverPanel {
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: block;
     }
   }
@@ -1862,12 +1820,12 @@ function handleSeatClick(seat: Seat) {
     max-width: min(calc(100vw - 100px), 17rem);
     pointer-events: none;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       position: absolute;
-      right: $seat-map-controls-inset;
+      right: 12px;
       top: 10px;
       z-index: 1;
-      max-width: min(calc(100vw - #{2 * $seat-map-controls-inset}), 17rem);
+      max-width: min(calc(100vw - 24px), 17rem);
     }
   }
 
@@ -1882,17 +1840,17 @@ function handleSeatClick(seat: Seat) {
     margin: 0;
     font: inherit;
     text-align: left;
-    color: #2c333a;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #ced4da;
+    color: $seat-map-ui-text;
+    background: $seat-map-ui-surface;
+    border: 1px solid $seat-map-ui-border;
     border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
 
     &:hover:not(:disabled) {
-      background: #fff;
-      border-color: #adb5bd;
+      background: $seat-map-ui-surface-solid;
+      border-color: $color-border-strong;
     }
 
     &:disabled {
@@ -1910,7 +1868,7 @@ function handleSeatClick(seat: Seat) {
     font-size: 0.68rem;
     font-weight: 600;
     line-height: 1.25;
-    color: #3d454d;
+    color: $seat-map-hint-text;
     justify-self: start;
   }
 
@@ -1930,7 +1888,7 @@ function handleSeatClick(seat: Seat) {
     font-size: 1.05rem;
   }
 
-  @media (max-width: $seat-map-mobile-bp) {
+  @include media-down(lg) {
     .seatMap__toolbarRow {
       grid-template-columns: 36px;
       width: 40px;
@@ -1950,10 +1908,10 @@ function handleSeatClick(seat: Seat) {
     padding: 4px 9px;
     font-size: 0.7rem;
     font-weight: 600;
-    color: #495057;
-    background: rgba(255, 255, 255, 0.92);
+    color: $color-text-secondary;
+    background: $color-surface-panel;
     border-radius: 6px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     pointer-events: none;
   }
 
@@ -1966,10 +1924,10 @@ function handleSeatClick(seat: Seat) {
     padding: 8px 10px 9px;
     background: rgba(255, 255, 255, 0.94);
     border-radius: 8px;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 6px $seat-map-ui-shadow-medium;
     pointer-events: none;
 
-    @media (max-width: $seat-map-mobile-bp) {
+    @include media-down(lg) {
       display: none !important;
     }
   }
@@ -2012,7 +1970,23 @@ function handleSeatClick(seat: Seat) {
     border-radius: 2px;
 
     &--border {
-      box-shadow: inset 0 0 0 1px rgba(30, 30, 30, 0.22);
+      box-shadow: inset 0 0 0 1px $seat-map-legend-swatch-border;
+    }
+
+    &--free {
+      background: $seat-map-seat-fill-free;
+    }
+    &--selected {
+      background: $seat-map-seat-fill-selected;
+    }
+    &--hold {
+      background: $seat-map-seat-fill-hold;
+    }
+    &--paid {
+      background: $seat-map-seat-fill-paid;
+    }
+    &--staff {
+      background: $seat-map-seat-fill-staff;
     }
   }
 
@@ -2020,7 +1994,7 @@ function handleSeatClick(seat: Seat) {
     font-size: 0.62rem;
     font-weight: 500;
     line-height: 1.35;
-    color: #3d454d;
+    color: $seat-map-hint-text;
   }
 
   .legend__foot {
@@ -2028,16 +2002,16 @@ function handleSeatClick(seat: Seat) {
     font-size: 0.58rem;
     font-weight: 500;
     line-height: 1.4;
-    color: #6b7580;
+    color: $seat-map-ui-text-muted;
 
     &--strong {
       margin-top: 0.35em;
       font-weight: 600;
-      color: #4d5660;
+      color: $seat-map-ui-text-soft;
     }
   }
 
-  @media (max-width: $seat-map-mobile-bp) {
+  @include media-down(lg) {
     .seatMap__legend--inPopover .legend__label {
       font-size: 0.6rem;
     }
@@ -2048,29 +2022,31 @@ function handleSeatClick(seat: Seat) {
     height: 100%;
     display: block;
     overflow: hidden;
-    border: 2px solid #dee2e6;
+    border: 2px solid $seat-map-viewport-border;
     border-radius: 8px;
-    background: #e8eaed;
+    background: $seat-map-viewport-bg;
     user-select: none;
     cursor: grab;
 
     .svg__seat {
+      stroke: $seat-map-seat-stroke;
+      stroke-width: 0.45;
       transition: fill 0.35s ease;
 
       &--free {
-        fill: rgba(250, 250, 250, 0.78);
+        fill: $seat-map-seat-fill-free;
       }
       &--selected {
-        fill: #43a047;
+        fill: $seat-map-seat-fill-selected;
       }
       &--hold {
-        fill: #ffb300;
+        fill: $seat-map-seat-fill-hold;
       }
       &--paid {
-        fill: #e53935;
+        fill: $seat-map-seat-fill-paid;
       }
       &--staff {
-        fill: #6d4bae;
+        fill: $seat-map-seat-fill-staff;
       }
 
       &--clickable {
@@ -2086,13 +2062,13 @@ function handleSeatClick(seat: Seat) {
       text-anchor: middle;
       font-size: 4.5px;
       font-weight: 600;
-      fill: #000000;
+      fill: $seat-map-label-fill;
       pointer-events: none;
     }
 
     .svg__stageRect {
-      fill: rgba(72, 62, 56, 0.1);
-      stroke: rgba(30, 30, 30, 0.14);
+      fill: $seat-map-stage-fill;
+      stroke: $seat-map-stage-stroke;
       stroke-width: 0.5;
       pointer-events: none;
     }
@@ -2101,7 +2077,7 @@ function handleSeatClick(seat: Seat) {
       text-anchor: middle;
       font-size: 9px;
       font-weight: 700;
-      fill: #4a4542;
+      fill: $seat-map-stage-label;
       letter-spacing: 0.04em;
       pointer-events: none;
     }
@@ -2111,11 +2087,11 @@ function handleSeatClick(seat: Seat) {
       pointer-events: none;
 
       &--balcony {
-        fill: rgba(78, 98, 128, 0.055);
+        fill: $seat-map-zone-balcony-fill;
       }
 
       &--parterre {
-        fill: rgba(118, 102, 92, 0.048);
+        fill: $seat-map-zone-parterre-fill;
       }
     }
 
@@ -2124,7 +2100,7 @@ function handleSeatClick(seat: Seat) {
       dominant-baseline: hanging;
       font-size: 6.5px;
       font-weight: 700;
-      fill: #1e2a3d;
+      fill: $seat-map-zone-title;
       letter-spacing: 0.02em;
       pointer-events: none;
     }
@@ -2134,7 +2110,7 @@ function handleSeatClick(seat: Seat) {
       dominant-baseline: hanging;
       font-size: 4.25px;
       font-weight: 600;
-      fill: rgba(30, 42, 61, 0.82);
+      fill: $seat-map-zone-subtitle;
       pointer-events: none;
     }
 

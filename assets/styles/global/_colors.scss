@@ -1,0 +1,109 @@
+// =============================================================================
+// Palette globale + tokens UI (importé automatiquement dans les .vue via Nuxt).
+// Sièges : préfixe $seat-map-* (plan SVG + légende — classes .legend__swatch--* dans SeatMap.vue).
+// =============================================================================
+
+// --- Neutres (texte, bordures, surfaces) ---
+$color-white: #fff;
+$color-black: #000;
+$color-gray-50: #f8f9fa;
+$color-gray-100: #f4f5f8;
+$color-gray-200: #e9ecef;
+$color-gray-300: #dee2e6;
+$color-gray-400: #ced4da;
+$color-gray-500: #adb5bd;
+$color-gray-600: #6c757d;
+$color-gray-700: #495057;
+$color-gray-800: #343a40;
+$color-gray-900: #212529;
+
+// Texte / UI générique
+$color-text-primary: #212529;
+$color-text-secondary: #495057;
+$color-text-muted: #6c757d;
+$color-text-placeholder: #868e96;
+$color-border-default: #ced4da;
+$color-border-subtle: #dee2e6;
+$color-border-strong: #adb5bd;
+$color-surface-page: #fff;
+$color-surface-muted: #f8f9fa;
+$color-surface-panel: rgba(255, 255, 255, 0.92);
+
+// Primaire (boutons, focus, loader)
+$color-primary: #0d6efd;
+$color-primary-border-focus: #86b7fe;
+$color-primary-focus-ring: rgba(13, 110, 253, 0.22);
+
+// Alertes (booking, formulaires)
+$color-danger-text: #842029;
+$color-danger-bg: #f8d7da;
+$color-danger-border: #f5c2c7;
+$color-danger-bright: #dc3545;
+$color-warning-text: #664d03;
+$color-warning-bg: #fff3cd;
+$color-warning-border: #ffecb5;
+
+// Footer
+$color-footer-bg: #1a1a2e;
+$color-footer-text: #e8e8ef;
+$color-footer-text-muted: rgba(255, 255, 255, 0.45);
+$color-footer-link: rgba(255, 255, 255, 0.88);
+
+// Hero
+$color-hero-text: #fff;
+$color-hero-kicker: rgba(255, 255, 255, 0.72);
+$color-hero-subtitle: rgba(255, 255, 255, 0.88);
+$color-hero-bg-base: #2d1f4e;
+$color-hero-cta-text: #1a1a2e;
+$color-hero-cta-bg: #fff;
+
+// Intro
+$color-intro-bg: #f4f5f8;
+$color-intro-accent-start: #667eea;
+$color-intro-accent-end: #764ba2;
+
+// =============================================================================
+// Plan de salle (SeatMap) — source unique pour les teintes sièges / légende
+// =============================================================================
+
+// États des sièges (remplissage SVG + légende)
+$seat-map-seat-stroke: rgba(30, 30, 30, 0.35);
+$seat-map-seat-fill-free: rgba(250, 250, 250, 0.78);
+$seat-map-seat-fill-selected: #43a047;
+$seat-map-seat-fill-hold: #ffb300;
+$seat-map-seat-fill-paid: #e53935;
+$seat-map-seat-fill-staff: #6d4bae;
+
+// Chrome du viewport SVG
+$seat-map-viewport-border: #dee2e6;
+$seat-map-viewport-bg: #e8eaed;
+$seat-map-label-fill: #000000;
+
+// Scène
+$seat-map-stage-fill: rgba(72, 62, 56, 0.1);
+$seat-map-stage-stroke: rgba(30, 30, 30, 0.14);
+$seat-map-stage-label: #4a4542;
+
+// Zones balcon / parterre
+$seat-map-zone-balcony-fill: rgba(78, 98, 128, 0.055);
+$seat-map-zone-parterre-fill: rgba(118, 102, 92, 0.048);
+$seat-map-zone-title: #1e2a3d;
+$seat-map-zone-subtitle: rgba(30, 42, 61, 0.82);
+
+// UI autour du plan (toolbar, popovers, légende)
+$seat-map-ui-text: #2c333a;
+$seat-map-ui-text-muted: #6b7580;
+$seat-map-ui-text-strong: #2a3138;
+$seat-map-ui-text-soft: #4d5660;
+$seat-map-ui-border: #ced4da;
+$seat-map-ui-shadow-soft: rgba(0, 0, 0, 0.06);
+$seat-map-ui-shadow-medium: rgba(0, 0, 0, 0.08);
+$seat-map-ui-shadow-popover: rgba(0, 0, 0, 0.12);
+$seat-map-ui-surface: rgba(255, 255, 255, 0.95);
+$seat-map-ui-surface-elevated: rgba(255, 255, 255, 0.97);
+$seat-map-ui-surface-solid: #fff;
+$seat-map-ui-shadow-popover-up: 0 4px 18px rgba(0, 0, 0, 0.12);
+$seat-map-ui-shadow-popover-down: 0 -4px 18px rgba(0, 0, 0, 0.1);
+$seat-map-focus-outline: rgba(74, 144, 217, 0.55);
+$seat-map-legend-swatch-border: rgba(30, 30, 30, 0.22);
+$seat-map-hint-text: #3d454d;

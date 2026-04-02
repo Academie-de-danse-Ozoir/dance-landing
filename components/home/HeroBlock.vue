@@ -1,5 +1,5 @@
 <template>
-  <section class="heroBlock" aria-labelledby="heroBlockTitle">
+  <section :id="HOME_TOP_SECTION_ID" class="heroBlock" aria-labelledby="heroBlockTitle">
     <div class="heroBlock__bg" aria-hidden="true" />
     <div class="heroBlock__overlay" aria-hidden="true" />
     <div class="heroBlock__inner">
@@ -19,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+import { HOME_TOP_SECTION_ID } from '../../constants'
 import { useScrollToBooking } from '../../composables/useScrollToBooking'
 
 defineProps<{

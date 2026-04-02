@@ -23,15 +23,27 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import content from '../locales/fr.json'
 import HeroBlock from '../components/home/HeroBlock.vue'
 import IntroBlock from '../components/home/IntroBlock.vue'
 import BookingBlock from '../components/home/BookingBlock.vue'
 import SiteFooter from '../components/layout/SiteFooter.vue'
+import { useScrollToBooking } from '../composables/useScrollToBooking'
+import { PENDING_SCROLL_TO_HOME_KEY, SCROLL_TO_SEATS_AFTER_NAV_MS } from '../constants'
+
+const { scrollToHomeTop } = useScrollToBooking()
+
+onMounted(() => {
+  if (!import.meta.client) return
+  if (sessionStorage.getItem(PENDING_SCROLL_TO_HOME_KEY)) {
+    sessionStorage.removeItem(PENDING_SCROLL_TO_HOME_KEY)
+    setTimeout(() => void scrollToHomeTop(), SCROLL_TO_SEATS_AFTER_NAV_MS)
+  }
+})
 </script>
 
 <style lang="scss" scoped>
-/* Même logique que les autres pages : footer pleine largeur et collé en bas si peu de contenu. */
 .spectaclePage {
   display: flex;
   flex-direction: column;

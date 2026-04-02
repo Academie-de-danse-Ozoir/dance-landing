@@ -1,0 +1,40 @@
+@use 'sass:map';
+
+// Largeurs max pour mobile-first « down » (576 / 640 / 768 / 1025 lg = NARROW_VIEWPORT / 1100)
+$breakpoints-max: (
+  xs: 575.98px,
+  sm: 640px,
+  md: 768px,
+  // = `NARROW_VIEWPORT_MAX_WIDTH_PX` dans `constants.ts` (Lenis, scroll natif, SeatMap mobile)
+  lg: 1025px,
+  xl: 1100px
+);
+
+// Alias unitaires (calculs, interpolations dans calc())
+$bp-xs: map.get($breakpoints-max, xs);
+$bp-sm: map.get($breakpoints-max, sm);
+$bp-md: map.get($breakpoints-max, md);
+$bp-lg: map.get($breakpoints-max, lg);
+$bp-xl: map.get($breakpoints-max, xl);
+
+/// max-width : écran **au plus** la clé (ex. `sm` → ≤640px)
+@mixin media-down($name) {
+  $max: map.get($breakpoints-max, $name);
+  @if $max == null {
+    @error 'Breakpoint inconnu: #{$name}. Clés : #{map.keys($breakpoints-max)}';
+  }
+  @media (max-width: $max) {
+    @content;
+  }
+}
+
+/// min-width : écran **strictement plus large** que la clé (évite chevauchement avec media-down)
+@mixin media-up($name) {
+  $max: map.get($breakpoints-max, $name);
+  @if $max == null {
+    @error 'Breakpoint inconnu: #{$name}.';
+  }
+  @media (min-width: $max) {
+    @content;
+  }
+}
