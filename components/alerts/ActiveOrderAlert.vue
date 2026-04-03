@@ -63,6 +63,38 @@ defineEmits<{
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
+
+    @include media-down(lg) {
+      margin-top: 8px;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 8px;
+
+      :deep(.defaultButton) {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 8px 6px;
+        font-size: 12px;
+        line-height: 1.2;
+        border-radius: 5px;
+      }
+    }
+  }
+
+  @include media-down(lg) {
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.35;
+
+    .activeOrderAlert__title {
+      margin: 0 0 4px;
+      font-size: inherit;
+    }
+
+    .activeOrderAlert__time {
+      font-size: 12px;
+      line-height: 1.3;
+    }
   }
 }
 </style>

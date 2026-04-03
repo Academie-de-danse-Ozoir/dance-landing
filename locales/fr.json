@@ -63,10 +63,10 @@
     "labelEvent": "Événement"
   },
   "home": {
-    "title": "Sélection des sièges",
+    "title": "Plan de salle interactif",
     "activeOrder": {
-      "title": "🟡 Réservation en cours",
-      "timeRemaining": "⏱ Temps restant :",
+      "title": "Réservation en cours",
+      "timeRemaining": "Temps restant :",
       "resumePayment": "Reprendre le paiement",
       "cancelReservation": "Annuler la réservation"
     },
@@ -75,20 +75,20 @@
         "reservationInProgress": "Une réservation est déjà en cours",
         "seatUnavailable": "Siège indisponible",
         "seatStaffReserved": "Place réservée au personnel",
-        "maxSelectionReached": "Maximum {max} places par commande — désélectionnez un siège pour en changer, ou passez une autre commande pour plus de places."
+        "maxSelectionReached": "Maximum {max} places par commande — désélectionnez une place pour modifier votre choix, ou passez une autre commande pour plus de places."
       },
       "map": {
         "hintsTitle": "Contrôles du plan",
         "hintsRows": [
           {
             "label": "Zoom",
-            "textDesktop": "<strong>Pincement</strong> avec deux doigts sur la carte ; boutons <strong>+</strong> / <strong>−</strong> à droite ou sur le clavier",
+            "textDesktop": "<strong>Pincement</strong> avec deux doigts sur la carte ; <strong>Ctrl</strong> + <strong>molette</strong> ou <strong> trackpad</strong> ; boutons <strong>+</strong> / <strong>−</strong> à droite ou sur le clavier",
             "textMobile": "<strong>Pincement</strong> avec deux doigts sur la carte ; boutons <strong>+</strong> / <strong>−</strong> à droite"
           },
           {
             "label": "Déplacer",
             "textDesktop": "<strong>Clic maintenu</strong>, <br>puis <strong>glisser</strong> sur la carte",
-            "textMobile": "<strong>Clic maintenu</strong>, <br>puis <strong>glisser</strong> sur la carte"
+            "textMobile": "<strong>Appui maintenu</strong>, <br>puis <strong>glisser</strong> sur la carte"
           },
           {
             "label": "Tout afficher",
@@ -109,25 +109,29 @@
         "legendMenuTrigger": "Sièges",
         "legendTitle": "Sièges",
         "legendFree": "Disponible",
-        "legendSelected": "Sélectionné (votre choix)",
+        "legendSelected": "Votre choix",
         "legendHold": "Réservation en cours (autre spectateur)",
         "legendPaid": "Vendu / non disponible",
         "legendStaff": "Réservé personnel",
         "legendMaxPerOrder": "Jusqu’à {max} places par commande.",
-        "mapLoading": "Chargement du plan de salle…"
+        "mapLoading": "Chargement du plan de salle…",
+        "activeOrderLockTitle": "Plan en pause",
+        "activeOrderLockHint": "Une réservation est en cours — reprenez ou annulez depuis le bandeau.",
+        "accessibilityZoneTitle": "Places accès facilité",
+        "accessibilityZoneSubtitle": "Rangée O — côtés O22 à O2 et O5 à O21"
       }
     },
     "selection": {
-      "none": "Aucun siège sélectionné",
-      "one": "siège sélectionné",
-      "multiple": "sièges sélectionnés",
-      "limitReached": "Vous avez atteint la limite de {max} places par commande. Désélectionnez un siège pour en ajouter une autre, ou effectuez plusieurs commandes si vous avez besoin de plus de places."
+      "none": "Aucune place sélectionnée",
+      "one": "place sélectionnée",
+      "multiple": "places sélectionnées",
+      "limitReached": "Vous avez atteint la limite de {max} places par commande. Désélectionnez une place pour en ajouter une autre, ou effectuez plusieurs commandes si vous souhaitez plus de places."
     },
     "actions": {
       "reserve": "Réserver"
     },
     "modal": {
-      "title": "Informations de réservation",
+      "title": "Coordonnées et réservation",
       "scrollRegionLabel": "Contenu du formulaire de réservation",
       "close": "Fermer",
       "cancel": "Annuler",
@@ -136,7 +140,7 @@
       "submit": "Payer",
       "submitting": "Traitement...",
       "step2Title": "Détails des billets",
-      "step2Intro": "Renseignez le nom et le type pour chaque place.",
+      "step2Intro": "Indiquez le nom complet et le type de billet (adulte ou enfant) pour chaque place.",
       "place": "Place",
       "adult": "Adulte",
       "child": "Enfant",
@@ -148,11 +152,11 @@
       "fields": {
         "firstName": {
           "label": "Prénom",
-          "placeholder": "Entrez votre prénom"
+          "placeholder": "Prénom du réservataire"
         },
         "lastName": {
           "label": "Nom",
-          "placeholder": "Entrez votre nom"
+          "placeholder": "Nom du réservataire"
         },
         "email": {
           "label": "Email",
@@ -186,37 +190,48 @@
       "completeTicketDetailsBeforePay": "Complétez d’abord les informations de chaque billet, puis cliquez sur « Payer »."
     },
     "hero": {
-      "kicker": "Billetterie en ligne",
-      "title": "Spectacle de Danse d’Ozoir",
-      "subtitle": "Samedi 24 mai 2026 — Salle des fêtes – Ozoir-la-Ferrière. Choisissez vos sièges sur le plan, payez en toute sécurité et recevez vos billets par email.",
-      "ctaScroll": "Accéder à la réservation"
+      "kicker": "Billetterie officielle",
+      "title": "Spectacle de Danse d'Ozoir",
+      "subtitle": "Le samedi 24 mai 2026, la Salle des fêtes d'Ozoir-la-Ferrière accueille une soirée où la danse rencontre l'élégance. Parcourez le plan de salle interactif, complétez vos informations puis réglez votre commande en ligne sur une page sécurisée ; vos billets vous parviennent par e-mail.",
+      "ctaScroll": "Réserver mes places"
     },
-    "intro": {
+    "statement": {
+      "eyebrow": "Le spectacle",
       "title": "Une soirée à vivre ensemble",
-      "lead": "Retrouvez nos élèves sur scène pour un moment de danse et de partage. Cette billetterie est le seul canal officiel pour acheter vos places : vous sélectionnez vos sièges en direct sur le plan de salle, puis finalisez votre commande en ligne.",
-      "blocks": [
+      "lead": "« Quand les tissus deviennent élégance » vous invite à découvrir un spectacle alliant danse classique et modern' jazz où la mode rencontre la danse ! Au fil de chorégraphies captivantes et pleines d'émotions, laissez-vous emporter dans les coulisses du monde de la couture et l'univers fascinant des défilés. Un lieu dans lequel l'élégance prend vie."
+    },
+    "highlights": {
+      "sectionAria": "Informations sur le spectacle et la réservation",
+      "rows": [
         {
-          "title": "Comment réserver ?",
-          "text": "Cliquez sur les places disponibles, puis sur « Réserver ». Après validation de vos coordonnées et du détail par billet, le paiement s’effectue via Stripe. Un email de confirmation récapitule votre commande ; les billets (PDF) sont envoyés après paiement réussi."
+          "title": "Votre parcours de réservation",
+          "text": "Choisissez vos places libres sur le plan interactif, puis validez avec « Réserver ». Renseignez vos coordonnées, puis le nom et le type de billet (adulte ou enfant) pour chaque place. Le paiement s'effectue ensuite entièrement en ligne, sur une interface sécurisée, par carte bancaire. Dès la confirmation, un e-mail récapitulatif confirme votre commande ; les billets au format PDF vous sont transmis automatiquement après validation du paiement.",
+          "imageSide": "right",
+          "caption": "Ambiance d'une salle avant le lever du rideau — visuel d'illustration."
         },
         {
-          "title": "Bon à savoir",
-          "text": "Les tarifs et conditions d’accès (horaires, âge, retard) figurent sur cette page et dans nos conditions générales de vente. En cas de question, écrivez-nous à l’adresse indiquée en bas de page."
+          "title": "Exigence et émotion sur scène",
+          "text": "Costumes, lumière et mise en scène accompagnent des chorégraphies pensées pour faire dialoguer la précision du classique et l'énergie du modern' jazz. Cette production prolonge le travail de l'Académie et invite le public à un moment où le geste devient silhouette, et la silhouette, souvenir.",
+          "imageSide": "left",
+          "caption": "Danse, mouvement et travail du corps — visuel d'illustration."
+        },
+        {
+          "title": "Avant votre venue",
+          "text": "Les tarifs en vigueur, les conditions d'accès et les mentions utiles (horaires, retard, accompagnement des jeunes spectateurs) figurent sur cette page et dans nos conditions générales de vente. Pour toute précision, contactez-nous à l'adresse indiquée en pied de page : nous vous répondons dans les meilleurs délais.",
+          "imageSide": "right",
+          "caption": "Le public et la salle : le partage du moment — visuel d'illustration."
         }
-      ],
-      "visualAlt1": "Salle de spectacle — ambiance lumières (visuel d’illustration).",
-      "visualAlt2": "Danse sur scène — mouvement et costumes (visuel d’illustration).",
-      "noteUnderVisuals": "Images non contractuelles — visuels promotionnels du spectacle peuvent être communiqués séparément (affiche, réseaux sociaux)."
+      ]
     }
   },
   "success": {
     "title": "Paiement confirmé",
-    "message": "Merci pour votre achat !\nVos billets ont été réservés avec succès.",
-    "info": "Vous recevrez un email de confirmation avec tous les détails de votre réservation.",
-    "backToSeats": "Retour à la sélection des sièges"
+    "message": "Nous vous remercions pour votre commande.\nVos billets sont enregistrés.",
+    "info": "Un e-mail de confirmation vient de vous être envoyé : il récapitule votre réservation et contient les informations utiles pour le jour du spectacle.",
+    "backToSeats": "Retour à la réservation"
   },
   "footer": {
-    "tagline": "Billetterie officielle pour le spectacle — réservation en ligne, paiement sécurisé, billets par email.",
+    "tagline": "Billetterie en direct pour le Spectacle de Danse d'Ozoir — réservation encadrée, paiement en ligne sécurisé, confirmation et billets par e-mail.",
     "navAria": "Pied de page",
     "copyright": "© {year} — Spectacle de Danse d’Ozoir. Tous droits réservés.",
     "columns": {

@@ -37,5 +37,11 @@ export default defineNuxtConfig({
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_ANON_KEY,
     redirect: false,
+    /**
+     * Par défaut le module cherche `~/types/database.types.ts` et affiche un WARN si absent.
+     * Mets `types: '~/types/database.types.ts'` après génération :
+     * `npx supabase gen types typescript --project-id <ref> > types/database.types.ts`
+     */
+    types: false,
   },
 })

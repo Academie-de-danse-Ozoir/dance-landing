@@ -7,13 +7,14 @@
       :cta-scroll="content.home.hero.ctaScroll"
     />
 
-    <IntroBlock
-      :title="content.home.intro.title"
-      :lead="content.home.intro.lead"
-      :blocks="content.home.intro.blocks"
-      :visual-alt1="content.home.intro.visualAlt1"
-      :visual-alt2="content.home.intro.visualAlt2"
-      :note-under-visuals="content.home.intro.noteUnderVisuals"
+    <StatementSection
+      :eyebrow="content.home.statement.eyebrow"
+      :title="content.home.statement.title"
+      :lead="content.home.statement.lead"
+    />
+    <AlternatingFeatures
+      :section-aria="content.home.highlights.sectionAria"
+      :rows="homeHighlightRows"
     />
 
     <BookingBlock />
@@ -26,13 +27,18 @@
 import { onMounted } from 'vue'
 import content from '../locales/fr.json'
 import HeroBlock from '../components/home/HeroBlock.vue'
-import IntroBlock from '../components/home/IntroBlock.vue'
+import StatementSection from '../components/home/StatementSection.vue'
+import AlternatingFeatures, {
+  type AlternatingFeatureRow
+} from '../components/home/AlternatingFeatures.vue'
 import BookingBlock from '../components/home/BookingBlock.vue'
 import SiteFooter from '../components/layout/SiteFooter.vue'
 import { useScrollToBooking } from '../composables/useScrollToBooking'
 import { PENDING_SCROLL_TO_HOME_KEY, SCROLL_TO_SEATS_AFTER_NAV_MS } from '../constants'
 
 const { scrollToHomeTop } = useScrollToBooking()
+
+const homeHighlightRows = content.home.highlights.rows as AlternatingFeatureRow[]
 
 onMounted(() => {
   if (!import.meta.client) return

@@ -11,76 +11,58 @@
     </div>
 
     <Transition name="bookingBlockReveal" appear>
-      <div v-if="seatsReady">
+      <div v-if="seatsReady" class="bookingBlock__reveal">
         <div ref="bookingInnerRef" class="bookingBlock__inner">
-      <h1 class="bookingBlock__title">{{ content.home.title }}</h1>
+          <h1 class="bookingBlock__title">{{ content.home.title }}</h1>
 
-      <Transition
-        :css="false"
-        appear
-        @before-enter="onOrderBannerBeforeEnter"
-        @enter="onOrderBannerEnter"
-        @after-enter="onOrderBannerAfterEnter"
-        @before-leave="onOrderBannerBeforeLeave"
-        @leave="onOrderBannerLeave"
-        @after-leave="onOrderBannerAfterLeave"
-      >
-        <div
-          v-if="activeOrder && !showModal && !suppressPageOrderAlert"
-          ref="orderBannerSlotRef"
-          class="bookingBlock__orderBannerSlot"
-        >
-          <ActiveOrderAlert
-            :active-order="activeOrder"
-            :formatted-time="formattedTime"
-            @resume-payment="resumePaymentOrOpenModal"
-            @cancel="onCancelOrderBannerUser"
-          />
-        </div>
-      </Transition>
+          <div ref="seatMapSizerRef" class="bookingBlock__seatMapSizer">
+            <SeatMap
+              fill-height
+              :seats="seats"
+              :selected-seat-ids="selectedSeatIds"
+              :active-order="activeOrder"
+              :max-seats-per-order="MAX_SEATS_PER_ORDER"
+              class="bookingBlock__seatMap"
+              @seat-click="toggleSeat"
+              @booking-section-scroll-if-needed="onSeatMapBookingScrollIfNeeded"
+            />
+          </div>
 
-      <div ref="seatMapSizerRef" class="bookingBlock__seatMapSizer">
-        <SeatMap
-          fill-height
-          :seats="seats"
-          :selected-seat-ids="selectedSeatIds"
-          :active-order="activeOrder"
-          :max-seats-per-order="MAX_SEATS_PER_ORDER"
-          class="bookingBlock__seatMap"
-          @seat-click="toggleSeat"
-          @booking-section-scroll-if-needed="onSeatMapBookingScrollIfNeeded"
-        />
-      </div>
+          <SelectionInfo :seat-count="displayedSeatCount" :max-seats="MAX_SEATS_PER_ORDER" />
 
-      <SelectionInfo :seat-count="displayedSeatCount" :max-seats="MAX_SEATS_PER_ORDER" />
+          <Transition name="errorFade">
+            <div
+              v-if="selectionLimitMessage"
+              key="selection-limit"
+              class="bookingBlock__alert bookingBlock__alert--warning"
+              role="status"
+            >
+              {{ selectionLimitMessage }}
+            </div>
+          </Transition>
 
-      <Transition name="errorFade">
-        <div
-          v-if="selectionLimitMessage"
-          key="selection-limit"
-          class="bookingBlock__alert bookingBlock__alert--warning"
-          role="status"
-        >
-          {{ selectionLimitMessage }}
-        </div>
-      </Transition>
+          <div class="bookingBlock__actions">
+            <DefaultButton
+              variant="primary"
+              :label="content.home.actions.reserve"
+              :disabled="
+                isSubmitting ||
+                  (blockNewReserve && !canReopenReservation) ||
+                  (!canReopenReservation && selectedSeatIds.length === 0)
+              "
+              @click="openModal"
+            />
+          </div>
 
-      <div class="bookingBlock__actions">
-        <DefaultButton
-          variant="primary"
-          :label="content.home.actions.reserve"
-          :disabled="
-            isSubmitting ||
-              (blockNewReserve && !canReopenReservation) ||
-              (!canReopenReservation && selectedSeatIds.length === 0)
-          "
-          @click="openModal"
-        />
-      </div>
-
-      <Transition name="errorFade">
-        <div v-if="error" key="booking-error" class="bookingBlock__alert bookingBlock__alert--danger">{{ error }}</div>
-      </Transition>
+          <Transition name="errorFade">
+            <div
+              v-if="error"
+              key="booking-error"
+              class="bookingBlock__alert bookingBlock__alert--danger"
+            >
+              {{ error }}
+            </div>
+          </Transition>
         </div>
 
         <FormReservation
@@ -117,7 +99,8 @@ import {
   STORAGE_ORDER_KEY,
   CANCEL_REASON,
   EVENT_ID,
-  MAX_SEATS_PER_ORDER
+  MAX_SEATS_PER_ORDER,
+  NARROW_VIEWPORT_MQ
 } from '../../constants'
 import { layoutYerresTheaterSeats } from '../../utils/yerresSeatLayout'
 import content from '../../locales/fr.json'
@@ -127,7 +110,22 @@ import SelectionInfo from '../seats/SelectionInfo.vue'
 import FormReservation from '../forms/FormReservation.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
 import { useScrollToBooking } from '../../composables/useScrollToBooking'
+import { useBookingSession } from '../../composables/useBookingSession'
+import { registerBookingSeatMapSnap } from '../../composables/useBookingSeatMapSnap'
+import { registerBookingBannerActions } from '../../composables/useBookingBannerActions'
 const { scrollToBookingSection, scrollToBookingSectionIfMisaligned } = useScrollToBooking()
+
+const {
+  activeOrder,
+  seatsReady,
+  showModal,
+  suppressPageOrderAlert,
+  orderBannerAnimating,
+  bookingTimerDisplay
+} = useBookingSession()
+
+let unregisterBookingSnap: (() => void) | undefined
+let unregisterBookingBanner: (() => void) | undefined
 
 function onSeatMapBookingScrollIfNeeded() {
   void scrollToBookingSectionIfMisaligned()
@@ -155,23 +153,12 @@ type SeatApiResponse = {
 }
 
 const seats = ref<Seat[]>([])
-/** Plan : loader jusqu’au premier chargement `/api/seats`, puis fade-in du SeatMap. */
-const seatsReady = ref(false)
 const selectedSeatIds = ref<string[]>([])
 const selectionLimitMessage = ref<string | null>(null)
 const error = ref<string | null>(null)
-const activeOrder = ref<ActiveOrder | null>(null)
 
 const bookingInnerRef = ref<HTMLElement | null>(null)
 const seatMapSizerRef = ref<HTMLElement | null>(null)
-const orderBannerSlotRef = ref<HTMLElement | null>(null)
-/** Évite que le watch recalcule la hauteur du plan pendant l’anim JS bandeau ↔ seat map. */
-const orderBannerAnimating = ref(false)
-
-/** Opacité d’abord, puis hauteur (même durée / easing que le seat map). */
-const ORDER_BANNER_OPACITY_MS = 200
-const BOOKING_LAYOUT_MS = 420
-const BOOKING_LAYOUT_EASE_CSS = 'cubic-bezier(0.33, 1, 0.68, 1)'
 
 /** Hauteur logique du plan (px) — le DOM est mis à jour en synchrone via `setSeatMapSizerHeight` (pas de :style Vue) pour animer en même temps que le bandeau. */
 const seatMapAreaHeightPx = ref(480)
@@ -182,64 +169,18 @@ function setSeatMapSizerHeight(px: number) {
   seatMapSizerRef.value?.style.setProperty('height', `${px}px`)
 }
 
-function orderBannerReducedMotion() {
-  return import.meta.client && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-function sleepMs(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
-}
-
-/** Hauteur + marge du slot bandeau : WAAPI (robuste aux re-renders Vue qui cassent les transitions CSS sur height). */
-function animateOrderBannerLayout(
-  node: HTMLElement,
-  keyframes: Keyframe[],
-  options: { duration: number; easing: string }
-): Promise<void> {
-  if (typeof node.animate !== 'function') {
-    const last = keyframes[keyframes.length - 1] as Record<string, string>
-    if (last.height != null) node.style.height = last.height
-    if (last.marginBottom != null) node.style.marginBottom = last.marginBottom
-    return sleepMs(options.duration)
-  }
-  node.style.transition = 'none'
-  const anim = node.animate(keyframes, {
-    duration: options.duration,
-    easing: options.easing,
-    fill: 'forwards'
-  })
-  return anim.finished.then(() => {
-    anim.cancel()
-    const last = keyframes[keyframes.length - 1] as Record<string, string>
-    if (last.height != null) node.style.height = last.height
-    if (last.marginBottom != null) node.style.marginBottom = last.marginBottom
-  })
-}
-
-function doubleRaf() {
-  return new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-  })
-}
-
-function clearOrderBannerSlotInlineStyles(el: HTMLElement) {
-  el.style.removeProperty('transition')
-  el.style.removeProperty('height')
-  el.style.removeProperty('opacity')
-  el.style.removeProperty('overflow')
-  el.style.removeProperty('margin-bottom')
-}
-
 /**
  * Espace vertical pour le plan : clientHeight du bloc − padding − autres enfants − gap flex.
  * Ne pas utiliser next.top − prev.bottom : ça inclut la hauteur actuelle du plan → valeur figée.
- * `skipOrderBannerSlot` : cible comme si le bandeau n’occupait plus la colonne (anim de sortie).
- * Pendant `<Transition leave>`, `orderBannerSlotRef` est souvent déjà `null` : passer `bannerSlotElement` (= `el` du hook).
+ * Le bandeau « réservation en cours » est téléporté dans le layout (`BookingOrderBanner`) : hors flux de cette colonne.
  */
-function getSeatMapAreaHeightPx(options?: {
-  skipOrderBannerSlot?: boolean
-  bannerSlotElement?: HTMLElement | null
-}): number | null {
+/** Marge symétrique (haut + bas) laissée dans `.bookingBlock__inner` pour centrer la pile titre / plan / bouton. */
+function bookingStackVerticalInsetPx(): number {
+  if (!import.meta.client) return 32
+  return window.matchMedia(NARROW_VIEWPORT_MQ).matches ? 24 : 40
+}
+
+function getSeatMapAreaHeightPx(): number | null {
   if (!import.meta.client) return null
   const inner = bookingInnerRef.value
   const wrap = seatMapSizerRef.value
@@ -248,15 +189,12 @@ function getSeatMapAreaHeightPx(options?: {
   const cs = getComputedStyle(inner)
   const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)
   const innerH = inner.clientHeight
-  const rowGap = parseFloat(cs.rowGap) || parseFloat(cs.gap) || 0
 
-  const kids = [...inner.children] as HTMLElement[]
-  const bannerSlotEl =
-    options?.skipOrderBannerSlot === true
-      ? (options.bannerSlotElement ?? orderBannerSlotRef.value)
-      : null
-  const skipBanner = Boolean(options?.skipOrderBannerSlot && bannerSlotEl)
-  const flexItems = skipBanner ? kids.filter((k) => k !== bannerSlotEl) : kids
+  const layoutRoot = inner
+  const rootCs = getComputedStyle(layoutRoot)
+  const rowGap = parseFloat(rootCs.rowGap) || parseFloat(rootCs.gap) || 0
+
+  const flexItems = [...layoutRoot.children] as HTMLElement[]
 
   let used = padY
   for (const child of flexItems) {
@@ -272,15 +210,13 @@ function getSeatMapAreaHeightPx(options?: {
   const wm = getComputedStyle(wrap)
   const wrapMy = (parseFloat(wm.marginTop) || 0) + (parseFloat(wm.marginBottom) || 0)
 
-  const raw = innerH - used - wrapMy
+  const symmetricInset = bookingStackVerticalInsetPx() * 2
+  const raw = innerH - used - wrapMy - symmetricInset
   return Math.round(Math.max(240, raw))
 }
 
-function computeSeatMapAreaHeight(options?: {
-  skipOrderBannerSlot?: boolean
-  bannerSlotElement?: HTMLElement | null
-}) {
-  const px = getSeatMapAreaHeightPx(options)
+function computeSeatMapAreaHeight() {
+  const px = getSeatMapAreaHeightPx()
   if (px != null) setSeatMapSizerHeight(px)
 }
 
@@ -298,146 +234,21 @@ function snapSeatMapHeightToLayout() {
   wrap.style.removeProperty('transition')
 }
 
-let seatMapLayoutRaf = 0
+let seatMapLayoutScheduled = false
 function scheduleSeatMapHeightMeasure() {
   if (!import.meta.client) return
   if (orderBannerAnimating.value) return
-  cancelAnimationFrame(seatMapLayoutRaf)
-  seatMapLayoutRaf = requestAnimationFrame(() => {
-    seatMapLayoutRaf = requestAnimationFrame(() => {
-      if (orderBannerAnimating.value) return
-      computeSeatMapAreaHeight()
-    })
+  if (seatMapLayoutScheduled) return
+  seatMapLayoutScheduled = true
+  nextTick(() => {
+    seatMapLayoutScheduled = false
+    if (orderBannerAnimating.value) return
+    computeSeatMapAreaHeight()
   })
 }
 
-function onOrderBannerBeforeEnter() {
-  orderBannerAnimating.value = true
-}
-
-function onOrderBannerBeforeLeave() {
-  orderBannerAnimating.value = true
-}
-
-function onOrderBannerAfterEnter() {
-  orderBannerAnimating.value = false
-  snapSeatMapHeightToLayout()
-}
-
-function onOrderBannerAfterLeave() {
-  orderBannerAnimating.value = false
-  snapSeatMapHeightToLayout()
-}
-
-/** Entrée : d’abord hauteur bandeau (et marge) + seat map qui rétrécit, puis opacité. */
-async function onOrderBannerEnter(el: Element, done: () => void) {
-  const node = el as HTMLElement
-  if (orderBannerReducedMotion()) {
-    clearOrderBannerSlotInlineStyles(node)
-    done()
-    return
-  }
-
-  node.style.opacity = '0'
-  node.style.height = 'auto'
-  node.style.overflow = 'visible'
-  node.style.removeProperty('margin-bottom')
-  await nextTick()
-
-  const naturalH = node.offsetHeight
-  const mbFinal = parseFloat(getComputedStyle(node).marginBottom) || 0
-  const seatTargetWithBanner = getSeatMapAreaHeightPx()
-
-  node.style.height = '0px'
-  node.style.marginBottom = '0px'
-  node.style.overflow = 'hidden'
-  await doubleRaf()
-
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => {
-      const target = seatTargetWithBanner
-      if (target != null) {
-        setSeatMapSizerHeight(target)
-      }
-      void node.offsetHeight
-      animateOrderBannerLayout(
-        node,
-        [
-          { height: '0px', marginBottom: '0px' },
-          { height: `${naturalH}px`, marginBottom: mbFinal > 0 ? `${mbFinal}px` : '0px' }
-        ],
-        { duration: BOOKING_LAYOUT_MS, easing: BOOKING_LAYOUT_EASE_CSS }
-      ).then(resolve)
-    })
-  })
-
-  node.style.transition = ''
-  node.style.height = 'auto'
-  node.style.overflow = 'visible'
-  node.style.removeProperty('margin-bottom')
-  await nextTick()
-
-  node.style.transition = `opacity ${ORDER_BANNER_OPACITY_MS}ms ease`
-  node.style.opacity = '1'
-  await sleepMs(ORDER_BANNER_OPACITY_MS)
-
-  clearOrderBannerSlotInlineStyles(node)
-  done()
-}
-
-/** Sortie : d’abord opacité, puis hauteur + marge du bandeau→0 et seat map qui s’agrandit (même timing). */
-async function onOrderBannerLeave(el: Element, done: () => void) {
-  const node = el as HTMLElement
-  if (orderBannerReducedMotion()) {
-    computeSeatMapAreaHeight({ skipOrderBannerSlot: true, bannerSlotElement: node })
-    clearOrderBannerSlotInlineStyles(node)
-    node.style.opacity = '0'
-    done()
-    return
-  }
-
-  node.style.transition = `opacity ${ORDER_BANNER_OPACITY_MS}ms ease`
-  node.style.opacity = '0'
-  await sleepMs(ORDER_BANNER_OPACITY_MS)
-
-  const contentH = node.offsetHeight
-  const mb = parseFloat(getComputedStyle(node).marginBottom) || 0
-  node.style.overflow = 'hidden'
-  node.style.height = `${contentH}px`
-  node.style.marginBottom = `${mb}px`
-  node.style.transition = ''
-
-  await doubleRaf()
-
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => {
-      const expanded = getSeatMapAreaHeightPx({
-        skipOrderBannerSlot: true,
-        bannerSlotElement: node
-      })
-      if (expanded != null) {
-        setSeatMapSizerHeight(expanded)
-      }
-      void node.offsetHeight
-      animateOrderBannerLayout(
-        node,
-        [
-          { height: `${contentH}px`, marginBottom: `${mb}px` },
-          { height: '0px', marginBottom: '0px' }
-        ],
-        { duration: BOOKING_LAYOUT_MS, easing: BOOKING_LAYOUT_EASE_CSS }
-      ).then(resolve)
-    })
-  })
-
-  clearOrderBannerSlotInlineStyles(node)
-  done()
-}
-
-const showModal = ref(false)
 const formStep = ref<1 | 2>(1)
 const isSubmitting = ref(false)
-const suppressPageOrderAlert = ref(false)
 
 watch(
   () =>
@@ -494,6 +305,14 @@ const formattedTime = computed(() => {
   const s = Math.floor(remainingSeconds.value % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
 })
+
+watch(
+  formattedTime,
+  (v) => {
+    bookingTimerDisplay.value = v
+  },
+  { immediate: true }
+)
 
 function getErrorMessage(err: unknown): string {
   const e = err as { data?: { statusMessage?: string; message?: string } }
@@ -704,13 +523,20 @@ onMounted(async () => {
     sessionStorage.removeItem(PENDING_SCROLL_TO_SEATS_KEY)
     setTimeout(() => void scrollToBookingSection(), SCROLL_TO_SEATS_AFTER_NAV_MS)
   }
+
+  unregisterBookingSnap = registerBookingSeatMapSnap(snapSeatMapHeightToLayout)
+  unregisterBookingBanner = registerBookingBannerActions({
+    resume: resumePaymentOrOpenModal,
+    cancel: onCancelOrderBannerUser
+  })
 })
 
 onUnmounted(() => {
+  unregisterBookingSnap?.()
+  unregisterBookingBanner?.()
   if (import.meta.client) {
     window.removeEventListener('pageshow', onPageShow)
     window.removeEventListener('resize', scheduleSeatMapHeightMeasure)
-    cancelAnimationFrame(seatMapLayoutRaf)
   }
   stopMainAnimationLoop()
   stopSeatsRealtime()
@@ -1064,11 +890,24 @@ async function pay(turnstileToken?: string) {
 .bookingBlock {
   margin: 0;
   padding: 10px 0 24px 0;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100dvh;
   scroll-margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
+}
+
+/** Pleine largeur sur desktop : évite que le shrink-to-fit du flex parent change la largeur du plan quand le bandeau apparaît. */
+.bookingBlock__reveal {
+  @include media-up(lg) {
+    align-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .bookingBlock__inner {
@@ -1080,12 +919,17 @@ async function pay(turnstileToken?: string) {
   padding: 20px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
+
+  @include media-up(lg) {
+    align-self: stretch;
+    width: 100%;
+  }
 
   @include media-down(lg) {
     height: 85dvh;
   }
-
 }
 
 .bookingBlock__title {
@@ -1105,12 +949,19 @@ async function pay(turnstileToken?: string) {
 $booking-layout-ease: cubic-bezier(0.33, 1, 0.68, 1);
 $booking-layout-ms: 0.42s;
 
+/** Desktop (≥ lg) : le plan ne remplit plus toute la hauteur disponible — ajuste ici (dvh ou px). */
+$booking-seat-map-max-height-desktop: 70dvh;
+
 .bookingBlock__seatMapSizer {
   width: 100%;
   flex-shrink: 0;
   min-height: 220px;
   margin-bottom: 40px;
   transition: height $booking-layout-ms $booking-layout-ease;
+
+  @include media-up(lg) {
+    max-height: $booking-seat-map-max-height-desktop;
+  }
 }
 
 .bookingBlock__loader {
@@ -1180,16 +1031,7 @@ $booking-layout-ms: 0.42s;
   .bookingBlockReveal-enter-active {
     transition-duration: 0.01ms;
   }
-}
 
-.bookingBlock__orderBannerSlot {
-  display: flow-root;
-  flex-shrink: 0;
-  margin: 0 0 16px 0;
-
-  :deep(.activeOrderAlert) {
-    margin-bottom: 0;
-  }
 }
 
 .bookingBlock__seatMap {

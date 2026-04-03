@@ -486,6 +486,18 @@ export function parseTheaterSeatLabel(label: string): { row: string; num: number
   return { row: m[1], num: parseInt(m[2], 10) }
 }
 
+/**
+ * Zone « places accès facilité » (rangée O) : côté O22 à O2 (pairs 2–22) et côté O5 à O21 (impairs).
+ * Exclut le centre O1 / O3 (accès gradins).
+ */
+export function isAccessibilityEaseSeatLabel(label: string): boolean {
+  const pr = parseTheaterSeatLabel(label)
+  if (!pr || pr.row !== 'O') return false
+  const n = pr.num
+  if (n % 2 === 0) return n >= 2 && n <= 22
+  return n >= 5 && n <= 21
+}
+
 function rowVerticalIndex(row: string): number {
   const R = row.toUpperCase()
   const order = ROW_ORDER_TOP_TO_BOTTOM as readonly string[]

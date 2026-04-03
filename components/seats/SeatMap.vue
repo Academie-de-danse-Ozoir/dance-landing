@@ -1,5 +1,8 @@
 <template>
-  <div class="seatMap" :class="{ 'seatMap--fillHeight': fillHeight }">
+  <div
+    class="seatMap"
+    :class="{ 'seatMap--fillHeight': fillHeight, 'seatMap--activeOrderLock': !!activeOrder }"
+  >
     <div
       ref="viewportRef"
       class="seatMap__viewport"
@@ -57,6 +60,33 @@
           Rangées O à A
         </text>
       </g>
+      <g v-if="accessibilityZone" class="svg__zone svg__zone--accessibility">
+        <rect
+          :x="accessibilityZone.x"
+          :y="accessibilityZone.y"
+          :width="accessibilityZone.w"
+          :height="accessibilityZone.h"
+          rx="3"
+          ry="3"
+          class="svg__zoneRect svg__zoneRect--accessibility"
+        />
+        <text
+          :x="accessibilityZone.titleX"
+          :y="accessibilityZone.titleY"
+          class="svg__zoneTitle svg__zoneTitle--end"
+          text-anchor="end"
+        >
+          {{ mapUi.accessibilityZoneTitle }}
+        </text>
+        <text
+          :x="accessibilityZone.subtitleX"
+          :y="accessibilityZone.subtitleY"
+          class="svg__zoneSubtitle svg__zoneSubtitle--end"
+          text-anchor="end"
+        >
+          {{ mapUi.accessibilityZoneSubtitle }}
+        </text>
+      </g>
       <g v-if="stageBlock" class="svg__stage">
         <rect
           :x="stageBlock.x"
@@ -109,6 +139,33 @@
       </text>
         </g>
       </svg>
+      <Transition name="seatMapActiveOrderLock">
+        <div
+          v-if="activeOrder"
+          class="seatMap__activeOrderLock"
+          role="status"
+          aria-live="polite"
+        >
+          <div class="seatMap__activeOrderLockCard">
+            <svg
+              class="activeOrderLock__icon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <p class="activeOrderLock__title">{{ mapUi.activeOrderLockTitle }}</p>
+            <p class="activeOrderLock__hint">{{ mapUi.activeOrderLockHint }}</p>
+          </div>
+        </div>
+      </Transition>
     </div>
     <div class="seatMap__overlay" role="region" :aria-label="mapUi.viewportLabel">
       <section
@@ -292,6 +349,7 @@ import {
   STAFF_SEAT_LABELS_VISUAL_AS_PAID
 } from '../../constants'
 import {
+  isAccessibilityEaseSeatLabel,
   parseTheaterSeatLabel,
   rowIsBalcony,
   seatMapViewBoxString
@@ -320,6 +378,10 @@ type SeatMapNavCopy = {
   legendPaid: string
   legendStaff: string
   legendMaxPerOrder: string
+  activeOrderLockTitle: string
+  activeOrderLockHint: string
+  accessibilityZoneTitle: string
+  accessibilityZoneSubtitle: string
 }
 const mapUi: SeatMapNavCopy = (content.home.seats as unknown as { map: SeatMapNavCopy }).map
 const mapHintsTitleId = useId()
@@ -672,6 +734,19 @@ const ZONE_FRAME_LABEL_CORNER_PAD_Y = 6
 const ZONE_FRAME_LABEL_LINE_STEP = 7.85
 /** Allonge un peu le cadre balcon vers le bas (sièges P–X inchangés). */
 const BALCONY_ZONE_EXTRA_BOTTOM = 6
+/**
+ * Cadre « accès facilité » : marge basse réduite (collage aux sièges), colonne texte à droite.
+ */
+const ACCESSIBILITY_ZONE_INSET_TOP = 9
+const ACCESSIBILITY_ZONE_INSET_LEFT = 7
+const ACCESSIBILITY_ZONE_INSET_BOTTOM = 2
+const ACCESSIBILITY_ZONE_INSET_AFTER_SEATS = 5
+/** Largeur réservée au titre / sous-titre (alignés à droite dans cette bande). */
+const ACCESSIBILITY_ZONE_LABEL_COLUMN = 100
+/** Décale le bloc texte vers la gauche (depuis le bord droit du cadre). */
+const ACCESSIBILITY_ZONE_TEXT_NUDGE_LEFT = 90
+/** Décale le titre + sous-titre vers le bas (px SVG, positif = plus bas). */
+const ACCESSIBILITY_ZONE_TEXT_OFFSET_DOWN = 4
 
 type SeatBounds = { minX: number; minY: number; maxX: number; maxY: number }
 type ZoneFrameOptions = { extraBottom?: number }
@@ -696,6 +771,45 @@ function seatBoundsForRowFilter(
   }
   if (!Number.isFinite(minX)) return null
   return { minX, minY, maxX, maxY }
+}
+
+function seatBoundsForAccessibilitySeats(seats: Seat[]): SeatBounds | null {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const s of seats) {
+    if (!isAccessibilityEaseSeatLabel(s.label)) continue
+    minX = Math.min(minX, s.x)
+    minY = Math.min(minY, s.y)
+    maxX = Math.max(maxX, s.x + SEAT_SIZE)
+    maxY = Math.max(maxY, s.y + SEAT_SIZE)
+  }
+  if (!Number.isFinite(minX)) return null
+  return { minX, minY, maxX, maxY }
+}
+
+/** Cadre zone accès facilité : serré en bas, extension à droite pour les libellés (text-anchor end). */
+function accessibilityZoneFrameFromBounds(b: SeatBounds) {
+  const x = b.minX - ACCESSIBILITY_ZONE_INSET_LEFT
+  const y = b.minY - ACCESSIBILITY_ZONE_INSET_TOP
+  const seatW = b.maxX - b.minX
+  const seatH = b.maxY - b.minY
+  const w =
+    seatW +
+    ACCESSIBILITY_ZONE_INSET_LEFT +
+    ACCESSIBILITY_ZONE_INSET_AFTER_SEATS +
+    ACCESSIBILITY_ZONE_LABEL_COLUMN
+  const h = seatH + ACCESSIBILITY_ZONE_INSET_TOP + ACCESSIBILITY_ZONE_INSET_BOTTOM
+  const padRight = ZONE_FRAME_LABEL_CORNER_PAD_X + ACCESSIBILITY_ZONE_TEXT_NUDGE_LEFT
+  const titleX = x + w - padRight
+  const subtitleX = titleX
+  const lineStep = ZONE_FRAME_LABEL_LINE_STEP
+  const blockApprox = 6.5 + lineStep + 4.25
+  const titleY =
+    y + Math.max(0, (h - blockApprox) / 2) + ACCESSIBILITY_ZONE_TEXT_OFFSET_DOWN
+  const subtitleY = titleY + lineStep
+  return { x, y, w, h, titleX, titleY, subtitleX, subtitleY }
 }
 
 /** Cadre autour d’une bbox sièges : inset identique sur les quatre côtés ; `extraBottom` optionnel (balcon). */
@@ -822,6 +936,14 @@ const parterreZone = computed(() => {
   return paddedZoneFrameFromBounds(b, zoneFrameUniformInset.value)
 })
 
+/** Sous-zone rangée O : places accès facilité (O22–O2 et O5–O21). */
+const accessibilitySeatBounds = computed(() => seatBoundsForAccessibilitySeats(props.seats))
+const accessibilityZone = computed(() => {
+  const b = accessibilitySeatBounds.value
+  if (!b) return null
+  return accessibilityZoneFrameFromBounds(b)
+})
+
 /** Espace entre le bas des sièges A (et le cadre parterre) et le haut du bloc « Scène ». */
 const STAGE_GAP_BELOW_ROW_A = 30
 
@@ -848,6 +970,7 @@ const mapOverlayRects = computed(() => {
   const out: { x: number; y: number; w: number; h: number }[] = []
   if (balconyZone.value) out.push(balconyZone.value)
   if (parterreZone.value) out.push(parterreZone.value)
+  if (accessibilityZone.value) out.push(accessibilityZone.value)
   if (stageBlock.value) out.push(stageBlock.value)
   return out.length ? out : undefined
 })
@@ -859,7 +982,19 @@ const MAP_ZOOM_MIN = 1
 const MAP_ZOOM_MIN_MOBILE = 1.32
 /** 15 = 1500 % dans le badge et les contrôles */
 const MAP_ZOOM_MAX = 15
+/** Boutons ±, raccourcis clavier : pas multiplicatif (inchangé par le réglage pincement desktop). */
 const MAP_ZOOM_STEP = 1.25
+/**
+ * Pincement desktop uniquement (viewport large, hors `NARROW_VIEWPORT_MQ`) :
+ * Chrome / Firefox — Ctrl + molette / trackpad. Plus proche de 1 = zoom plus doux (ex. 1.04 ≈ 4 % par impulsion).
+ * @see MAP_DESKTOP_SAFARI_PINCH_SENSITIVITY pour Safari (gesture*).
+ */
+const MAP_DESKTOP_TRACKPAD_PINCH_STEP = 1.1
+/**
+ * Safari (Mac) — `gesturechange` : atténue `scale` autour de 1. 1 = natif ; ~0.35–0.5 = plus doux.
+ * Ajuste ici si le pincement Safari reste trop fort après `MAP_DESKTOP_TRACKPAD_PINCH_STEP`.
+ */
+const MAP_DESKTOP_SAFARI_PINCH_SENSITIVITY = 1
 /** En px écran : au-delà, un geste commencé sur un siège devient un pan (sinon = clic siège). */
 const MAP_PAN_DRAG_THRESHOLD_PX = 6
 
@@ -873,6 +1008,11 @@ const MAP_ZOOM_DEFAULT_MOBILE = MAP_ZOOM_MIN_MOBILE
 
 function defaultMapZoomForViewport(): number {
   return isSeatMapMobileViewport() ? MAP_ZOOM_DEFAULT_MOBILE : 1
+}
+
+/** Réduit l’effet du `scale` Safari autour de 1 (desktop). */
+function dampenDesktopSafariPinchScale(scale: number): number {
+  return 1 + (scale - 1) * MAP_DESKTOP_SAFARI_PINCH_SENSITIVITY
 }
 
 /** Min zoom effectif (réactif à `NARROW_VIEWPORT_MQ` via seatMapLayoutMobile). */
@@ -1237,7 +1377,10 @@ onMounted(() => {
         clientY: number
       }
       ev.preventDefault()
-      const z = safariGestureBaseZoom * ev.scale
+      const scale = isSeatMapMobileViewport()
+        ? ev.scale
+        : dampenDesktopSafariPinchScale(ev.scale)
+      const z = safariGestureBaseZoom * scale
       const p = clientToSvgPoint(ev.clientX, ev.clientY)
       setMapZoomAtPoint(z, p.x, p.y)
     }
@@ -1250,7 +1393,8 @@ onMounted(() => {
       if (!e.ctrlKey) return
       emit('booking-section-scroll-if-needed')
       e.preventDefault()
-      const mult = e.deltaY < 0 ? MAP_ZOOM_STEP : 1 / MAP_ZOOM_STEP
+      const step = isSeatMapMobileViewport() ? MAP_ZOOM_STEP : MAP_DESKTOP_TRACKPAD_PINCH_STEP
+      const mult = e.deltaY < 0 ? step : 1 / step
       const p = clientToSvgPoint(e.clientX, e.clientY)
       setMapZoomAtPoint(mapTargetZoom.value * mult, p.x, p.y)
     }
@@ -1528,6 +1672,7 @@ function handleSeatClick(seat: Seat) {
   }
 
   .seatMap__viewport {
+    position: relative;
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -1537,6 +1682,116 @@ function handleSeatClick(seat: Seat) {
     &:focus-visible {
       outline: 2px solid $seat-map-focus-outline;
       outline-offset: 2px;
+    }
+  }
+
+  .seatMap__activeOrderLock {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    pointer-events: auto;
+    cursor: not-allowed;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(4px) saturate(0.92);
+    -webkit-backdrop-filter: blur(4px) saturate(0.92);
+  }
+
+  .seatMapActiveOrderLock-enter-active,
+  .seatMapActiveOrderLock-leave-active {
+    transition:
+      opacity 0.42s cubic-bezier(0.33, 1, 0.68, 1),
+      backdrop-filter 0.52s ease,
+      -webkit-backdrop-filter 0.52s ease;
+  }
+
+  .seatMapActiveOrderLock-enter-active .seatMap__activeOrderLockCard,
+  .seatMapActiveOrderLock-leave-active .seatMap__activeOrderLockCard {
+    transition:
+      opacity 0.36s cubic-bezier(0.33, 1, 0.68, 1) 0.06s,
+      transform 0.4s cubic-bezier(0.33, 1, 0.68, 1) 0.06s;
+  }
+
+  .seatMapActiveOrderLock-enter-from,
+  .seatMapActiveOrderLock-leave-to {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+
+  .seatMapActiveOrderLock-enter-from .seatMap__activeOrderLockCard,
+  .seatMapActiveOrderLock-leave-to .seatMap__activeOrderLockCard {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seatMapActiveOrderLock-enter-active,
+    .seatMapActiveOrderLock-leave-active {
+      transition-duration: 0.01ms !important;
+    }
+
+    .seatMapActiveOrderLock-enter-active .seatMap__activeOrderLockCard,
+    .seatMapActiveOrderLock-leave-active .seatMap__activeOrderLockCard {
+      transition-duration: 0.01ms !important;
+    }
+
+    .seatMap__activeOrderLock {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .seatMapActiveOrderLock-enter-from,
+    .seatMapActiveOrderLock-leave-to {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+  }
+
+  .seatMap__activeOrderLockCard {
+    max-width: 16.5rem;
+    padding: 14px 16px 16px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  .activeOrderLock__icon {
+    display: block;
+    width: 28px;
+    height: 28px;
+    margin: 0 auto 10px;
+    color: $color-text-muted;
+  }
+
+  .activeOrderLock__title {
+    margin: 0 0 6px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: $color-text-primary;
+    line-height: 1.3;
+  }
+
+  .activeOrderLock__hint {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $color-text-secondary;
+    line-height: 1.4;
+  }
+
+  &.seatMap--activeOrderLock {
+    .seatMap__toolbarHost {
+      opacity: 0.42;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
     }
   }
 
@@ -2092,6 +2347,10 @@ function handleSeatClick(seat: Seat) {
 
       &--parterre {
         fill: $seat-map-zone-parterre-fill;
+      }
+
+      &--accessibility {
+        fill: $seat-map-zone-accessibility-fill;
       }
     }
 

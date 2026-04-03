@@ -7,6 +7,28 @@
       role="presentation"
       @click.self="$emit('close')"
     >
+      <div
+        class="formReservationOverlay__column"
+        :class="{ 'formReservationOverlay__column--stepHidden': stepCardHidden }"
+      >
+        <Transition name="formReservationBanner">
+          <div
+            v-if="showReservationTimer"
+            key="reservation-timer"
+            class="formReservation__timer"
+            role="status"
+          >
+            <p class="timer__title">{{ content.home.modal.reservationBannerTitle }}</p>
+            <p class="timer__line">
+              <span class="timer__label">{{ content.home.modal.reservationTimeLabel }}</span>
+              <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
+            </p>
+            <button type="button" class="timer__cancel" @click="$emit('cancel-reservation')">
+              {{ content.home.activeOrder.cancelReservation }}
+            </button>
+          </div>
+        </Transition>
+
         <div
           class="formReservation"
           :class="{ 'formReservation--stepHidden': stepCardHidden }"
@@ -24,20 +46,11 @@
             </button>
           </div>
 
-          <Transition name="formReservationBanner">
-            <div v-if="showReservationTimer" key="reservation-timer" class="formReservation__timer" role="status">
-              <p class="timer__title">{{ content.home.modal.reservationBannerTitle }}</p>
-              <p class="timer__line">
-                <span class="timer__label">{{ content.home.modal.reservationTimeLabel }}</span>
-                <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
-              </p>
-              <button type="button" class="timer__cancel" @click="$emit('cancel-reservation')">
-                {{ content.home.activeOrder.cancelReservation }}
-              </button>
-            </div>
-          </Transition>
-
-          <div class="formReservation__scroll" :aria-label="content.home.modal.scrollRegionLabel">
+          <div
+            ref="scrollRegionRef"
+            class="formReservation__scroll"
+            :aria-label="content.home.modal.scrollRegionLabel"
+          >
             <div class="formReservation__body">
               <form v-if="displayedStep === 1" key="step-1" class="body__form" @submit.prevent="onNext">
                 <div class="form__row form__row--namePair">
@@ -157,6 +170,7 @@
             </div>
           </div>
         </div>
+      </div>
     </div>
   </Transition>
 </template>
@@ -216,7 +230,8 @@ const STEP_CARD_FADE_MS = 260
 const STEP_REVEAL_DELAY_MS = 100
 let stepChangeGeneration = 0
 
-const BANNER_TRANSITION_MS = 400
+/** Aligné sur `.formReservationBanner-*` (opacité + transform ~280ms). */
+const BANNER_TRANSITION_MS = 300
 
 watch(
   () => props.show,
@@ -261,9 +276,12 @@ watch(
     }
     displayedStep.value = next
     await nextTick()
+    resetPopupScrollToTop()
     await new Promise((r) => setTimeout(r, STEP_REVEAL_DELAY_MS))
     rootLenis.value?.resize()
     stepCardHidden.value = false
+    await nextTick()
+    resetPopupScrollToTop()
   }
 )
 
@@ -349,6 +367,13 @@ const formFields = [
 ]
 
 const dialogTitleId = useId()
+const scrollRegionRef = ref<HTMLElement | null>(null)
+
+function resetPopupScrollToTop() {
+  const el = scrollRegionRef.value
+  if (!el) return
+  el.scrollTop = 0
+}
 const formFieldsNameRow = formFields.filter((f) => f.key === 'firstName' || f.key === 'lastName')
 const formFieldsAfterNames = formFields.filter((f) => f.key !== 'firstName' && f.key !== 'lastName')
 
@@ -405,39 +430,59 @@ function onSubmitStep2() {
 </script>
 
 <style lang="scss" scoped>
-/* Une seule couche d’animation à l’ouverture / fermeture (fond + carte en même temps). */
+/* Ouverture / fermeture : fond assombri + flou du contenu derrière (même couche que la modale). */
 .formReservationOverlay-enter-active,
 .formReservationOverlay-leave-active {
-  transition: opacity 0.22s ease;
+  transition:
+    opacity 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    backdrop-filter 0.38s ease,
+    -webkit-backdrop-filter 0.38s ease;
 }
 
 .formReservationOverlay-enter-from,
 .formReservationOverlay-leave-to {
   opacity: 0;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
 }
 
-/* Bandeau réservation : hauteur + opacité (évite le saut brutal de la carte). */
+/* Bandeau réservation : même rythme que l’overlay (opacité + léger slide). */
 .formReservationBanner-enter-active,
 .formReservationBanner-leave-active {
-  overflow: hidden;
   transition:
-    max-height 0.38s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.3s ease;
+    opacity 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.28s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .formReservationBanner-enter-from,
 .formReservationBanner-leave-to {
-  max-height: 0;
   opacity: 0;
+  transform: translateY(-8px);
 }
 
 .formReservationBanner-enter-to,
 .formReservationBanner-leave-from {
-  max-height: 380px;
   opacity: 1;
+  transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .formReservationOverlay-enter-active,
+  .formReservationOverlay-leave-active {
+    transition-duration: 0.01ms !important;
+  }
+
+  .formReservationOverlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .formReservationOverlay-enter-from,
+  .formReservationOverlay-leave-to {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
   .formReservationBanner-enter-active,
   .formReservationBanner-leave-active {
     transition-duration: 0.01ms;
@@ -447,87 +492,187 @@ function onSubmitStep2() {
 .formReservationOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(4px) saturate(0.92);
+  -webkit-backdrop-filter: blur(4px) saturate(0.92);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1050;
+
+  @include media-down(lg) {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 0;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+.formReservationOverlay__column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 90%;
+  max-width: 650px;
+  max-height: 95vh;
+  margin: auto;
+  gap: 0;
+
+  @include media-down(lg) {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    gap: 8px;
+
+    &:has(> .formReservation__timer) {
+      gap: 0;
+    }
+  }
+
+  @include media-up(lg) {
+    &:has(> .formReservation__timer) .formReservation {
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    &:has(> .formReservation__timer) .formReservation__timer {
+      border-radius: 8px 8px 0 0;
+      box-shadow: none;
+    }
+  }
+}
+
+/** Pendant le fondu de changement d’étape : bandeau + carte au même timing (évite le saut du bandeau sur desktop). */
+.formReservationOverlay__column--stepHidden .formReservation__timer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.formReservation__timer {
+  flex-shrink: 0;
+  padding: 14px 20px 16px;
+  background: linear-gradient(180deg, #e7f1ff 0%, #dbeafe 100%);
+  border: 1px solid #b6d4fe;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  transition: opacity 0.26s ease;
+
+  @include media-down(lg) {
+    padding: 10px 14px 12px;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  @include media-up(lg) {
+    border-bottom: 1px solid #b6d4fe;
+  }
+}
+
+@include media-down(lg) {
+  .formReservationOverlay__column:has(> .formReservation__timer) .formReservation__timer {
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+    box-shadow: none;
+  }
+
+  .formReservationOverlay__column:has(> .formReservation__timer) .formReservation {
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  }
+}
+
+.timer__title {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1e40af;
+
+  @include media-down(lg) {
+    margin-bottom: 4px;
+  }
+}
+
+.timer__line {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  @include media-down(lg) {
+    margin-bottom: 8px;
+  }
+}
+
+.timer__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.timer__clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  line-height: 1;
+
+  @include media-down(lg) {
+    font-size: 1.45rem;
+  }
+}
+
+.timer__cancel {
+  display: inline-block;
+  margin: 0 auto;
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #991b1b;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+
+  @include media-down(lg) {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  &:hover {
+    background: #fff;
+  }
 }
 
 .formReservation {
   background: white;
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  width: 90%;
-  max-width: 650px;
+  width: 100%;
   max-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  margin: auto;
   transition: opacity 0.26s ease;
+
+  @include media-down(lg) {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
 
   &.formReservation--stepHidden {
     opacity: 0;
     pointer-events: none;
-  }
-
-  .formReservation__timer {
-    flex-shrink: 0;
-    padding: 14px 20px 16px;
-    background: linear-gradient(180deg, #e7f1ff 0%, #dbeafe 100%);
-    border-bottom: 1px solid #b6d4fe;
-    text-align: center;
-  }
-
-  .timer__title {
-    margin: 0 0 8px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #1e40af;
-  }
-
-  .timer__line {
-    margin: 0 0 14px;
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .timer__label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #1e3a8a;
-  }
-
-  .timer__clock {
-    font-variant-numeric: tabular-nums;
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: #1d4ed8;
-    line-height: 1;
-  }
-
-  .timer__cancel {
-    display: inline-block;
-    margin: 0 auto;
-    padding: 8px 16px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: #991b1b;
-    background: rgba(255, 255, 255, 0.85);
-    border: 1px solid #fecaca;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-
-    &:hover {
-      background: #fff;
-    }
   }
 
   .formReservation__header {
@@ -537,6 +682,10 @@ function onSubmitStep2() {
     gap: 12px;
     padding: 20px 24px;
     border-bottom: 1px solid #dee2e6;
+
+    @include media-down(lg) {
+      padding: 14px 16px;
+    }
 
     .header__title {
       flex: 1;
@@ -585,6 +734,10 @@ function onSubmitStep2() {
 
   .formReservation__body {
     padding: 24px;
+
+    @include media-down(lg) {
+      padding: 16px;
+    }
 
     .body__form {
       display: flex;
@@ -729,10 +882,6 @@ function onSubmitStep2() {
 
 @media (max-width: 575.98px) {
   .formReservation {
-    width: 95%;
-    max-width: none;
-    margin: 10px;
-
     .formReservation__header {
       padding: 16px 20px;
     }
