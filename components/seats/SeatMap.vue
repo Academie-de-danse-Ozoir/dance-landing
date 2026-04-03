@@ -145,6 +145,7 @@
           class="seatMap__activeOrderLock"
           role="status"
           aria-live="polite"
+          @pointerdown.stop
         >
           <div class="seatMap__activeOrderLockCard">
             <svg
@@ -1254,8 +1255,13 @@ function clientToSvgPoint(clientX: number, clientY: number): { x: number; y: num
   return { x: p.x, y: p.y }
 }
 
+function isMapNavLocked() {
+  return !!props.activeOrder
+}
+
 /** Met à jour les cibles (zoom autour du point focus) puis lisse vers l’affichage via rAF. */
 function setMapZoomAtPoint(z1: number, focusX: number, focusY: number) {
+  if (isMapNavLocked()) return
   const z0 = mapTargetZoom.value
   const next = Math.min(MAP_ZOOM_MAX, Math.max(mapZoomMinEffective.value, z1))
   if (Math.abs(next - z0) < 1e-9) return
@@ -1271,6 +1277,7 @@ function setMapZoomAtPoint(z1: number, focusX: number, focusY: number) {
 }
 
 function zoomMapByStep(mult: number) {
+  if (isMapNavLocked()) return
   emit('booking-section-scroll-if-needed')
   const svg = svgRef.value
   if (!svg) return
@@ -1280,6 +1287,7 @@ function zoomMapByStep(mult: number) {
 }
 
 function resetMapView() {
+  if (isMapNavLocked()) return
   emit('booking-section-scroll-if-needed')
   stopMapNavRaf()
   const z = defaultMapZoomForViewport()
@@ -1365,11 +1373,13 @@ onMounted(() => {
     const nonPassive: AddEventListenerOptions = { passive: false }
 
     const onGestureStart = (e: Event) => {
+      if (isMapNavLocked()) return
       ;(e as unknown as { preventDefault(): void }).preventDefault()
       emit('booking-section-scroll-if-needed')
       safariGestureBaseZoom = mapTargetZoom.value
     }
     const onGestureChange = (e: Event) => {
+      if (isMapNavLocked()) return
       const ev = e as unknown as {
         preventDefault(): void
         scale: number
@@ -1385,11 +1395,13 @@ onMounted(() => {
       setMapZoomAtPoint(z, p.x, p.y)
     }
     const onGestureEnd = (e: Event) => {
+      if (isMapNavLocked()) return
       ;(e as unknown as { preventDefault(): void }).preventDefault()
     }
 
     /** Chrome / Firefox (Mac) : pincement trackpad = molette + ctrlKey (Safari utilise gesture*). */
     const onWheelPinch = (e: WheelEvent) => {
+      if (isMapNavLocked()) return
       if (!e.ctrlKey) return
       emit('booking-section-scroll-if-needed')
       e.preventDefault()
@@ -1404,6 +1416,7 @@ onMounted(() => {
     vp.addEventListener('gestureend', onGestureEnd, nonPassive)
 
     const onTouchStart = (e: TouchEvent) => {
+      if (isMapNavLocked()) return
       if (e.touches.length === 2) {
         emit('booking-section-scroll-if-needed')
         stopMapNavRaf()
@@ -1415,6 +1428,7 @@ onMounted(() => {
       }
     }
     const onTouchMove = (e: TouchEvent) => {
+      if (isMapNavLocked()) return
       if (e.touches.length === 2 && touchPinchStartDist > 1) {
         const d = touchPinchDistance(e.touches)
         const z = touchPinchStartZoom * (d / touchPinchStartDist)
@@ -1459,6 +1473,7 @@ onBeforeUnmount(() => {
 })
 
 function beginMapPan(e: PointerEvent) {
+  if (isMapNavLocked()) return
   emit('booking-section-scroll-if-needed')
   e.preventDefault()
   stopMapNavRaf()
@@ -1472,6 +1487,7 @@ function beginMapPan(e: PointerEvent) {
 
 function onMapPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
+  if (isMapNavLocked()) return
   if (isSeatMapMobileViewport()) {
     emit('booking-section-scroll-if-needed')
   }
@@ -1488,6 +1504,7 @@ function onMapPointerDown(e: PointerEvent) {
 }
 
 function onMapPointerMove(e: PointerEvent) {
+  if (isMapNavLocked()) return
   if (mapPanAwaitingThreshold.value && !isMapPanning.value) {
     const dx = e.clientX - mapPanDownClientX
     const dy = e.clientY - mapPanDownClientY
@@ -1562,6 +1579,7 @@ function isMapZoomOutKeyEvent(e: KeyboardEvent): boolean {
  * Les boutons (sièges, toolbar) sont exclus pour laisser le comportement natif si besoin.
  */
 function applyMapKeyboardShortcuts(e: KeyboardEvent) {
+  if (isMapNavLocked()) return
   const el = e.target as HTMLElement
   if (el.closest?.('button, input, textarea, select, [contenteditable]')) return
   if (e.ctrlKey || e.metaKey || e.altKey) return
@@ -1585,6 +1603,7 @@ function applyMapKeyboardShortcuts(e: KeyboardEvent) {
  * sans focus sur le viewport — sauf si le focus est dans un champ de saisie.
  */
 function tryHomeGlobalMapZoom(e: KeyboardEvent): boolean {
+  if (isMapNavLocked()) return false
   if (e.ctrlKey || e.metaKey || e.altKey) return false
   const path = route.path
   if (path !== '/' && path !== '') return false

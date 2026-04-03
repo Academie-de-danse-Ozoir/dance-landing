@@ -17,6 +17,8 @@
       :rows="homeHighlightRows"
     />
 
+    <MapAndPricingSection />
+
     <BookingBlock />
 
     <SiteFooter />
@@ -31,6 +33,7 @@ import StatementSection from '../components/home/StatementSection.vue'
 import AlternatingFeatures, {
   type AlternatingFeatureRow
 } from '../components/home/AlternatingFeatures.vue'
+import MapAndPricingSection from '../components/home/MapAndPricingSection.vue'
 import BookingBlock from '../components/home/BookingBlock.vue'
 import SiteFooter from '../components/layout/SiteFooter.vue'
 import { useScrollToBooking } from '../composables/useScrollToBooking'

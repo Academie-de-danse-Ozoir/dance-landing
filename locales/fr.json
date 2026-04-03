@@ -125,7 +125,7 @@
       "none": "Aucune place sélectionnée",
       "one": "place sélectionnée",
       "multiple": "places sélectionnées",
-      "limitReached": "Vous avez atteint la limite de {max} places par commande. Désélectionnez une place pour en ajouter une autre, ou effectuez plusieurs commandes si vous souhaitez plus de places."
+      "limitReached": "Vous avez atteint la limite de {max} places par commande."
     },
     "actions": {
       "reserve": "Réserver"
@@ -152,11 +152,11 @@
       "fields": {
         "firstName": {
           "label": "Prénom",
-          "placeholder": "Prénom du réservataire"
+          "placeholder": "Prénom"
         },
         "lastName": {
           "label": "Nom",
-          "placeholder": "Nom du réservataire"
+          "placeholder": "Nom"
         },
         "email": {
           "label": "Email",
@@ -222,6 +222,75 @@
           "caption": "Le public et la salle : le partage du moment — visuel d'illustration."
         }
       ]
+    },
+    "mapAndPricing": {
+      "sectionAria": "Guide de réservation : tarifs, plan interactif et conditions",
+      "eyebrow": "Billetterie",
+      "title": "Tout savoir avant de réserver",
+      "intro": "Cette page regroupe l’essentiel pour réserver : tarifs, lecture du plan (balcon, parterre, scène), limites de commande et utilisation de la carte. Le **récapitulatif des montants** s’affiche juste avant le paiement.",
+      "pricing": {
+        "title": "Prix des billets",
+        "lead": "Les montants ci-dessous s’appliquent à chaque place au moment où vous validez le paiement. Ils sont indiqués toutes taxes comprises (TTC).",
+        "adultLabel": "Billet adulte",
+        "childLabel": "Billet enfant",
+        "detail": "Le total de la commande (places × tarifs) apparaît sur l’écran Stripe avant confirmation. Après paiement accepté, un e-mail récapitule sièges, montant et coordonnées.",
+        "footnote": "Paiement sécurisé par carte bancaire."
+      },
+      "map": {
+        "title": "Lire le plan interactif",
+        "lead": "Le plan est une vue du dessus : la scène en haut de l’écran, le balcon au-dessus du parterre. Chaque siège affiche rangée et numéro ; seuls les sièges disponibles (couleur claire) sont cliquables tant qu’aucune réservation n’est en cours de votre côté.",
+        "legendTitle": "Couleurs des sièges",
+        "legend": [
+          {
+            "key": "free",
+            "term": "Disponible",
+            "detail": "Siège libre : vous pouvez le sélectionner pour votre commande."
+          },
+          {
+            "key": "selected",
+            "term": "Votre sélection",
+            "detail": "Places que vous avez choisies pour cette session (avant validation du formulaire et du paiement)."
+          },
+          {
+            "key": "hold",
+            "term": "En cours",
+            "detail": "Un autre spectateur a temporairement réservé ce siège ; il peut revenir disponible si le délai expire."
+          },
+          {
+            "key": "paid",
+            "term": "Indisponible",
+            "detail": "Place vendue ou bloquée pour la vente — non sélectionnable."
+          },
+          {
+            "key": "staff",
+            "term": "Organisation",
+            "detail": "Réservé au personnel ou à l’organisation du spectacle ; ne fait pas partie des places en vente en ligne."
+          }
+        ]
+      },
+      "controls": {
+        "title": "Contrôles du plan",
+        "lead": "Les mêmes actions sont disponibles sur ordinateur, tablette et mobile ; les libellés des boutons peuvent varier selon la taille d’écran.",
+        "items": [
+          {
+            "label": "Zoom",
+            "text": "Molette de la souris (souvent avec Ctrl sur PC), pincement à deux doigts sur écran tactile, ou boutons + et − sur le bord du plan. Un pourcentage peut indiquer le niveau de zoom."
+          },
+          {
+            "label": "Déplacer la vue",
+            "text": "Clic ou appui maintenu, puis glisser sur la carte pour vous déplacer dans la salle sans changer le zoom."
+          },
+          {
+            "label": "Tout voir d’un coup",
+            "text": "Touche Échap ou 0 du clavier, ou le bouton de réinitialisation (par ex. « Tout afficher » ou icône ⟲) pour recadrer l’ensemble du plan."
+          }
+        ]
+      },
+      "limits": {
+        "title": "Limite par commande",
+        "highlight": "Jusqu’à **{max} places** par commande.",
+        "detail": "Cette limite évite les blocages prolongés de nombreux sièges. Pour un groupe plus nombreux, finalisez une première commande en payant, puis ouvrez une deuxième réservation pour choisir parmi les places restantes. Chaque commande donne lieu à un paiement et à un e-mail de confirmation distincts."
+      }
     }
   },
   "success": {
