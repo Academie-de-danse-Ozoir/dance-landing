@@ -1,0 +1,42 @@
+@use 'breakpoints' as *;
+
+.bookingOrderActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  @include media-down(lg) {
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+@include media-down(lg) {
+  div.bookingOrderActions:not(.bookingOrderActions--single) > button.defaultButton {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 6px;
+    font-size: 12px;
+    line-height: 1.2;
+    border-radius: 5px;
+  }
+
+  div.bookingOrderActions.bookingOrderActions--single {
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  div.bookingOrderActions.bookingOrderActions--single > button.defaultButton {
+    flex: 0 0 calc((100% - 8px) / 2);
+    width: calc((100% - 8px) / 2);
+    max-width: 100%;
+    min-width: 0;
+    padding: 8px 6px;
+    font-size: 12px;
+    line-height: 1.2;
+    border-radius: 5px;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+  }
+}

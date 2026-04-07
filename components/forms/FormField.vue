@@ -5,10 +5,12 @@
     </label>
     <input
       :id="fieldKey"
+      :name="inputName ?? fieldKey"
       :value="modelValue"
       :type="type"
       :maxlength="maxlength"
       :inputmode="inputmode"
+      :autocomplete="autocomplete"
       class="formField__input"
       :class="{
         'formField__input--invalid': error,
@@ -45,6 +47,13 @@ const props = defineProps<{
   inputmode?: 'text' | 'numeric' | 'tel' | 'email' | 'url' | 'search' | 'decimal' | 'none'
   /** Chiffres uniquement (saisie + collage) ; max 10 chiffres avant formatage parent. */
   digitsOnly?: boolean
+  /**
+   * Valeurs HTML standard (`given-name`, `email`, `tel`…) pour l’autofill navigateur.
+   * Pour plusieurs personnes : préfixe `section-xxx` (ex. `section-place-0 given-name`).
+   */
+  autocomplete?: string
+  /** Attribut `name` (défaut : `fieldKey`). */
+  inputName?: string
 }>()
 
 const emit = defineEmits<{

@@ -8,7 +8,15 @@
     >
       <div class="altFeatures__copy">
         <h2 class="altFeatures__title">{{ row.title }}</h2>
-        <p class="altFeatures__text">{{ row.text }}</p>
+        <p class="altFeatures__text">
+          {{ row.text }}
+          <template v-if="row.billingEmailLink">
+            <UnderlineLink class="altFeatures__emailLink" :href="`mailto:${billingEmail}`">{{
+              billingEmail
+            }}</UnderlineLink>
+            <span v-if="row.textAfterEmail" class="altFeatures__emailFollow">{{ row.textAfterEmail }}</span>
+          </template>
+        </p>
       </div>
       <figure class="altFeatures__figure">
         <div
@@ -24,17 +32,25 @@
 </template>
 
 <script setup lang="ts">
+import UnderlineLink from '~/components/buttons/UnderlineLink.vue'
+import content from '../../locales/fr.json'
+
 export type AlternatingFeatureRow = {
   title: string
   text: string
   /** `"left"` | `"right"` dans `fr.json` — typé en string pour l’inférence JSON. */
   imageSide: string
+  /** Si vrai, insère un lien `mailto` vers l’email billetterie entre `text` et `textAfterEmail`. */
+  billingEmailLink?: boolean
+  textAfterEmail?: string
 }
 
 defineProps<{
   sectionAria: string
   rows: AlternatingFeatureRow[]
 }>()
+
+const billingEmail = content.brand.senderEmail
 </script>
 
 <style lang="scss" scoped>
@@ -80,6 +96,22 @@ defineProps<{
   font-size: 1rem;
   line-height: 1.7;
   color: $color-text-secondary;
+}
+
+.altFeatures__emailLink {
+  color: mix($color-primary, $color-text-secondary, 40%);
+  font-weight: 500;
+  transition: color 0.28s ease;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    color: $color-primary;
+  }
+}
+
+.altFeatures__emailFollow {
+  display: block;
+  margin-top: 0.65rem;
 }
 
 .altFeatures__figure {

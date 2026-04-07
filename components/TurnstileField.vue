@@ -19,6 +19,9 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLElement | null>(null)
 let widgetId: string | undefined
+/** Laisse le widget visible pendant le fade-out de la modale (évite le « trou » instantané). */
+const TURNSTILE_DESTROY_DELAY_MS = 450
+let deferredDestroyTimer: ReturnType<typeof setTimeout> | null = null
 
 type TurnstileApi = {
   render: (container: HTMLElement | string, parameters: Record<string, unknown>) => string
@@ -70,6 +73,10 @@ async function mountWidget() {
 }
 
 function destroyWidget() {
+  if (deferredDestroyTimer) {
+    clearTimeout(deferredDestroyTimer)
+    deferredDestroyTimer = null
+  }
   const ts = getTurnstile()
   if (widgetId && ts) {
     try {
@@ -85,6 +92,10 @@ function destroyWidget() {
 }
 
 onMounted(async () => {
+  if (deferredDestroyTimer) {
+    clearTimeout(deferredDestroyTimer)
+    deferredDestroyTimer = null
+  }
   if (!props.siteKey) return
   try {
     await loadScript()
@@ -110,14 +121,49 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  destroyWidget()
+  if (deferredDestroyTimer) {
+    clearTimeout(deferredDestroyTimer)
+    deferredDestroyTimer = null
+  }
+
+  const id = widgetId
+  const el = containerRef.value
+  widgetId = undefined
   emit('update:token', null)
+
+  if (!id) {
+    if (el) el.innerHTML = ''
+    return
+  }
+
+  deferredDestroyTimer = setTimeout(() => {
+    deferredDestroyTimer = null
+    const ts = getTurnstile()
+    if (ts) {
+      try {
+        ts.remove(id)
+      } catch {
+        /* ignore */
+      }
+    }
+    if (el) {
+      try {
+        el.innerHTML = ''
+      } catch {
+        /* nœud déjà retiré du DOM */
+      }
+    }
+  }, TURNSTILE_DESTROY_DELAY_MS)
 })
 </script>
 
 <style scoped lang="scss">
 .turnstileField {
   margin-top: 10px;
+}
+
+.turnstileField__widget {
+  min-height: 65px;
 }
 
 .turnstileField__hint {

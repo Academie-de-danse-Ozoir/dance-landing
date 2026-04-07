@@ -98,6 +98,30 @@ export const CANCEL_REASON = {
  */
 export const SEAT_MAP_VIEWBOX_EXTRA_HORIZONTAL = 72
 
+/**
+ * Zone PMR sur le plan (sous G26–G30, `SeatMap.vue`).
+ * Largeur = emprise horizontale commune aux sièges G26…G30 (bord gauche du plus à gauche → bord droit du plus à droite).
+ */
+/** Distance (px SVG) entre le bas des sièges G26–G30 et le haut de la zone PMR. */
+export const SEAT_MAP_PMR_ZONE_GAP_BELOW_ROW_G = 2
+/**
+ * Ajustements de hauteur (px SVG), ajoutés à la hauteur de base (2 × taille d’un siège sur la carte).
+ * `padTop` : étend la zone vers le haut (vers la rangée G). `padBottom` : vers le bas.
+ */
+export const SEAT_MAP_PMR_ZONE_PAD_TOP_SVG = -2
+export const SEAT_MAP_PMR_ZONE_PAD_BOTTOM_SVG = 6
+/**
+ * Réduit l’extension de la zone PMR vers la **droite** (px SVG), par rapport au bord droit
+ * de l’emprise G26–G30. Augmenter pour raccourcir la zone à droite.
+ */
+export const SEAT_MAP_PMR_ZONE_INSET_RIGHT_SVG = 481.5
+
+/**
+ * Biais du bord droit (px SVG) : diagonale rigide — le bas-droite est un peu plus à gauche que le haut-droite.
+ * Inclinaison volontairement faible (quelques px sur la hauteur de la zone).
+ */
+export const SEAT_MAP_PMR_ZONE_RIGHT_SKEW_SVG = 5
+
 // -----------------------------------------------------------------------------
 // Carte sièges — arc balcon P→X (SeatMap, coordonnées monde SVG)
 // -----------------------------------------------------------------------------

@@ -137,6 +137,32 @@
       >
         {{ seat.label }}
       </text>
+      <g v-if="pmrZoneBelowG26to30" class="svg__zone svg__zone--pmr">
+        <title>{{ mapUi.pmrZoneAreaLabel }}</title>
+        <path
+          :d="pmrZoneBelowG26to30.zonePath"
+          class="svg__zoneRect svg__zoneRect--pmr"
+        />
+        <!-- Icône fauteuil (Font Awesome–style, repère 512 après translate/scale) -->
+        <g
+          class="svg__pmrIcon"
+          :transform="pmrZoneBelowG26to30.iconTransform"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <g transform="translate(0,512) scale(0.1,-0.1)">
+            <path
+              d="M2021 5104 c-181 -49 -322 -203 -354 -388 -15 -89 1 -189 47 -280 144 -291 526 -354 756 -125 225 226 166 610 -118 754 -103 53 -226 67 -331 39z"
+            />
+            <path
+              d="M2037 3866 c-94 -26 -181 -113 -207 -204 -6 -24 -10 -385 -10 -1032 0 -946 1 -997 19 -1035 22 -48 54 -79 103 -100 32 -13 121 -15 660 -15 l623 0 475 -475 c529 -528 518 -519 645 -519 116 0 214 59 265 161 21 41 25 62 25 138 0 75 -4 98 -24 135 -16 30 -203 225 -579 603 l-557 557 -527 0 -528 0 0 305 0 304 578 3 577 3 47 27 c218 129 206 430 -21 537 l-56 26 -562 3 -561 3 -4 177 c-3 155 -6 183 -25 224 -63 139 -216 214 -356 174z"
+            />
+            <path
+              d="M1389 3127 c-456 -232 -771 -643 -881 -1150 -19 -88 -22 -133 -23 -322 0 -194 3 -233 23 -329 154 -720 733 -1242 1459 -1317 491 -50 978 126 1331 482 89 91 212 243 212 264 0 18 -209 220 -218 210 -4 -6 -30 -44 -57 -85 -63 -94 -237 -269 -335 -337 -445 -304 -1014 -322 -1473 -46 -95 58 -244 181 -310 257 -168 195 -284 442 -323 689 -26 159 -15 387 24 537 93 359 303 639 625 835 l77 46 0 160 c0 127 -3 159 -14 159 -7 0 -60 -24 -117 -53z"
+            />
+          </g>
+        </g>
+      </g>
         </g>
       </svg>
       <Transition name="seatMapActiveOrderLock">
@@ -194,6 +220,7 @@
               class="seatMap__toolbarTrigger"
               :aria-expanded="mapToolbarMenuOpen"
               :aria-controls="mapToolbarPanelId"
+              @pointerdown="onSeatMapToolbarPointerDown"
               @click.stop="toggleMapToolbarMenu"
             >
               {{ mapUi.toolbarMenuTrigger }}
@@ -220,6 +247,7 @@
             class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomOut"
             :disabled="mapZoom <= mapZoomMinEffective + 1e-6"
+            @pointerdown="onSeatMapToolbarPointerDown"
             @click="zoomMapByStep(1 / MAP_ZOOM_STEP)"
           >
             <span class="toolbarRow__label">{{ mapUi.zoomOutCaption }}</span>
@@ -230,6 +258,7 @@
             class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomIn"
             :disabled="mapZoom >= MAP_ZOOM_MAX - 1e-6"
+            @pointerdown="onSeatMapToolbarPointerDown"
             @click="zoomMapByStep(MAP_ZOOM_STEP)"
           >
             <span class="toolbarRow__label">{{ mapUi.zoomInCaption }}</span>
@@ -239,6 +268,7 @@
             type="button"
             class="seatMap__toolbarRow seatMap__toolbarRow--reset"
             :aria-label="mapUi.resetView"
+            @pointerdown="onSeatMapToolbarPointerDown"
             @click="resetMapView"
           >
             <span class="toolbarRow__label">{{ mapUi.resetViewCaption }}</span>
@@ -254,6 +284,7 @@
             class="seatMap__toolbarTrigger seatMap__legendMenuTrigger"
             :aria-expanded="mapLegendMenuOpen"
             :aria-controls="mapLegendPanelId"
+            @pointerdown="onSeatMapToolbarPointerDown"
             @click.stop="toggleMapLegendMenu"
           >
             {{ mapUi.legendMenuTrigger }}
@@ -346,7 +377,12 @@ import {
   SEAT_MAP_BALCONY_ARC_ROTATION_SIGN,
   SEAT_MAP_BALCONY_ARC_SCALE_X_CURVE_POWER,
   SEAT_MAP_BALCONY_ARC_SCALE_X_MIN,
-  NARROW_VIEWPORT_MQ
+  NARROW_VIEWPORT_MQ,
+  SEAT_MAP_PMR_ZONE_GAP_BELOW_ROW_G,
+  SEAT_MAP_PMR_ZONE_INSET_RIGHT_SVG,
+  SEAT_MAP_PMR_ZONE_PAD_BOTTOM_SVG,
+  SEAT_MAP_PMR_ZONE_PAD_TOP_SVG,
+  SEAT_MAP_PMR_ZONE_RIGHT_SKEW_SVG
 } from '../../constants'
 import {
   isAccessibilityEaseSeatLabel,
@@ -354,6 +390,12 @@ import {
   rowIsBalcony,
   seatMapViewBoxString
 } from '../../utils/yerresSeatLayout'
+import {
+  cancelAndAnimate,
+  SEAT_MAP_TOOLBAR_TAP_MS,
+  seatMapToolbarIconTapKeyframes,
+  seatMapToolbarSurfaceTapKeyframes
+} from '../../utils/tapPulse'
 
 type MapHintRow = { label: string; textDesktop: string; textMobile: string }
 
@@ -381,6 +423,7 @@ type SeatMapNavCopy = {
   activeOrderLockHint: string
   accessibilityZoneTitle: string
   accessibilityZoneSubtitle: string
+  pmrZoneAreaLabel: string
 }
 const mapUi: SeatMapNavCopy = (content.home.seats as unknown as { map: SeatMapNavCopy }).map
 const mapHintsTitleId = useId()
@@ -400,8 +443,81 @@ function closeMobileMapPopovers() {
   mapLegendMenuOpen.value = false
 }
 
+function seatMapCoarseTap(): boolean {
+  if (import.meta.server) return false
+  return window.matchMedia('(hover: none)').matches
+}
+
+/** Tactile : WAAPI pour relancer le flash à chaque tap (évite `:active` + CSS qui ne redémarre pas si spam). */
+function onSeatMapToolbarPointerDown(e: PointerEvent) {
+  if (!seatMapCoarseTap()) return
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  const el = e.currentTarget
+  if (!(el instanceof HTMLButtonElement) || el.disabled) return
+
+  cancelAndAnimate(el, seatMapToolbarSurfaceTapKeyframes(), SEAT_MAP_TOOLBAR_TAP_MS)
+  const icon = el.querySelector('.toolbarRow__icon')
+  if (icon instanceof HTMLElement) {
+    cancelAndAnimate(icon, seatMapToolbarIconTapKeyframes(), SEAT_MAP_TOOLBAR_TAP_MS)
+  }
+}
+
 const SEAT_SIZE = 13
 const SEAT_RADIUS = 1.2
+
+/**
+ * Polygone convexe avec coins arrondis (rayon comme les sièges).
+ * Points en ordre **horaire** (Y vers le bas).
+ */
+function roundedConvexPolygonPath(points: [number, number][], radius: number): string {
+  const n = points.length
+  if (n < 3) return ''
+
+  let minEdge = Infinity
+  for (let i = 0; i < n; i++) {
+    const p = points[i]!
+    const q = points[(i + 1) % n]!
+    minEdge = Math.min(minEdge, Math.hypot(q[0] - p[0], q[1] - p[1]))
+  }
+  const r = Math.min(radius, Math.max(0.2, minEdge * 0.25 - 0.02))
+
+  const parts: string[] = []
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i - 1 + n) % n]!
+    const curr = points[i]!
+    const next = points[(i + 1) % n]!
+    const v1x = curr[0] - prev[0]
+    const v1y = curr[1] - prev[1]
+    const v2x = next[0] - curr[0]
+    const v2y = next[1] - curr[1]
+    const len1 = Math.hypot(v1x, v1y)
+    const len2 = Math.hypot(v2x, v2y)
+    if (len1 < 1e-9 || len2 < 1e-9) continue
+    const u1x = v1x / len1
+    const u1y = v1y / len1
+    const u2x = v2x / len2
+    const u2y = v2y / len2
+    const d = -(u1x * u2x + u1y * u2y)
+    const innerAngle = Math.acos(Math.max(-1, Math.min(1, d)))
+    const tf = r / Math.tan(innerAngle / 2)
+    const s1x = curr[0] - u1x * tf
+    const s1y = curr[1] - u1y * tf
+    const s2x = curr[0] + u2x * tf
+    const s2y = curr[1] + u2y * tf
+
+    const cross = u1x * u2y - u1y * u2x
+    const sweep = cross < 0 ? 0 : 1
+
+    if (i === 0) {
+      parts.push(`M ${s1x} ${s1y}`)
+    } else {
+      parts.push(`L ${s1x} ${s1y}`)
+    }
+    parts.push(`A ${r} ${r} 0 0 ${sweep} ${s2x} ${s2y}`)
+  }
+  parts.push('Z')
+  return parts.join(' ')
+}
 
 type LegendRow = {
   key: 'free' | 'selected' | 'hold' | 'paid'
@@ -787,6 +903,34 @@ function seatBoundsForAccessibilitySeats(seats: Seat[]): SeatBounds | null {
   return { minX, minY, maxX, maxY }
 }
 
+/**
+ * Bbox des sièges listés (même rangée) : largeur = du bord gauche au bord droit
+ * (ex. G26…G30 → emprise de G26 à G30 selon la disposition sur le plan).
+ */
+function seatBoundsForSeatNumbers(
+  seats: Seat[],
+  rowLetter: string,
+  nums: number[]
+): SeatBounds | null {
+  const R = rowLetter.toUpperCase()
+  const set = new Set(nums)
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const s of seats) {
+    const pr = parseTheaterSeatLabel(s.label)
+    if (!pr || pr.row.toUpperCase() !== R) continue
+    if (!set.has(pr.num)) continue
+    minX = Math.min(minX, s.x)
+    minY = Math.min(minY, s.y)
+    maxX = Math.max(maxX, s.x + SEAT_SIZE)
+    maxY = Math.max(maxY, s.y + SEAT_SIZE)
+  }
+  if (!Number.isFinite(minX)) return null
+  return { minX, minY, maxX, maxY }
+}
+
 /** Cadre zone accès facilité : serré en bas, extension à droite pour les libellés (text-anchor end). */
 function accessibilityZoneFrameFromBounds(b: SeatBounds) {
   const x = b.minX - ACCESSIBILITY_ZONE_INSET_LEFT
@@ -942,6 +1086,40 @@ const accessibilityZone = computed(() => {
   return accessibilityZoneFrameFromBounds(b)
 })
 
+/** Zone PMR sous G26–G30 : hauteur de base = 2 × `SEAT_SIZE`, + pads dans `constants.ts`. */
+/** Taille logique de l’icône PMR (Font Awesome 512×512 après `translate(0,512) scale(0.1,-0.1)`). */
+const PMR_ICON_UNITS = 512
+
+const pmrZoneBelowG26to30 = computed(() => {
+  const b = seatBoundsForSeatNumbers(props.seats, 'G', [26, 27, 28, 29, 30])
+  if (!b) return null
+  const padTop = SEAT_MAP_PMR_ZONE_PAD_TOP_SVG
+  const padBottom = SEAT_MAP_PMR_ZONE_PAD_BOTTOM_SVG
+  const h = SEAT_SIZE * 2 + padTop + padBottom
+  const x = b.minX
+  const y = b.maxY + SEAT_MAP_PMR_ZONE_GAP_BELOW_ROW_G - padTop
+  const w = Math.max(
+    SEAT_SIZE,
+    b.maxX - b.minX - SEAT_MAP_PMR_ZONE_INSET_RIGHT_SVG
+  )
+  const skew = SEAT_MAP_PMR_ZONE_RIGHT_SKEW_SVG
+  const zonePath = roundedConvexPolygonPath(
+    [
+      [x, y],
+      [x + w, y],
+      [x + w - skew, y + h],
+      [x, y + h]
+    ],
+    SEAT_RADIUS
+  )
+  const iconSize = Math.min(w, h) * 0.5
+  const s = iconSize / PMR_ICON_UNITS
+  const cx = x + w / 2 - skew / 4
+  const cy = y + h / 2
+  const iconTransform = `translate(${cx - (PMR_ICON_UNITS / 2) * s} ${cy - (PMR_ICON_UNITS / 2) * s}) scale(${s})`
+  return { x, y, w, h, zonePath, iconTransform }
+})
+
 /** Espace entre le bas des sièges A (et le cadre parterre) et le haut du bloc « Scène ». */
 const STAGE_GAP_BELOW_ROW_A = 30
 
@@ -969,6 +1147,7 @@ const mapOverlayRects = computed(() => {
   if (balconyZone.value) out.push(balconyZone.value)
   if (parterreZone.value) out.push(parterreZone.value)
   if (accessibilityZone.value) out.push(accessibilityZone.value)
+  if (pmrZoneBelowG26to30.value) out.push(pmrZoneBelowG26to30.value)
   if (stageBlock.value) out.push(stageBlock.value)
   return out.length ? out : undefined
 })
@@ -2012,17 +2191,27 @@ function handleSeatClick(seat: Seat) {
     font: inherit;
     font-size: 0.72rem;
     font-weight: 600;
-    color: $seat-map-ui-text;
+    color: $seat-map-hint-text;
     background: $seat-map-ui-surface;
     border: 1px solid $seat-map-ui-border;
     border-radius: 8px;
     box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.25s ease,
+      color 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
 
-    &:hover {
-      background: $seat-map-ui-surface-solid;
-      border-color: $color-border-strong;
+    @media (hover: hover) {
+      &:hover,
+      &:active {
+        background: $seat-map-hint-text;
+        border-color: $seat-map-hint-text;
+        color: $seat-map-ui-surface-solid;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+      }
     }
 
     @include media-down(lg) {
@@ -2107,27 +2296,33 @@ function handleSeatClick(seat: Seat) {
     margin: 0;
     font: inherit;
     text-align: left;
-    color: $seat-map-ui-text;
+    color: $seat-map-hint-text;
     background: $seat-map-ui-surface;
     border: 1px solid $seat-map-ui-border;
     border-radius: 8px;
     box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.25s ease,
+      color 0.25s ease,
+      border-color 0.25s ease,
+      opacity 0.25s ease,
+      box-shadow 0.25s ease;
 
-    &:hover:not(:disabled) {
-      background: $seat-map-ui-surface-solid;
-      border-color: $color-border-strong;
+    @media (hover: hover) {
+      &:hover:not(:disabled),
+      &:active:not(:disabled) {
+        background: $seat-map-hint-text;
+        border-color: $seat-map-hint-text;
+        color: $seat-map-ui-surface-solid;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+      }
     }
 
     &:disabled {
       cursor: not-allowed;
-      opacity: 0.55;
-
-      .toolbarRow__label,
-      .toolbarRow__icon {
-        opacity: 0.65;
-      }
+      opacity: 0.48;
     }
   }
 
@@ -2135,8 +2330,9 @@ function handleSeatClick(seat: Seat) {
     font-size: 0.68rem;
     font-weight: 600;
     line-height: 1.25;
-    color: $seat-map-hint-text;
+    color: currentColor;
     justify-self: start;
+    transition: color 0.25s ease, opacity 0.25s ease;
   }
 
   .toolbarRow__icon {
@@ -2149,6 +2345,8 @@ function handleSeatClick(seat: Seat) {
     font-weight: 600;
     line-height: 1;
     justify-self: end;
+    color: currentColor;
+    transition: color 0.25s ease, opacity 0.25s ease;
   }
 
   .seatMap__toolbarRow--reset .toolbarRow__icon {
@@ -2358,6 +2556,20 @@ function handleSeatClick(seat: Seat) {
       &--accessibility {
         fill: $seat-map-zone-accessibility-fill;
       }
+
+      &--pmr {
+        fill: $seat-map-zone-pmr-fill;
+        stroke: $seat-map-zone-pmr-stroke;
+        stroke-width: 0.45;
+      }
+    }
+
+    .svg__zone--pmr {
+      pointer-events: none;
+    }
+
+    .svg__pmrIcon {
+      color: $seat-map-pmr-icon;
     }
 
     .svg__zoneTitle {

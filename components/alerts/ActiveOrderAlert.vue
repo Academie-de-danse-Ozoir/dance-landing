@@ -3,7 +3,7 @@
     <strong class="activeOrderAlert__title">{{ content.home.activeOrder.title }}</strong><br />
     <span class="activeOrderAlert__time">{{ content.home.activeOrder.timeRemaining }} {{ formattedTime }}</span>
 
-    <div class="activeOrderAlert__actions">
+    <div class="activeOrderAlert__actions bookingOrderActions">
       <DefaultButton
         variant="primary"
         :label="content.home.activeOrder.resumePayment"
@@ -11,7 +11,7 @@
       />
 
       <DefaultButton
-        variant="secondary"
+        variant="cancelReservation"
         :label="content.home.activeOrder.cancelReservation"
         @click="$emit('cancel')"
       />
@@ -60,24 +60,9 @@ defineEmits<{
 
   .activeOrderAlert__actions {
     margin-top: 12px;
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
 
     @include media-down(lg) {
       margin-top: 8px;
-      flex-wrap: nowrap;
-      align-items: stretch;
-      gap: 8px;
-
-      :deep(.defaultButton) {
-        flex: 1 1 0;
-        min-width: 0;
-        padding: 8px 6px;
-        font-size: 12px;
-        line-height: 1.2;
-        border-radius: 5px;
-      }
     }
   }
 

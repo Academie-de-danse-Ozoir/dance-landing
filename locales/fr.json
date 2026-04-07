@@ -34,10 +34,10 @@
     }
   },
   "brand": {
-    "eventDate": "Samedi 24 mai 2026",
-    "eventVenue": "Salle des fêtes – Ozoir-la-Ferrière",
-    "spectacleName": "Spectacle de Danse d'Ozoir",
-    "spectacleNameStripe": "Spectacle de danse d'Ozoir",
+    "eventDate": "Dimanche 28 juin 2026 — ouverture des portes à 16h30, lever de rideau à 17h",
+    "eventVenue": "Théâtre de Yerres",
+    "spectacleName": "Spectacle de l'Académie de Danse d'Ozoir",
+    "spectacleNameStripe": "Spectacle de l'Académie de Danse d'Ozoir",
     "billetterieLabel": "Billetterie officielle",
     "senderEmail": "spectacle.academiedanseozoir@gmail.com",
     "contactPhone": "01 23 45 67 89",
@@ -78,17 +78,17 @@
         "maxSelectionReached": "Maximum {max} places par commande — désélectionnez une place pour modifier votre choix, ou passez une autre commande pour plus de places."
       },
       "map": {
-        "hintsTitle": "Contrôles du plan",
+        "hintsTitle": "Aide à l'utilisation du plan",
         "hintsRows": [
           {
             "label": "Zoom",
-            "textDesktop": "<strong>Pincement</strong> avec deux doigts sur la carte ; <strong>Ctrl</strong> + <strong>molette</strong> ou <strong> trackpad</strong> ; boutons <strong>+</strong> / <strong>−</strong> à droite ou sur le clavier",
-            "textMobile": "<strong>Pincement</strong> avec deux doigts sur la carte ; boutons <strong>+</strong> / <strong>−</strong> à droite"
+            "textDesktop": "<strong>Pincement</strong> avec deux doigts sur le plan ; <strong>Ctrl</strong> + <strong>molette</strong> ou <strong> trackpad</strong> ; boutons <strong>+</strong> / <strong>−</strong> à droite ou sur le clavier",
+            "textMobile": "<strong>Pincement</strong> avec deux doigts sur le plan ; boutons <strong>+</strong> / <strong>−</strong> à droite"
           },
           {
             "label": "Déplacer",
-            "textDesktop": "<strong>Clic maintenu</strong>, <br>puis <strong>glisser</strong> sur la carte",
-            "textMobile": "<strong>Appui maintenu</strong>, <br>puis <strong>glisser</strong> sur la carte"
+            "textDesktop": "<strong>Clic maintenu</strong>, <br>puis <strong>glisser</strong> sur le plan",
+            "textMobile": "<strong>Appui maintenu</strong>, <br>puis <strong>glisser</strong> sur le plan"
           },
           {
             "label": "Tout afficher",
@@ -104,10 +104,10 @@
         "resetViewCaption": "Tout afficher",
         "zoomPercent": "{n} %",
         "viewportLabel": "Plan de salle — zoom et déplacement",
-        "toolbarLabel": "Contrôles du zoom sur le plan",
-        "toolbarMenuTrigger": "Contrôles",
-        "legendMenuTrigger": "Sièges",
-        "legendTitle": "Sièges",
+        "toolbarLabel": "Zoom, déplacement et vue d’ensemble",
+        "toolbarMenuTrigger": "Aide",
+        "legendMenuTrigger": "Légende",
+        "legendTitle": "Légende des sièges",
         "legendFree": "Disponible",
         "legendSelected": "Votre choix",
         "legendHold": "Réservation en cours (autre spectateur)",
@@ -117,7 +117,8 @@
         "activeOrderLockTitle": "Plan en pause",
         "activeOrderLockHint": "Une réservation est en cours — reprenez ou annulez depuis le bandeau.",
         "accessibilityZoneTitle": "Places accès facilité",
-        "accessibilityZoneSubtitle": "Rangée O — côtés O22 à O2 et O5 à O21"
+        "accessibilityZoneSubtitle": "Rangée O — côtés O22 à O2 et O5 à O21",
+        "pmrZoneAreaLabel": "Zone places PMR (sous G26 à G30)"
       }
     },
     "selection": {
@@ -190,8 +191,8 @@
     },
     "hero": {
       "kicker": "Billetterie officielle",
-      "title": "Spectacle de Danse d'Ozoir",
-      "subtitle": "Le samedi 24 mai 2026, la Salle des fêtes d'Ozoir-la-Ferrière accueille une soirée où la danse rencontre l'élégance. Parcourez le plan de salle interactif, complétez vos informations puis réglez votre commande en ligne sur une page sécurisée ; vos billets vous parviennent par email.",
+      "title": "Spectacle de l'Académie de Danse d'Ozoir",
+      "subtitle": "Le dimanche 28 juin 2026 au Théâtre de Yerres, ouverture des portes à 16h30 et lever de rideau à 17h. Une après-midi où la danse rencontre l'élégance. Offrez-vous ce rendez-vous — les meilleures places partent vite, et ce moment ne se vit qu'une fois.",
       "ctaScroll": "Réserver mes places"
     },
     "statement": {
@@ -216,7 +217,9 @@
         },
         {
           "title": "Avant votre venue",
-          "text": "Les tarifs en vigueur, les conditions d'accès et les mentions utiles (horaires, retard, accompagnement des jeunes spectateurs) figurent sur cette page et dans nos conditions générales de vente. Pour toute précision, contactez-nous à l'adresse indiquée en pied de page : nous vous répondons dans les meilleurs délais.",
+          "text": "Les rubriques « Tout savoir avant de réserver » et « Infos vente » sur cette page précisent notamment l’ouverture des portes à 16h30, le lever de rideau à 17h, l’interdiction d’entrée après le début du spectacle et l’absence de vente sur place. Les tarifs et les conditions générales de vente s’y trouvent aussi. Pour toute précision, contactez-nous sur : ",
+          "textAfterEmail": "Nous vous répondons dans les meilleurs délais.",
+          "billingEmailLink": true,
           "imageSide": "right",
           "caption": "Le public et la salle : le partage du moment — visuel d'illustration."
         }
@@ -234,6 +237,16 @@
         "childLabel": "Billet enfant",
         "detail": "Le total de la commande (places × tarifs) apparaît sur l’écran Stripe avant confirmation. Après paiement accepté, un email récapitule sièges, montant et coordonnées.",
         "footnote": "Paiement sécurisé par carte bancaire."
+      },
+      "saleInfo": {
+        "title": "Infos vente",
+        "items": [
+          "Ouverture des portes à **16h30**, lever de rideau à **17h**.",
+          "Aucune entrée n’est autorisée une fois le spectacle commencé (**à 17h**).",
+          "Aucune vente de places sur place : réservation et paiement **uniquement en ligne** sur ce site.",
+          "Représentation : **dimanche 28 juin 2026** — ouverture des portes **16h30**, lever de rideau **17h**.",
+          "Lieu : **Théâtre de Yerres**."
+        ]
       },
       "map": {
         "title": "Lire le plan interactif",
@@ -268,10 +281,10 @@
         "items": [
           {
             "label": "Zoom",
-            "text": "Molette de la souris (souvent avec Ctrl sur PC), pincement à deux doigts sur écran tactile, ou boutons + et − sur le bord du plan. Un pourcentage peut indiquer le niveau de zoom."
+            "text": "Molette de la souris (souvent avec Ctrl sur PC), pincement à deux doigts sur écran tactile, ou boutons + et − sur le bord du plan."
           },
           {
-            "label": "Déplacer la vue",
+            "label": "Déplacement",
             "text": "Clic ou appui maintenu, puis glisser sur la carte pour vous déplacer dans la salle sans changer le zoom."
           },
           {
@@ -300,7 +313,7 @@
     "backToSeats": "Retour à la réservation"
   },
   "footer": {
-    "tagline": "Billetterie en direct pour le Spectacle de Danse d'Ozoir — réservation encadrée, paiement en ligne sécurisé, confirmation et billets par email.",
+    "tagline": "Billetterie en direct pour le Spectacle de Danse d'Ozoir (Théâtre de Yerres) — réservation encadrée, paiement en ligne sécurisé, confirmation et billets par email.",
     "navAria": "Pied de page",
     "copyright": "© {year} — Spectacle de Danse d’Ozoir. Tous droits réservés.",
     "columns": {

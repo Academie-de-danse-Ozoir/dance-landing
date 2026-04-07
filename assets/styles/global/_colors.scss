@@ -43,6 +43,14 @@ $color-warning-text: #664d03;
 $color-warning-bg: #fff3cd;
 $color-warning-border: #ffecb5;
 
+// Bouton « Annuler la réservation » (bandeau home + bannière modal) — rouge doux
+$color-cancel-reservation-fill-bg: #a97272;
+$color-cancel-reservation-fill-fg: #fff;
+$color-cancel-reservation-fill-border: #a97272;
+$color-cancel-reservation-hover-bg: #fdf8f8;
+$color-cancel-reservation-hover-fg: #6f4242;
+$color-cancel-reservation-hover-border: #d4b0b0;
+
 // Footer
 $color-footer-bg: #1a1a2e;
 $color-footer-text: #e8e8ef;
@@ -87,6 +95,10 @@ $seat-map-stage-label: #4a4542;
 $seat-map-zone-balcony-fill: rgba(78, 98, 128, 0.055);
 $seat-map-zone-parterre-fill: rgba(118, 102, 92, 0.048);
 $seat-map-zone-accessibility-fill: rgba(46, 125, 110, 0.09);
+/** Zone PMR sous G26–G30 : mêmes teintes que les sièges disponibles (`--free`). */
+$seat-map-zone-pmr-fill: $seat-map-seat-fill-free;
+$seat-map-zone-pmr-stroke: $seat-map-seat-stroke;
+$seat-map-pmr-icon: $seat-map-label-fill;
 $seat-map-zone-title: #1e2a3d;
 $seat-map-zone-subtitle: rgba(30, 42, 61, 0.82);
 

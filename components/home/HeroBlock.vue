@@ -102,35 +102,70 @@ function scrollToBooking() {
   margin: 0 0 40px 0;
   font-size: clamp(1rem, 2.2vw, 1.2rem);
   line-height: 1.65;
-  max-width: 34rem;
+  max-width: 30rem;
   margin-left: auto;
   margin-right: auto;
   color: rgba(255, 255, 255, 0.88);
 }
 
 .heroBlock__cta {
+  $cta-fg: #1a1a2e;
+  $cta-bg: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 16px 32px;
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a2e;
-  background: #fff;
-  border: none;
+  color: $cta-fg;
+  background: $cta-bg;
+  border: 2px solid $cta-bg;
   border-radius: 999px;
   cursor: pointer;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
+  @media (hover: hover) {
+    &:hover,
+    &:active {
+      color: $cta-bg;
+      background: $cta-fg;
+      border-color: $cta-fg;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
+    }
+  }
+
+  @media (hover: none) {
+    &:active {
+      animation: heroCtaTap 0.45s ease;
+    }
   }
 
   &:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 4px;
+  }
+}
+
+@keyframes heroCtaTap {
+  0%,
+  100% {
+    color: #1a1a2e;
+    background: #fff;
+    border-color: #fff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  }
+
+  40% {
+    color: #fff;
+    background: #1a1a2e;
+    border-color: #1a1a2e;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
   }
 }
 </style>

@@ -50,6 +50,22 @@
         </article>
 
         <article class="mapPricingSection__card">
+          <h3 class="mapPricingSection__cardTitle">{{ content.home.mapAndPricing.saleInfo.title }}</h3>
+          <ul class="mapPricingSection__saleInfoList" role="list">
+            <li
+              v-for="(line, i) in content.home.mapAndPricing.saleInfo.items"
+              :key="i"
+              class="mapPricingSection__saleInfoItem"
+            >
+              <span v-for="(seg, j) in parseBoldSegments(line)" :key="j">
+                <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
+                <template v-else>{{ seg.text }}</template>
+              </span>
+            </li>
+          </ul>
+        </article>
+
+        <article class="mapPricingSection__card">
           <h3 class="mapPricingSection__cardTitle">{{ content.home.mapAndPricing.map.title }}</h3>
           <p class="mapPricingSection__lead">
             <span v-for="(seg, i) in mapLeadSegments" :key="i">
@@ -293,6 +309,23 @@ const pmrTelHref = computed(() => {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: $color-text-muted;
+}
+
+.mapPricingSection__saleInfoList {
+  margin: 0;
+  padding: 0 0 0 1.2rem;
+  list-style: disc;
+}
+
+.mapPricingSection__saleInfoItem {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: $color-text-secondary;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .mapPricingSection__priceList {

@@ -1,5 +1,5 @@
 <template>
-  <Transition name="formReservationOverlay" appear>
+  <Transition name="formReservationOverlay" appear @after-leave="onOverlayAfterLeave">
     <div
       v-if="show"
       class="formReservationOverlay"
@@ -23,9 +23,15 @@
               <span class="timer__label">{{ content.home.modal.reservationTimeLabel }}</span>
               <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
             </p>
-            <button type="button" class="timer__cancel" @click="$emit('cancel-reservation')">
-              {{ content.home.activeOrder.cancelReservation }}
-            </button>
+            <div class="formReservation__timerActions bookingOrderActions bookingOrderActions--single">
+              <DefaultButton
+                type="button"
+                variant="cancelReservation"
+                class="timer__cancel"
+                :label="content.home.activeOrder.cancelReservation"
+                @click="$emit('cancel-reservation')"
+              />
+            </div>
           </div>
         </Transition>
 
@@ -42,7 +48,20 @@
               {{ displayedStep === 1 ? content.home.modal.title : content.home.modal.step2Title }}
             </h2>
             <button type="button" class="header__close" @click="$emit('close')" :aria-label="content.home.modal.close">
-              <span class="close__icon">&times;</span>
+              <svg
+                class="close__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
             </button>
           </div>
 
@@ -52,7 +71,13 @@
             :aria-label="content.home.modal.scrollRegionLabel"
           >
             <div class="formReservation__body">
-              <form v-if="displayedStep === 1" key="step-1" class="body__form" @submit.prevent="onNext">
+              <form
+                v-if="displayedStep === 1"
+                key="step-1"
+                class="body__form"
+                autocomplete="on"
+                @submit.prevent="onNext"
+              >
                 <div class="form__row form__row--namePair">
                   <FormField
                     v-for="field in formFieldsNameRow"
@@ -63,6 +88,7 @@
                     :placeholder="field.placeholder"
                     :maxlength="field.maxlength"
                     :inputmode="field.inputmode"
+                    :autocomplete="field.autocomplete"
                     :model-value="form[field.key]"
                     :error="errors[field.key]"
                     :touched="touched[field.key]"
@@ -79,6 +105,7 @@
                   :placeholder="field.placeholder"
                   :maxlength="field.maxlength"
                   :inputmode="field.inputmode"
+                  :autocomplete="field.autocomplete"
                   :digits-only="field.key === 'phone'"
                   :model-value="form[field.key]"
                   :error="errors[field.key]"
@@ -96,13 +123,19 @@
                   <DefaultButton
                     variant="primary"
                     type="button"
-                    :label="isSubmitting ? content.home.modal.submitting : content.home.modal.next"
-                    :disabled="isSubmitting"
+                    :label="content.home.modal.next"
+                    :disabled="isSavingContact"
                     @click="onNext"
                   />
                 </div>
               </form>
-              <form v-else key="step-2" class="body__form body__form--step2" @submit.prevent="onSubmitStep2">
+              <form
+                v-else
+                key="step-2"
+                class="body__form body__form--step2"
+                autocomplete="on"
+                @submit.prevent="onSubmitStep2"
+              >
                 <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
                 <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
                   <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
@@ -112,6 +145,7 @@
                       :label="content.home.modal.fields.firstName.label"
                       type="text"
                       :placeholder="content.home.modal.fields.firstName.placeholder"
+                      :autocomplete="`section-place-${idx} given-name`"
                       :model-value="ticket.firstName"
                       :error="ticketErrors[idx]?.firstName"
                       @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
@@ -121,6 +155,7 @@
                       :label="content.home.modal.fields.lastName.label"
                       type="text"
                       :placeholder="content.home.modal.fields.lastName.placeholder"
+                      :autocomplete="`section-place-${idx} family-name`"
                       :model-value="ticket.lastName"
                       :error="ticketErrors[idx]?.lastName"
                       @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
@@ -205,20 +240,26 @@ export type FormData = {
 
 import type { TicketDetail } from '../../types'
 
-const props = defineProps<{
-  show: boolean
-  form: FormData
-  seatCount: number
-  step: 1 | 2
-  /** Pour l’étape 2 : liste des sièges (id + label) dans l’ordre de la réservation */
-  seatItems?: { id: string; label: string }[]
-  errors: Record<string, string>
-  touched: Record<string, boolean>
-  isSubmitting: boolean
-  /** Bandeau décompte + annulation (hold créé au clic « Réserver »). */
-  showReservationTimer: boolean
-  formattedReservationTime: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    show: boolean
+    form: FormData
+    seatCount: number
+    step: 1 | 2
+    /** Pour l’étape 2 : liste des sièges (id + label) dans l’ordre de la réservation */
+    seatItems?: { id: string; label: string }[]
+    errors: Record<string, string>
+    touched: Record<string, boolean>
+    /** Finalisation commande (étape 2). */
+    isSubmitting: boolean
+    /** Enregistrement coordonnées vers l’API (étape 1) — sans changer le libellé « Suivant ». */
+    isSavingContact?: boolean
+    /** Bandeau décompte + annulation (hold créé au clic « Réserver »). */
+    showReservationTimer: boolean
+    formattedReservationTime: string
+  }>(),
+  { isSavingContact: false }
+)
 
 const config = useRuntimeConfig()
 const rootLenis = useLenis()
@@ -226,6 +267,12 @@ const rootLenis = useLenis()
 function lockDocumentScroll(lock: boolean) {
   if (import.meta.server) return
   document.documentElement.style.overflow = lock ? 'hidden' : ''
+}
+
+/** Après la fin du fade-out : évite de rendre la scrollbar pendant que l’overlay est encore visible (saut de layout). */
+function onOverlayAfterLeave() {
+  lockDocumentScroll(false)
+  rootLenis.value?.resize()
 }
 
 /** Affichage réel après fondu complet de la carte (toute la popup, pas seulement le body). */
@@ -242,13 +289,14 @@ const BANNER_TRANSITION_MS = 300
 watch(
   () => props.show,
   (open) => {
-    lockDocumentScroll(open)
     if (open) {
+      lockDocumentScroll(true)
       displayedStep.value = props.step
       rootLenis.value?.resize()
     } else {
       stepCardHidden.value = false
-      displayedStep.value = props.step
+      /* Scroll : déverrouillage dans onOverlayAfterLeave uniquement.
+       * displayedStep inchangé pendant le leave (cf. watch step). */
     }
   }
 )
@@ -269,7 +317,6 @@ watch(
   async (next, prev) => {
     if (next === prev) return
     if (!props.show) {
-      displayedStep.value = next
       return
     }
     const gen = ++stepChangeGeneration
@@ -277,7 +324,9 @@ watch(
     await new Promise((r) => setTimeout(r, STEP_CARD_FADE_MS))
     if (gen !== stepChangeGeneration || !props.show) {
       stepCardHidden.value = false
-      displayedStep.value = props.step
+      if (props.show) {
+        displayedStep.value = props.step
+      }
       return
     }
     displayedStep.value = next
@@ -318,29 +367,35 @@ const emit = defineEmits<{
 const ticketDetails = ref<TicketDetail[]>([])
 const ticketErrors = ref<Record<number, { firstName?: string; lastName?: string }>>({})
 
-watch(
-  () => props.step,
-  (s) => {
-    if (s === 1) {
-      turnstileToken.value = null
-      turnstileError.value = null
-    }
-  }
-)
+let prevFormStep: 1 | 2 | undefined
 
 watch(
   () => [props.step, props.seatItems] as const,
-  ([newStep, items]) => {
-    if (newStep === 2 && items && items.length > 0 && ticketDetails.value.length !== items.length) {
-      ticketDetails.value = items.map((s) => ({
-        seatId: s.id,
-        seatLabel: s.label,
-        firstName: '',
-        lastName: '',
-        ticketType: 'adult' as const
-      }))
-      ticketErrors.value = {}
+  ([step, items]) => {
+    if (step === 1) {
+      turnstileToken.value = null
+      turnstileError.value = null
     }
+
+    if (step === 2 && items && items.length > 0) {
+      const fn = props.form.firstName?.trim() ?? ''
+      const ln = props.form.lastName?.trim() ?? ''
+      const needsBuild = ticketDetails.value.length !== items.length
+      const enteredFromStep1 = prevFormStep === 1
+      if (needsBuild || enteredFromStep1) {
+        const prevTickets = [...ticketDetails.value]
+        ticketDetails.value = items.map((s, i) => ({
+          seatId: s.id,
+          seatLabel: s.label,
+          firstName: fn,
+          lastName: ln,
+          ticketType: prevTickets[i]?.ticketType ?? 'adult'
+        }))
+        ticketErrors.value = {}
+      }
+    }
+
+    prevFormStep = step
   },
   { immediate: true }
 )
@@ -369,16 +424,35 @@ const priceSummary = computed(() => {
 const PHONE_INPUT_MAX_LEN = 14
 
 const formFields = [
-  { key: 'firstName' as const, label: content.home.modal.fields.firstName.label, type: 'text' as const, placeholder: content.home.modal.fields.firstName.placeholder },
-  { key: 'lastName' as const, label: content.home.modal.fields.lastName.label, type: 'text' as const, placeholder: content.home.modal.fields.lastName.placeholder },
-  { key: 'email' as const, label: content.home.modal.fields.email.label, type: 'email' as const, placeholder: content.home.modal.fields.email.placeholder },
+  {
+    key: 'firstName' as const,
+    label: content.home.modal.fields.firstName.label,
+    type: 'text' as const,
+    placeholder: content.home.modal.fields.firstName.placeholder,
+    autocomplete: 'given-name'
+  },
+  {
+    key: 'lastName' as const,
+    label: content.home.modal.fields.lastName.label,
+    type: 'text' as const,
+    placeholder: content.home.modal.fields.lastName.placeholder,
+    autocomplete: 'family-name'
+  },
+  {
+    key: 'email' as const,
+    label: content.home.modal.fields.email.label,
+    type: 'email' as const,
+    placeholder: content.home.modal.fields.email.placeholder,
+    autocomplete: 'email'
+  },
   {
     key: 'phone' as const,
     label: content.home.modal.fields.phone.label,
     type: 'tel' as const,
     placeholder: content.home.modal.fields.phone.placeholder,
     maxlength: PHONE_INPUT_MAX_LEN,
-    inputmode: 'numeric' as const
+    inputmode: 'numeric' as const,
+    autocomplete: 'tel'
   }
 ]
 
@@ -517,6 +591,7 @@ function onSubmitStep2() {
   align-items: center;
   justify-content: center;
   z-index: 1050;
+  cursor: pointer;
 
   @include media-down(lg) {
     flex-direction: column;
@@ -528,6 +603,7 @@ function onSubmitStep2() {
 }
 
 .formReservationOverlay__column {
+  cursor: default;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -581,7 +657,7 @@ function onSubmitStep2() {
   transition: opacity 0.26s ease;
 
   @include media-down(lg) {
-    padding: 10px 14px 12px;
+    padding: 12px 16px 14px;
     border-radius: 8px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   }
@@ -589,6 +665,10 @@ function onSubmitStep2() {
   @include media-up(lg) {
     border-bottom: 1px solid #b6d4fe;
   }
+}
+
+.formReservation__timerActions {
+  justify-content: center;
 }
 
 @include media-down(lg) {
@@ -648,29 +728,6 @@ function onSubmitStep2() {
   }
 }
 
-.timer__cancel {
-  display: inline-block;
-  margin: 0 auto;
-  padding: 8px 16px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #991b1b;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-
-  @include media-down(lg) {
-    padding: 6px 12px;
-    font-size: 0.75rem;
-  }
-
-  &:hover {
-    background: #fff;
-  }
-}
-
 .formReservation {
   background: white;
   border-radius: 8px;
@@ -696,7 +753,6 @@ function onSubmitStep2() {
   .formReservation__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: 20px 24px;
     border-bottom: 1px solid #dee2e6;
@@ -711,15 +767,15 @@ function onSubmitStep2() {
       margin: 0;
       font-size: 20px;
       font-weight: 600;
+      /* Même hauteur que le bouton fermer : le flex centre les deux sur le même axe. */
       color: #212529;
     }
 
     .header__close {
       flex-shrink: 0;
+      box-sizing: border-box;
       background: none;
       border: none;
-      font-size: 28px;
-      line-height: 1;
       color: #6c757d;
       cursor: pointer;
       padding: 0;
@@ -728,6 +784,7 @@ function onSubmitStep2() {
       display: flex;
       align-items: center;
       justify-content: center;
+      transform: translateY(1px);
       border-radius: 4px;
       transition: background-color 0.3s ease, color 0.3s ease;
 
@@ -737,6 +794,8 @@ function onSubmitStep2() {
       }
 
       .close__icon {
+        width: 22px;
+        height: 22px;
         display: block;
       }
     }
@@ -845,6 +904,8 @@ function onSubmitStep2() {
         display: flex;
         flex-direction: column;
         align-items: center;
+        /* Évite un effondrement si le widget Cloudflare est retiré avant la fin du fade-out */
+        min-height: 72px;
       }
 
       .form__turnstileError {

@@ -74,7 +74,8 @@
           :errors="errors"
           :touched="touched"
           :is-submitting="isSubmitting"
-          :show-reservation-timer="showModal && !!activeOrder"
+          :is-saving-contact="isSavingContact"
+          :show-reservation-timer="!!activeOrder && (showModal || keepModalChromeDuringLeave)"
           :formatted-reservation-time="formattedTime"
           @close="closeModal"
           @next="onFormNext"
@@ -249,6 +250,31 @@ function scheduleSeatMapHeightMeasure() {
 
 const formStep = ref<1 | 2>(1)
 const isSubmitting = ref(false)
+const isSavingContact = ref(false)
+
+/** Garde bandeau timer + props stables le temps du fade-out de la modale (évite saut de hauteur). */
+const keepModalChromeDuringLeave = ref(false)
+/** Durée max alignée sur `.formReservationOverlay-leave-active` (backdrop 0.38s). */
+const MODAL_OVERLAY_LEAVE_MS = 420
+let modalCloseResetTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelModalCloseReset() {
+  if (modalCloseResetTimer) {
+    clearTimeout(modalCloseResetTimer)
+    modalCloseResetTimer = null
+  }
+}
+
+function scheduleModalCloseReset() {
+  cancelModalCloseReset()
+  modalCloseResetTimer = setTimeout(() => {
+    modalCloseResetTimer = null
+    keepModalChromeDuringLeave.value = false
+    formStep.value = 1
+    errors.value = {}
+    touched.value = {}
+  }, MODAL_OVERLAY_LEAVE_MS)
+}
 
 watch(
   () =>
@@ -532,6 +558,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  cancelModalCloseReset()
   unregisterBookingSnap?.()
   unregisterBookingBanner?.()
   if (import.meta.client) {
@@ -567,6 +594,9 @@ function toggleSeat(id: string) {
 }
 
 async function openModal() {
+  cancelModalCloseReset()
+  keepModalChromeDuringLeave.value = false
+
   if (canReopenReservation.value && activeOrder.value) {
     const o = activeOrder.value
     error.value = null
@@ -625,6 +655,9 @@ async function openModal() {
 }
 
 function resumePaymentOrOpenModal() {
+  cancelModalCloseReset()
+  keepModalChromeDuringLeave.value = false
+
   const o = activeOrder.value
   if (!o) return
   error.value = null
@@ -643,11 +676,11 @@ async function onCancelReservationFromModal() {
 }
 
 function closeModal() {
+  keepModalChromeDuringLeave.value = true
   showModal.value = false
   suppressPageOrderAlert.value = false
-  formStep.value = 1
-  errors.value = {}
-  touched.value = {}
+  isSavingContact.value = false
+  scheduleModalCloseReset()
 }
 
 const formFieldKeys = ['firstName', 'lastName', 'email', 'phone'] as const
@@ -701,7 +734,7 @@ async function onFormNext() {
     return
   }
 
-  isSubmitting.value = true
+  isSavingContact.value = true
   error.value = null
 
   try {
@@ -727,7 +760,7 @@ async function onFormNext() {
   } catch (err) {
     error.value = getErrorMessage(err)
   } finally {
-    isSubmitting.value = false
+    isSavingContact.value = false
   }
 }
 

@@ -4,7 +4,12 @@ import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  css: ['~/assets/styles/reset.scss', '~/assets/styles/page-transitions.scss', '~/assets/styles/error-fade.scss'],
+  css: [
+    '~/assets/styles/reset.scss',
+    '~/assets/styles/page-transitions.scss',
+    '~/assets/styles/error-fade.scss',
+    '~/assets/styles/global/booking-order-actions.scss',
+  ],
   vite: {
     css: {
       preprocessorOptions: {
