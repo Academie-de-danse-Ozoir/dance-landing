@@ -45,13 +45,24 @@ const legalLinks = [
   { to: '/politique-confidentialite', label: content.footer.links.privacy }
 ]
 
-const contactLinks = [
-  {
+function footerTelHref(phone: string) {
+  const digits = phone.replace(/\D/g, '')
+  return digits ? `tel:${digits}` : '#'
+}
+
+const contactLinks = computed(() => {
+  const emailLink = {
     to: `mailto:${content.brand.senderEmail}`,
     label: content.brand.senderEmail,
     external: true
   }
-]
+  const phone = content.brand.contactPhone?.trim()
+  if (!phone) return [emailLink]
+  return [
+    { to: footerTelHref(phone), label: phone, external: true },
+    emailLink
+  ]
+})
 
 const copyrightLine = computed(() =>
   content.footer.copyright.replace('{year}', String(new Date().getFullYear()))

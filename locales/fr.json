@@ -40,6 +40,7 @@
     "spectacleNameStripe": "Spectacle de danse d'Ozoir",
     "billetterieLabel": "Billetterie officielle",
     "senderEmail": "spectacle.academiedanseozoir@gmail.com",
+    "contactPhone": "01 23 45 67 89",
     "stripeLineAdult": "Billet adulte",
     "stripeLineChild": "Billet enfant",
     "pdfLabelEvent": "Spectacle",
@@ -150,19 +151,19 @@
       "fields": {
         "firstName": {
           "label": "Prénom",
-          "placeholder": "Prénom"
+          "placeholder": "Entrez votre prénom"
         },
         "lastName": {
           "label": "Nom",
-          "placeholder": "Nom"
+          "placeholder": "Entrez votre nom"
         },
         "email": {
           "label": "Email",
-          "placeholder": "exemple@email.com"
+          "placeholder": "Entrez votre email"
         },
         "phone": {
           "label": "Téléphone",
-          "placeholder": "06 12 34 56 78"
+          "placeholder": "Entrez votre numéro de téléphone"
         },
         "adultCount": {
           "label": "Nombre de places adultes"
@@ -190,7 +191,7 @@
     "hero": {
       "kicker": "Billetterie officielle",
       "title": "Spectacle de Danse d'Ozoir",
-      "subtitle": "Le samedi 24 mai 2026, la Salle des fêtes d'Ozoir-la-Ferrière accueille une soirée où la danse rencontre l'élégance. Parcourez le plan de salle interactif, complétez vos informations puis réglez votre commande en ligne sur une page sécurisée ; vos billets vous parviennent par e-mail.",
+      "subtitle": "Le samedi 24 mai 2026, la Salle des fêtes d'Ozoir-la-Ferrière accueille une soirée où la danse rencontre l'élégance. Parcourez le plan de salle interactif, complétez vos informations puis réglez votre commande en ligne sur une page sécurisée ; vos billets vous parviennent par email.",
       "ctaScroll": "Réserver mes places"
     },
     "statement": {
@@ -203,7 +204,7 @@
       "rows": [
         {
           "title": "Votre parcours de réservation",
-          "text": "Choisissez vos places libres sur le plan interactif, puis validez avec « Réserver ». Renseignez vos coordonnées, puis le nom et le type de billet (adulte ou enfant) pour chaque place. Le paiement s'effectue ensuite entièrement en ligne, sur une interface sécurisée, par carte bancaire. Dès la confirmation, un e-mail récapitulatif confirme votre commande ; les billets au format PDF vous sont transmis automatiquement après validation du paiement.",
+          "text": "Choisissez vos places libres sur le plan interactif, puis validez avec « Réserver ». Renseignez vos coordonnées, puis le nom et le type de billet (adulte ou enfant) pour chaque place. Le paiement s'effectue ensuite entièrement en ligne, sur une interface sécurisée, par carte bancaire. Dès la confirmation, un email récapitulatif confirme votre commande ; les billets au format PDF vous sont transmis automatiquement après validation du paiement.",
           "imageSide": "right",
           "caption": "Ambiance d'une salle avant le lever du rideau — visuel d'illustration."
         },
@@ -231,7 +232,7 @@
         "lead": "Les montants ci-dessous s’appliquent à chaque place au moment où vous validez le paiement. Ils sont indiqués toutes taxes comprises (TTC).",
         "adultLabel": "Billet adulte",
         "childLabel": "Billet enfant",
-        "detail": "Le total de la commande (places × tarifs) apparaît sur l’écran Stripe avant confirmation. Après paiement accepté, un e-mail récapitule sièges, montant et coordonnées.",
+        "detail": "Le total de la commande (places × tarifs) apparaît sur l’écran Stripe avant confirmation. Après paiement accepté, un email récapitule sièges, montant et coordonnées.",
         "footnote": "Paiement sécurisé par carte bancaire."
       },
       "map": {
@@ -282,18 +283,24 @@
       "limits": {
         "title": "Limite par commande",
         "highlight": "Jusqu’à **{max} places** par commande.",
-        "detail": "Cette limite évite les blocages prolongés de nombreux sièges. Pour un groupe plus nombreux, finalisez une première commande en payant, puis ouvrez une deuxième réservation pour choisir parmi les places restantes. Chaque commande donne lieu à un paiement et à un e-mail de confirmation distincts."
+        "detail": "Cette limite évite les blocages prolongés de nombreux sièges. Pour un groupe plus nombreux, finalisez une première commande en payant, puis ouvrez une deuxième réservation pour choisir parmi les places restantes. Chaque commande donne lieu à un paiement et à un email de confirmation distincts."
+      },
+      "pmr": {
+        "title": "Personnes à mobilité réduite (PMR)",
+        "text": "Les places et modalités prévues pour les **personnes PMR** ne peuvent pas être réservées via cette billetterie en ligne. Pour **acheter un billet** ou organiser votre venue, **contactez l’association** directement : nous vous indiquerons la démarche et les places disponibles.",
+        "phoneLabel": "Téléphone",
+        "mailLabel": "Email"
       }
     }
   },
   "success": {
     "title": "Paiement confirmé",
     "message": "Nous vous remercions pour votre commande.\nVos billets sont enregistrés.",
-    "info": "Un e-mail de confirmation vient de vous être envoyé : il récapitule votre réservation et contient les informations utiles pour le jour du spectacle.",
+    "info": "Un email de confirmation vient de vous être envoyé : il récapitule votre réservation et contient les informations utiles pour le jour du spectacle.",
     "backToSeats": "Retour à la réservation"
   },
   "footer": {
-    "tagline": "Billetterie en direct pour le Spectacle de Danse d'Ozoir — réservation encadrée, paiement en ligne sécurisé, confirmation et billets par e-mail.",
+    "tagline": "Billetterie en direct pour le Spectacle de Danse d'Ozoir — réservation encadrée, paiement en ligne sécurisé, confirmation et billets par email.",
     "navAria": "Pied de page",
     "copyright": "© {year} — Spectacle de Danse d’Ozoir. Tous droits réservés.",
     "columns": {

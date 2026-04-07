@@ -7,6 +7,8 @@
       :id="fieldKey"
       :value="modelValue"
       :type="type"
+      :maxlength="maxlength"
+      :inputmode="inputmode"
       class="formField__input"
       :class="{
         'formField__input--invalid': error,
@@ -14,7 +16,8 @@
       }"
       :placeholder="placeholder"
       @blur="$emit('blur')"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @keydown="onKeydown"
+      @input="onInput"
     />
     <div class="formField__feedback">
       <Transition name="errorFade" mode="out-in">
@@ -26,7 +29,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { isAllowedPhoneKeyEvent, normalizePhoneKeyboardInput } from '../../utils/phoneInput'
+
+const props = defineProps<{
   fieldKey: string
   label: string
   type: string
@@ -34,12 +39,50 @@ defineProps<{
   modelValue: string
   error?: string
   touched?: boolean
+  /** Longueur max du texte affiché (ex. téléphone formaté). */
+  maxlength?: number
+  /** Saisie optimisée (ex. `numeric` pour le téléphone). */
+  inputmode?: 'text' | 'numeric' | 'tel' | 'email' | 'url' | 'search' | 'decimal' | 'none'
+  /** Chiffres uniquement (saisie + collage) ; max 10 chiffres avant formatage parent. */
+  digitsOnly?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [value: string]
   'blur': []
 }>()
+
+function onKeydown(e: KeyboardEvent) {
+  if (!props.digitsOnly) return
+  if (e.ctrlKey || e.metaKey || e.altKey) return
+  const nav = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Escape',
+    'Enter',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End'
+  ]
+  if (nav.includes(e.key)) return
+  if (isAllowedPhoneKeyEvent(e)) return
+  if (e.key.length === 1) {
+    e.preventDefault()
+  }
+}
+
+function onInput(e: Event) {
+  const t = e.target as HTMLInputElement
+  let v = t.value
+  if (props.digitsOnly) {
+    v = normalizePhoneKeyboardInput(v)
+  }
+  emit('update:modelValue', v)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -84,7 +127,7 @@ defineEmits<{
 
     &::placeholder {
       color: #6c757d;
-      opacity: 1;
+      opacity: 0.5;
     }
 
     &--invalid {

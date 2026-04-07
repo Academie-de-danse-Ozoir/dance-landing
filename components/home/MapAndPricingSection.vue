@@ -114,17 +114,49 @@
           </p>
         </article>
       </div>
+
+      <aside class="mapPricingSection__pmr" :aria-labelledby="pmrTitleId">
+        <h3 :id="pmrTitleId" class="mapPricingSection__pmrTitle">
+          {{ content.home.mapAndPricing.pmr.title }}
+        </h3>
+        <p class="mapPricingSection__pmrText">
+          <span v-for="(seg, i) in pmrSegments" :key="i">
+            <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
+            <template v-else>{{ seg.text }}</template>
+          </span>
+        </p>
+        <div class="mapPricingSection__pmrContact">
+          <p class="mapPricingSection__pmrLine">
+            <span class="mapPricingSection__pmrLabel"
+              >{{ content.home.mapAndPricing.pmr.phoneLabel }} : </span
+            >
+            <UnderlineLink class="mapPricingSection__pmrLink" :href="pmrTelHref">{{
+              contactPhoneDisplay
+            }}</UnderlineLink>
+          </p>
+          <p class="mapPricingSection__pmrLine">
+            <span class="mapPricingSection__pmrLabel"
+              >{{ content.home.mapAndPricing.pmr.mailLabel }} : </span
+            >
+            <UnderlineLink class="mapPricingSection__pmrLink" :href="`mailto:${content.brand.senderEmail}`">{{
+              content.brand.senderEmail
+            }}</UnderlineLink>
+          </p>
+        </div>
+      </aside>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import UnderlineLink from '~/components/buttons/UnderlineLink.vue'
 import { computed } from 'vue'
 import content from '../../locales/fr.json'
 import { MAX_SEATS_PER_ORDER, PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
 import { parseBoldSegments } from '../../utils/richText'
 
 const titleId = 'map-pricing-section-title'
+const pmrTitleId = 'map-pricing-pmr-title'
 
 const eur = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -147,6 +179,15 @@ const limitsHighlightSegments = computed(() =>
   )
 )
 const limitsDetailSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.limits.detail))
+
+const pmrSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.pmr.text))
+
+const contactPhoneDisplay = computed(() => content.brand.contactPhone?.trim() ?? '')
+
+const pmrTelHref = computed(() => {
+  const digits = contactPhoneDisplay.value.replace(/\D/g, '')
+  return digits ? `tel:${digits}` : '#'
+})
 </script>
 
 <style lang="scss" scoped>
@@ -398,5 +439,57 @@ const limitsDetailSegments = computed(() => parseBoldSegments(content.home.mapAn
   font-size: 0.9375rem;
   line-height: 1.65;
   color: $color-text-secondary;
+}
+
+.mapPricingSection__pmr {
+  margin-top: clamp(1.75rem, 3vw, 2.25rem);
+  padding-top: clamp(1.25rem, 2.5vw, 1.75rem);
+  border-top: 1px solid $color-border-subtle;
+  max-width: 44rem;
+}
+
+.mapPricingSection__pmrTitle {
+  margin: 0 0 0.65rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: $color-text-primary;
+}
+
+.mapPricingSection__pmrText {
+  margin: 0 0 0.85rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: $color-text-secondary;
+}
+
+.mapPricingSection__pmrContact {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: $color-text-secondary;
+}
+
+.mapPricingSection__pmrLine {
+  margin: 0 0 0.4rem 0;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.mapPricingSection__pmrLabel {
+  font-weight: 500;
+  color: $color-text-primary;
+}
+
+.mapPricingSection__pmrLink {
+  color: mix($color-primary, $color-text-secondary, 40%);
+  font-weight: 500;
+  transition: color 0.28s ease;
+
+  &:hover {
+    color: $color-primary;
+  }
 }
 </style>

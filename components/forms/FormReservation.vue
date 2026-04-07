@@ -61,6 +61,8 @@
                     :label="field.label"
                     :type="field.type"
                     :placeholder="field.placeholder"
+                    :maxlength="field.maxlength"
+                    :inputmode="field.inputmode"
                     :model-value="form[field.key]"
                     :error="errors[field.key]"
                     :touched="touched[field.key]"
@@ -75,6 +77,9 @@
                   :label="field.label"
                   :type="field.type"
                   :placeholder="field.placeholder"
+                  :maxlength="field.maxlength"
+                  :inputmode="field.inputmode"
+                  :digits-only="field.key === 'phone'"
                   :model-value="form[field.key]"
                   :error="errors[field.key]"
                   :touched="touched[field.key]"
@@ -179,6 +184,7 @@
 import { computed, watch, ref, onBeforeUnmount, useId, nextTick } from 'vue'
 import content from '../../locales/fr.json'
 import { PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
+import { formatFrenchPhoneInput } from '../../utils/phoneInput'
 import FormField from './FormField.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
 import TurnstileField from '../TurnstileField.vue'
@@ -359,11 +365,21 @@ const priceSummary = computed(() => {
   }
 })
 
+/** 10 chiffres + 4 espaces (groupes de 2). */
+const PHONE_INPUT_MAX_LEN = 14
+
 const formFields = [
   { key: 'firstName' as const, label: content.home.modal.fields.firstName.label, type: 'text' as const, placeholder: content.home.modal.fields.firstName.placeholder },
   { key: 'lastName' as const, label: content.home.modal.fields.lastName.label, type: 'text' as const, placeholder: content.home.modal.fields.lastName.placeholder },
   { key: 'email' as const, label: content.home.modal.fields.email.label, type: 'email' as const, placeholder: content.home.modal.fields.email.placeholder },
-  { key: 'phone' as const, label: content.home.modal.fields.phone.label, type: 'tel' as const, placeholder: content.home.modal.fields.phone.placeholder }
+  {
+    key: 'phone' as const,
+    label: content.home.modal.fields.phone.label,
+    type: 'tel' as const,
+    placeholder: content.home.modal.fields.phone.placeholder,
+    maxlength: PHONE_INPUT_MAX_LEN,
+    inputmode: 'numeric' as const
+  }
 ]
 
 const dialogTitleId = useId()
@@ -378,7 +394,9 @@ const formFieldsNameRow = formFields.filter((f) => f.key === 'firstName' || f.ke
 const formFieldsAfterNames = formFields.filter((f) => f.key !== 'firstName' && f.key !== 'lastName')
 
 function updateField(key: keyof FormData, value: string) {
-  emit('update:form', { ...props.form, [key]: value })
+  const next =
+    key === 'phone' ? formatFrenchPhoneInput(value) : value
+  emit('update:form', { ...props.form, [key]: next })
 }
 
 function updateTicketDetail(index: number, field: keyof TicketDetail, value: string | 'adult' | 'child') {

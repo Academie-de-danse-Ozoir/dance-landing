@@ -3,28 +3,31 @@
     <p class="footerLinkColumn__title">{{ title }}</p>
     <ul class="footerLinkColumn__list">
       <li v-for="(link, i) in links" :key="i" class="list__item">
-        <NuxtLink
+        <UnderlineLink
           v-if="!link.external"
           :to="link.to"
           class="list__link"
+          :show-underline-on-touch="isContactLink(link)"
           @click.capture="(e) => onBookingScrollLinkClick(e, link)"
         >
           {{ link.label }}
-        </NuxtLink>
-        <a
+        </UnderlineLink>
+        <UnderlineLink
           v-else
           :href="link.to"
           class="list__link"
+          :show-underline-on-touch="isContactLink(link)"
           rel="noopener noreferrer"
         >
           {{ link.label }}
-        </a>
+        </UnderlineLink>
       </li>
     </ul>
   </div>
 </template>
 
 <script setup lang="ts">
+import UnderlineLink from '~/components/buttons/UnderlineLink.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useScrollToBooking } from '../../composables/useScrollToBooking'
 import { PENDING_SCROLL_TO_HOME_KEY, PENDING_SCROLL_TO_SEATS_KEY } from '../../constants'
@@ -47,6 +50,13 @@ defineProps<{
 const route = useRoute()
 const router = useRouter()
 const { scrollToBookingSection, scrollToHomeTop } = useScrollToBooking()
+
+/** Ligne tactile par défaut uniquement pour tel / mail (pas les autres liens du footer). */
+function isContactLink(link: FooterColumnLink) {
+  if (!link.external) return false
+  const t = link.to.toLowerCase()
+  return t.startsWith('tel:') || t.startsWith('mailto:')
+}
 
 /**
  * Phase capture : avant le onClick interne de RouterLink, sinon `preventDefault`
@@ -108,10 +118,10 @@ function onBookingScrollLinkClick(e: MouseEvent, link: FooterColumnLink) {
   color: rgba(255, 255, 255, 0.88);
   text-decoration: none;
   word-break: break-word;
+  transition: color 0.28s ease;
 
   &:hover {
     color: #fff;
-    text-decoration: underline;
   }
 }
 </style>
