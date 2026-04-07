@@ -346,8 +346,7 @@ import {
   SEAT_MAP_BALCONY_ARC_ROTATION_SIGN,
   SEAT_MAP_BALCONY_ARC_SCALE_X_CURVE_POWER,
   SEAT_MAP_BALCONY_ARC_SCALE_X_MIN,
-  NARROW_VIEWPORT_MQ,
-  STAFF_SEAT_LABELS_VISUAL_AS_PAID
+  NARROW_VIEWPORT_MQ
 } from '../../constants'
 import {
   isAccessibilityEaseSeatLabel,
@@ -377,7 +376,6 @@ type SeatMapNavCopy = {
   legendSelected: string
   legendHold: string
   legendPaid: string
-  legendStaff: string
   legendMaxPerOrder: string
   activeOrderLockTitle: string
   activeOrderLockHint: string
@@ -406,7 +404,7 @@ const SEAT_SIZE = 13
 const SEAT_RADIUS = 1.2
 
 type LegendRow = {
-  key: 'free' | 'selected' | 'hold' | 'paid' | 'staff'
+  key: 'free' | 'selected' | 'hold' | 'paid'
   label: string
   border: boolean
 }
@@ -415,8 +413,7 @@ const seatStatusLegendRows = computed((): LegendRow[] => [
   { key: 'free', label: mapUi.legendFree, border: true },
   { key: 'selected', label: mapUi.legendSelected, border: false },
   { key: 'hold', label: mapUi.legendHold, border: false },
-  { key: 'paid', label: mapUi.legendPaid, border: false },
-  { key: 'staff', label: mapUi.legendStaff, border: false }
+  { key: 'paid', label: mapUi.legendPaid, border: false }
 ])
 
 const props = withDefaults(
@@ -1289,17 +1286,14 @@ function zoomMapByStep(mult: number) {
 function resetMapView() {
   if (isMapNavLocked()) return
   emit('booking-section-scroll-if-needed')
-  stopMapNavRaf()
   const z = defaultMapZoomForViewport()
   mapTargetPanX.value = 0
   mapTargetPanY.value = 0
   mapTargetZoom.value = z
-  mapPanX.value = 0
-  mapPanY.value = 0
-  mapZoom.value = z
   clampTargetMapPan()
-  clampMapPan()
   closeMobileMapPopovers()
+  /** Même lissage que zoom / pan : ne pas assigner mapZoom/mapPan directement. */
+  requestMapNavSmoothingFrame()
 }
 
 function closeMapToolbarMenu() {
@@ -1599,8 +1593,8 @@ function applyMapKeyboardShortcuts(e: KeyboardEvent) {
 }
 
 /**
- * Accueil : + / − (et =, _, pavé num.) zooment le plan partout sur la page,
- * sans focus sur le viewport — sauf si le focus est dans un champ de saisie.
+ * Accueil : + / − (et =, _, pavé num.) zooment le plan ; 0 / Échap réinitialisent la vue —
+ * sans focus sur le viewport, comme pour le zoom global — sauf champ de saisie.
  */
 function tryHomeGlobalMapZoom(e: KeyboardEvent): boolean {
   if (isMapNavLocked()) return false
@@ -1619,6 +1613,16 @@ function tryHomeGlobalMapZoom(e: KeyboardEvent): boolean {
     zoomMapByStep(MAP_ZOOM_STEP)
     return true
   }
+  if (e.key === '0' || e.code === 'Numpad0' || e.code === 'Digit0') {
+    e.preventDefault()
+    resetMapView()
+    return true
+  }
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    resetMapView()
+    return true
+  }
   return false
 }
 
@@ -1633,18 +1637,11 @@ function onWindowMapKeydownCapture(e: KeyboardEvent) {
   applyMapKeyboardShortcuts(e)
 }
 
-function isStaffSeatVisualAsPaid(seat: Seat) {
-  return seat.status === 'staff' && STAFF_SEAT_LABELS_VISUAL_AS_PAID.includes(seat.label)
-}
-
 /** Classe CSS pour `fill` animé (évite l’attribut `:fill` qui ne transitionne pas bien). */
 function seatVisualClass(seat: Seat) {
   if (seat.status === 'paid') return 'svg__seat--paid'
   if (seat.status === 'hold') return 'svg__seat--hold'
-  if (seat.status === 'staff') {
-    if (isStaffSeatVisualAsPaid(seat)) return 'svg__seat--paid'
-    return 'svg__seat--staff'
-  }
+  if (seat.status === 'staff') return 'svg__seat--paid'
   if (selectedSet.value.has(seat.id)) return 'svg__seat--selected'
   return 'svg__seat--free'
 }
@@ -1656,10 +1653,6 @@ function isSeatClickable(seat: Seat) {
 }
 
 function getSeatTitle(seat: Seat) {
-  if (seat.status === 'staff') {
-    if (isStaffSeatVisualAsPaid(seat)) return content.home.seats.tooltip.seatUnavailable
-    return content.home.seats.tooltip.seatStaffReserved
-  }
   if (props.activeOrder && seat.status === 'free') return content.home.seats.tooltip.reservationInProgress
   if (seat.status !== 'free') return content.home.seats.tooltip.seatUnavailable
   return ''
@@ -2259,9 +2252,6 @@ function handleSeatClick(seat: Seat) {
     &--paid {
       background: $seat-map-seat-fill-paid;
     }
-    &--staff {
-      background: $seat-map-seat-fill-staff;
-    }
   }
 
   .legend__label {
@@ -2318,9 +2308,6 @@ function handleSeatClick(seat: Seat) {
       }
       &--paid {
         fill: $seat-map-seat-fill-paid;
-      }
-      &--staff {
-        fill: $seat-map-seat-fill-staff;
       }
 
       &--clickable {

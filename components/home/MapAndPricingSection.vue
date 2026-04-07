@@ -346,9 +346,6 @@ const limitsDetailSegments = computed(() => parseBoldSegments(content.home.mapAn
   &--paid {
     background: $seat-map-seat-fill-paid;
   }
-  &--staff {
-    background: $seat-map-seat-fill-staff;
-  }
 }
 
 .mapPricingSection__controlsLead {

@@ -74,7 +74,6 @@
       "tooltip": {
         "reservationInProgress": "Une réservation est déjà en cours",
         "seatUnavailable": "Siège indisponible",
-        "seatStaffReserved": "Place réservée au personnel",
         "maxSelectionReached": "Maximum {max} places par commande — désélectionnez une place pour modifier votre choix, ou passez une autre commande pour plus de places."
       },
       "map": {
@@ -112,7 +111,6 @@
         "legendSelected": "Votre choix",
         "legendHold": "Réservation en cours (autre spectateur)",
         "legendPaid": "Vendu / non disponible",
-        "legendStaff": "Réservé personnel",
         "legendMaxPerOrder": "Jusqu’à {max} places par commande.",
         "mapLoading": "Chargement du plan de salle…",
         "activeOrderLockTitle": "Plan en pause",
@@ -259,12 +257,7 @@
           {
             "key": "paid",
             "term": "Indisponible",
-            "detail": "Place vendue ou bloquée pour la vente — non sélectionnable."
-          },
-          {
-            "key": "staff",
-            "term": "Organisation",
-            "detail": "Réservé au personnel ou à l’organisation du spectacle ; ne fait pas partie des places en vente en ligne."
+            "detail": "Place vendue, bloquée pour la vente ou réservée au personnel — affichée comme les autres places indisponibles."
           }
         ]
       },

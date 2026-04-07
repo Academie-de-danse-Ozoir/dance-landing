@@ -11,8 +11,8 @@ export const STORAGE_ORDER_KEY = 'order_id'
 export const EVENT_ID = 'f179039c-c6a9-4c93-ac39-2153c02105ec'
 
 /** Tarifs en centimes (affichage front + Stripe) */
-export const PRICE_ADULT_CENTS = 100
-export const PRICE_CHILD_CENTS = 50
+export const PRICE_ADULT_CENTS = 1800
+export const PRICE_CHILD_CENTS = 1300
 
 // =============================================================================
 // Réservation
@@ -82,32 +82,6 @@ export const SEAT_STATUS = {
   PAID: 'paid',
   STAFF: 'staff'
 } as const
-
-/**
- * Sièges `reserved_for_staff` affichés sur le plan comme « vendus / indisponibles » (`--paid`),
- * pas comme « personnel » (`--staff`). Autres places personnel : visuel staff inchangé.
- */
-export const STAFF_SEAT_LABELS_VISUAL_AS_PAID: readonly string[] = [
-  'G38',
-  'G36',
-  'G34',
-  'G32',
-  'G30',
-  'G28',
-  'G26',
-  'G24',
-  'G22',
-  'H40',
-  'H38',
-  'H36',
-  'H34',
-  'H32',
-  'H30',
-  'H28',
-  'H26',
-  'H24',
-  'H22'
-]
 
 export const CANCEL_REASON = {
   TIMER: 'timer',
