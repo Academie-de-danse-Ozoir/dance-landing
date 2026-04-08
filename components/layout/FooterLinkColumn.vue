@@ -120,8 +120,10 @@ function onBookingScrollLinkClick(e: MouseEvent, link: FooterColumnLink) {
   word-break: break-word;
   transition: color 0.28s ease;
 
-  &:hover {
-    color: #fff;
+  @media (hover: hover) {
+    &:hover {
+      color: #fff;
+    }
   }
 }
 </style>

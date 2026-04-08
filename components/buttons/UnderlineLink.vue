@@ -55,6 +55,7 @@ const isHref = computed(() => typeof props.href === 'string' && props.href.lengt
   text-decoration: none;
   cursor: pointer;
   vertical-align: baseline;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .underlineLink::after {

@@ -104,8 +104,10 @@ const billingEmail = content.brand.senderEmail
   transition: color 0.28s ease;
   overflow-wrap: anywhere;
 
-  &:hover {
-    color: $color-primary;
+  @media (hover: hover) {
+    &:hover {
+      color: $color-primary;
+    }
   }
 }
 

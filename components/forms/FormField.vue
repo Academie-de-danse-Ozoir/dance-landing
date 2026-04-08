@@ -31,7 +31,12 @@
 </template>
 
 <script setup lang="ts">
-import { isAllowedPhoneKeyEvent, normalizePhoneKeyboardInput } from '../../utils/phoneInput'
+import { nextTick } from 'vue'
+import {
+  isAllowedPhoneKeyEvent,
+  mapCaretAfterPhoneFormat,
+  normalizePhoneKeyboardInput
+} from '../../utils/phoneInput'
 
 const props = defineProps<{
   fieldKey: string
@@ -88,7 +93,22 @@ function onInput(e: Event) {
   const t = e.target as HTMLInputElement
   let v = t.value
   if (props.digitsOnly) {
-    v = normalizePhoneKeyboardInput(v)
+    /* État affiché au moment du `input` (souvent ≠ `modelValue` tant que le parent n’a pas resync). */
+    const prevDisplay = t.value
+    const selStart = t.selectionStart
+    const selEnd = t.selectionEnd
+    v = normalizePhoneKeyboardInput(t.value)
+    const { start, end } = mapCaretAfterPhoneFormat(prevDisplay, v, selStart, selEnd)
+    emit('update:modelValue', v)
+    nextTick(() => {
+      if (document.activeElement !== t) return
+      try {
+        t.setSelectionRange(start, end)
+      } catch {
+        /* certains navigateurs refusent si type/hidden */
+      }
+    })
+    return
   }
   emit('update:modelValue', v)
 }

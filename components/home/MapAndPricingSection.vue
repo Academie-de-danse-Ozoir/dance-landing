@@ -521,8 +521,10 @@ const pmrTelHref = computed(() => {
   font-weight: 500;
   transition: color 0.28s ease;
 
-  &:hover {
-    color: $color-primary;
+  @media (hover: hover) {
+    &:hover {
+      color: $color-primary;
+    }
   }
 }
 </style>

@@ -70,7 +70,10 @@
             class="formReservation__scroll"
             :aria-label="content.home.modal.scrollRegionLabel"
           >
-            <div class="formReservation__body">
+            <div
+              class="formReservation__body"
+              :class="{ 'formReservation__body--step2': displayedStep === 2 }"
+            >
               <form
                 v-if="displayedStep === 1"
                 key="step-1"
@@ -136,66 +139,78 @@
                 autocomplete="on"
                 @submit.prevent="onSubmitStep2"
               >
-                <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
-                <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
-                  <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
-                  <div class="ticketBlock__namePair">
-                    <FormField
-                      :field-key="`ticket-${idx}-firstName`"
-                      :label="content.home.modal.fields.firstName.label"
-                      type="text"
-                      :placeholder="content.home.modal.fields.firstName.placeholder"
-                      :autocomplete="`section-place-${idx} given-name`"
-                      :model-value="ticket.firstName"
-                      :error="ticketErrors[idx]?.firstName"
-                      @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
-                    />
-                    <FormField
-                      :field-key="`ticket-${idx}-lastName`"
-                      :label="content.home.modal.fields.lastName.label"
-                      type="text"
-                      :placeholder="content.home.modal.fields.lastName.placeholder"
-                      :autocomplete="`section-place-${idx} family-name`"
-                      :model-value="ticket.lastName"
-                      :error="ticketErrors[idx]?.lastName"
-                      @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
-                    />
+                <div class="form__step2Main">
+                  <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
+                  <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
+                    <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
+                    <div class="ticketBlock__namePair">
+                      <FormField
+                        :field-key="`ticket-${idx}-firstName`"
+                        :label="content.home.modal.fields.firstName.label"
+                        type="text"
+                        :placeholder="content.home.modal.fields.firstName.placeholder"
+                        :autocomplete="`section-place-${idx} given-name`"
+                        :model-value="ticket.firstName"
+                        :error="ticketErrors[idx]?.firstName"
+                        @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
+                      />
+                      <FormField
+                        :field-key="`ticket-${idx}-lastName`"
+                        :label="content.home.modal.fields.lastName.label"
+                        type="text"
+                        :placeholder="content.home.modal.fields.lastName.placeholder"
+                        :autocomplete="`section-place-${idx} family-name`"
+                        :model-value="ticket.lastName"
+                        :error="ticketErrors[idx]?.lastName"
+                        @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
+                      />
+                    </div>
+                    <div class="ticketBlock__type">
+                      <label class="type__label">{{ content.home.modal.ticketType }}</label>
+                      <select
+                        :value="ticket.ticketType"
+                        class="type__select"
+                        @change="
+                          updateTicketDetail(idx, 'ticketType', ($event.target as HTMLSelectElement).value as 'adult' | 'child')
+                        "
+                      >
+                        <option value="adult">{{ content.home.modal.adult }}</option>
+                        <option value="child">{{ content.home.modal.child }}</option>
+                      </select>
+                    </div>
                   </div>
-                  <div class="ticketBlock__type">
-                    <label class="type__label">{{ content.home.modal.ticketType }}</label>
-                    <select
-                      :value="ticket.ticketType"
-                      class="type__select"
-                      @change="
-                        updateTicketDetail(idx, 'ticketType', ($event.target as HTMLSelectElement).value as 'adult' | 'child')
-                      "
-                    >
-                      <option value="adult">{{ content.home.modal.adult }}</option>
-                      <option value="child">{{ content.home.modal.child }}</option>
-                    </select>
+                  <div class="priceSummary">
+                    <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
+                    <template v-if="priceSummary.adultCount > 0">
+                      <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
+                    </template>
+                    <template v-if="priceSummary.childCount > 0">
+                      <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
+                    </template>
+                    <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
                   </div>
-                </div>
-                <div class="priceSummary">
-                  <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
-                  <template v-if="priceSummary.adultCount > 0">
-                    <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
-                  </template>
-                  <template v-if="priceSummary.childCount > 0">
-                    <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
-                  </template>
-                  <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
                 </div>
                 <ClientOnly>
-                  <div v-if="turnstileSiteKey" class="form__turnstile">
-                    <TurnstileField
-                      :site-key="turnstileSiteKey"
-                      :hint="content.home.modal.turnstileHint"
-                      @update:token="onTurnstileToken"
-                    />
-                    <Transition name="errorFade">
-                      <p v-if="turnstileError" key="turnstile-err" class="form__turnstileError">{{ turnstileError }}</p>
-                    </Transition>
-                  </div>
+                  <Transition name="formTurnstileFade" appear>
+                    <div v-if="turnstileSiteKey" key="turnstile" class="form__turnstileShell">
+                      <div class="form__turnstileInner">
+                        <TurnstileField
+                          :site-key="turnstileSiteKey"
+                          :hint="content.home.modal.turnstileHint"
+                          @update:token="onTurnstileToken"
+                        />
+                      </div>
+                      <p
+                        class="form__turnstileError"
+                        :class="{ 'form__turnstileError--visible': !!turnstileError }"
+                        role="status"
+                        :aria-live="turnstileError ? 'polite' : 'off'"
+                        :aria-hidden="turnstileError ? undefined : 'true'"
+                      >
+                        {{ turnstileError ?? '' }}
+                      </p>
+                    </div>
+                  </Transition>
                 </ClientOnly>
                 <div class="form__footer">
                   <DefaultButton variant="secondary" :label="content.home.modal.back" type="button" @click="emit('back')" />
@@ -816,6 +831,13 @@ function onSubmitStep2() {
       padding: 16px;
     }
 
+    &--step2 {
+      min-height: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
     .body__form {
       display: flex;
       flex-direction: column;
@@ -832,11 +854,24 @@ function onSubmitStep2() {
       }
 
       &--step2 {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+
         .form__intro {
           margin: 0 0 20px 0;
           font-size: 14px;
           color: #6c757d;
         }
+
+        .form__footer {
+          margin-top: 0;
+        }
+      }
+
+      .form__step2Main {
+        flex: 1 1 auto;
       }
 
       .ticketBlock {
@@ -899,20 +934,71 @@ function onSubmitStep2() {
         }
       }
 
-      .form__turnstile {
-        margin-top: 16px;
+      .form__turnstileShell {
+        flex-shrink: 0;
+        width: 100%;
+        margin-top: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* Évite un effondrement si le widget Cloudflare est retiré avant la fin du fade-out */
-        min-height: 72px;
+        box-sizing: border-box;
+        margin-top: 15px;
+      }
+
+      /** Zone à hauteur fixe : widget + consigne, ancrés en bas pour éviter les sauts de layout. */
+      .form__turnstileInner {
+        width: 100%;
+        // height: 160px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        box-sizing: border-box;
+        
+
+        :deep(.turnstileField) {
+          margin-top: 0;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        :deep(.turnstileField__widget) {
+          // min-height: 65px;
+          display: flex;
+          justify-content: center;
+        }
+
+        :deep(.turnstileField__hint) {
+          margin: 6px 0 10px;
+          max-width: 13rem;
+          text-align: center;
+          font-size: 13px;
+          color: #6c757d;
+          line-height: 1.45;
+        }
       }
 
       .form__turnstileError {
-        margin: 8px 0 0;
+        margin: 0 0 10px;
+        min-height: 1.45em;
         font-size: 14px;
+        line-height: 1.45;
         color: #dc3545;
         text-align: center;
+        max-width: 22rem;
+        opacity: 0;
+        transition: opacity 0.28s ease;
+        pointer-events: none;
+        user-select: none;
+
+        &--visible {
+          opacity: 1;
+          pointer-events: auto;
+          user-select: text;
+        }
       }
 
       .priceSummary {
@@ -939,7 +1025,7 @@ function onSubmitStep2() {
 
         .priceSummary__total {
           margin: 12px 0 0 0;
-          padding-top: 10px;
+          padding-top: 12px;
           border-top: 1px solid #dee2e6;
           font-size: 16px;
           font-weight: 700;
@@ -957,6 +1043,16 @@ function onSubmitStep2() {
       }
     }
   }
+}
+
+.formTurnstileFade-enter-active,
+.formTurnstileFade-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.formTurnstileFade-enter-from,
+.formTurnstileFade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 575.98px) {

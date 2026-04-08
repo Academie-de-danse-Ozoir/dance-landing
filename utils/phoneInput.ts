@@ -46,6 +46,51 @@ export function formatFrenchPhoneInput(raw: string): string {
   return parts.join(' ')
 }
 
+/** Nombre de chiffres dans `s` strictement avant l’index `index`. */
+export function countDigitsBeforeIndex(s: string, index: number): number {
+  let c = 0
+  const end = Math.min(Math.max(0, index), s.length)
+  for (let i = 0; i < end; i++) {
+    if (/\d/.test(s[i]!)) c++
+  }
+  return c
+}
+
+/**
+ * Index dans la chaîne formatée après le `n`ᵉ chiffre (`n === 0` → début).
+ * Utile pour replacer le curseur après reformatage (espaces insérés).
+ */
+export function indexAfterDigitCount(formatted: string, digitCount: number): number {
+  if (digitCount <= 0) return 0
+  let seen = 0
+  for (let i = 0; i < formatted.length; i++) {
+    if (/\d/.test(formatted[i]!)) {
+      seen++
+      if (seen === digitCount) return i + 1
+    }
+  }
+  return formatted.length
+}
+
+/** Replacer le curseur après `formatFrenchPhoneInput` à partir de la position dans l’affichage précédent. */
+export function mapCaretAfterPhoneFormat(
+  prevDisplay: string,
+  nextDigits: string,
+  selectionStart: number | null,
+  selectionEnd: number | null
+): { start: number; end: number } {
+  const nextDisplay = formatFrenchPhoneInput(nextDigits)
+  const len = prevDisplay.length
+  const start = selectionStart == null ? len : Math.min(Math.max(0, selectionStart), len)
+  const end = selectionEnd == null ? start : Math.min(Math.max(0, selectionEnd), len)
+  const dStart = countDigitsBeforeIndex(prevDisplay, start)
+  const dEnd = countDigitsBeforeIndex(prevDisplay, end)
+  return {
+    start: indexAfterDigitCount(nextDisplay, dStart),
+    end: indexAfterDigitCount(nextDisplay, dEnd)
+  }
+}
+
 /**
  * Touche autorisée pour le téléphone : chiffres, pavé num., ou rang AZERTY.
  */
