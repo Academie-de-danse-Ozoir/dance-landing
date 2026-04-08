@@ -133,7 +133,11 @@ function onSeatMapBookingScrollIfNeeded() {
 }
 
 const supabase = useSupabaseClient()
-let realtimeChannel: any = null
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null
+/** Évite les courses reload/HMR : `removeChannel` est async ; un 2e souscription au même topic peut provoquer « mismatch between server and client bindings ». */
+let realtimeRetryTimer: ReturnType<typeof setTimeout> | null = null
+let realtimeResubscribeAttempts = 0
+const REALTIME_MAX_RESUBSCRIBE_ATTEMPTS = 5
 
 type OrderStatusResponse = {
   status: 'pending' | 'paid' | 'expired' | 'canceled' | 'refunded' | 'not_found'
@@ -381,15 +385,35 @@ async function loadSeats() {
   }
 }
 
-function startSeatsRealtime() {
+function clearRealtimeRetryTimer() {
+  if (realtimeRetryTimer) {
+    clearTimeout(realtimeRetryTimer)
+    realtimeRetryTimer = null
+  }
+}
+
+async function stopSeatsRealtime() {
+  clearRealtimeRetryTimer()
+  const ch = realtimeChannel
+  realtimeChannel = null
+  if (ch) {
+    await supabase.removeChannel(ch)
+  }
+}
+
+async function startSeatsRealtime() {
+  await stopSeatsRealtime()
+
   const opts: { event: string; schema: string; table: string; filter?: string } = {
     event: '*',
     schema: 'public',
     table: 'seat_reservation',
     filter: `event_id=eq.${EVENT_ID}`
   }
+
+  const channelTopic = `seat_reservation:${EVENT_ID}:${crypto.randomUUID()}`
   realtimeChannel = supabase
-    .channel('seat_reservation-realtime')
+    .channel(channelTopic)
     .on(
       'postgres_changes',
       opts,
@@ -404,17 +428,32 @@ function startSeatsRealtime() {
       if (import.meta.dev) {
         console.log('[Realtime] seat_reservation status:', status, err ?? '')
       }
+      if (status === 'SUBSCRIBED') {
+        realtimeResubscribeAttempts = 0
+        return
+      }
       if (status === 'CHANNEL_ERROR' && err) {
-        console.error('[Realtime] seat_reservation error:', err)
+        if (import.meta.dev) {
+          console.error('[Realtime] seat_reservation error:', err)
+        }
+        if (realtimeResubscribeAttempts >= REALTIME_MAX_RESUBSCRIBE_ATTEMPTS) {
+          if (import.meta.dev) {
+            console.error(
+              '[Realtime] seat_reservation: abandon après',
+              REALTIME_MAX_RESUBSCRIBE_ATTEMPTS,
+              'tentatives'
+            )
+          }
+          return
+        }
+        realtimeResubscribeAttempts++
+        const delay = Math.min(2500, 250 * realtimeResubscribeAttempts)
+        realtimeRetryTimer = setTimeout(() => {
+          realtimeRetryTimer = null
+          void startSeatsRealtime()
+        }, delay)
       }
     })
-}
-
-function stopSeatsRealtime() {
-  if (realtimeChannel) {
-    supabase.removeChannel(realtimeChannel)
-    realtimeChannel = null
-  }
 }
 
 let mainAnimationFrame: number | undefined
@@ -528,7 +567,7 @@ function onPageShow(ev: PageTransitionEvent) {
 onMounted(async () => {
   try {
     await loadSeats()
-    startSeatsRealtime()
+    await startSeatsRealtime()
   } catch (err) {
     error.value = getErrorMessage(err)
   }
@@ -566,7 +605,7 @@ onUnmounted(() => {
     window.removeEventListener('resize', scheduleSeatMapHeightMeasure)
   }
   stopMainAnimationLoop()
-  stopSeatsRealtime()
+  void stopSeatsRealtime()
 })
 
 function toggleSeat(id: string) {

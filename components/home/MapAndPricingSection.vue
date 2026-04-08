@@ -207,6 +207,8 @@ const pmrTelHref = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:color';
+
 .mapPricingSection {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: linear-gradient(
@@ -258,7 +260,7 @@ const pmrTelHref = computed(() => {
 /** Accent discret (remplace le gras) : teinte bleu-gris liée à la charte. */
 .mapPricingSection__hl {
   font-weight: 500;
-  color: mix($color-primary, $color-text-secondary, 34%);
+  color: color.mix($color-primary, $color-text-secondary, 34%);
 }
 
 .mapPricingSection__grid {
@@ -274,7 +276,7 @@ const pmrTelHref = computed(() => {
 .mapPricingSection__card {
   background: $color-surface-page;
   border: 1px solid $color-border-subtle;
-  border-radius: 10px;
+  border-radius: 4px;
   padding: clamp(20px, 3vw, 28px);
   box-shadow: 0 8px 28px rgba(33, 37, 41, 0.06);
   min-width: 0;
@@ -405,7 +407,7 @@ const pmrTelHref = computed(() => {
   width: 14px;
   height: 14px;
   margin-top: 3px;
-  border-radius: 3px;
+  border-radius: 4px;
 
   &--free {
     background: $seat-map-seat-fill-free;
@@ -448,7 +450,7 @@ const pmrTelHref = computed(() => {
   margin-bottom: 0.35rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: mix($color-text-primary, $color-text-secondary, 58%);
+  color: color.mix($color-text-primary, $color-text-secondary, 58%);
   letter-spacing: -0.01em;
 }
 
@@ -517,7 +519,7 @@ const pmrTelHref = computed(() => {
 }
 
 .mapPricingSection__pmrLink {
-  color: mix($color-primary, $color-text-secondary, 40%);
+  color: color.mix($color-primary, $color-text-secondary, 40%);
   font-weight: 500;
   transition: color 0.28s ease;
 

@@ -644,12 +644,12 @@ function onSubmitStep2() {
 
   @include media-up(lg) {
     &:has(> .formReservation__timer) .formReservation {
-      border-radius: 0 0 8px 8px;
+      border-radius: 0 0 4px 4px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     }
 
     &:has(> .formReservation__timer) .formReservation__timer {
-      border-radius: 8px 8px 0 0;
+      border-radius: 4px 4px 0 0;
       box-shadow: none;
     }
   }
@@ -663,17 +663,22 @@ function onSubmitStep2() {
 
 .formReservation__timer {
   flex-shrink: 0;
-  padding: 14px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 20px 20px 20px;
   background: linear-gradient(180deg, #e7f1ff 0%, #dbeafe 100%);
   border: 1px solid #b6d4fe;
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   text-align: center;
   transition: opacity 0.26s ease;
 
   @include media-down(lg) {
-    padding: 12px 16px 14px;
-    border-radius: 8px;
+    gap: 10px;
+    padding: 16px 16px 16px;
+    border-radius: 4px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   }
 
@@ -688,41 +693,33 @@ function onSubmitStep2() {
 
 @include media-down(lg) {
   .formReservationOverlay__column:has(> .formReservation__timer) .formReservation__timer {
-    border-radius: 8px 8px 0 0;
+    border-radius: 4px 4px 0 0;
     border-bottom: none;
     box-shadow: none;
   }
 
   .formReservationOverlay__column:has(> .formReservation__timer) .formReservation {
-    border-radius: 0 0 8px 8px;
+    border-radius: 0 0 4px 4px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
   }
 }
 
 .timer__title {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #1e40af;
-
-  @include media-down(lg) {
-    margin-bottom: 4px;
-  }
 }
 
 .timer__line {
-  margin: 0 0 14px;
+  margin: 0;
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
-
-  @include media-down(lg) {
-    margin-bottom: 8px;
-  }
 }
 
 .timer__label {
@@ -745,7 +742,7 @@ function onSubmitStep2() {
 
 .formReservation {
   background: white;
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-height: 95vh;
@@ -789,28 +786,61 @@ function onSubmitStep2() {
     .header__close {
       flex-shrink: 0;
       box-sizing: border-box;
-      background: none;
-      border: none;
-      color: #6c757d;
+      background: #fff;
+      border: 1px solid #dee2e6;
+      color: #495057;
       cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
+      padding: 8px;
+      min-width: 40px;
+      min-height: 40px;
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transform: translateY(1px);
       border-radius: 4px;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      box-shadow: 0 1px 2px rgba(33, 37, 41, 0.06);
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition:
+        transform 0.12s ease,
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 
-      &:hover {
-        background-color: #f8f9fa;
+      &:active {
+        transform: scale(0.94);
+        background-color: #e9ecef;
+        border-color: #adb5bd;
         color: #212529;
+        box-shadow: inset 0 1px 2px rgba(33, 37, 41, 0.08);
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          background-color: #f8f9fa;
+          border-color: #ced4da;
+          color: #212529;
+          box-shadow: 0 1px 3px rgba(33, 37, 41, 0.1);
+        }
+
+        &:hover:active {
+          transform: scale(0.94);
+          background-color: #e9ecef;
+          border-color: #adb5bd;
+          box-shadow: inset 0 1px 2px rgba(33, 37, 41, 0.08);
+        }
+      }
+
+      &:focus-visible {
+        outline: 2px solid #86b7fe;
+        outline-offset: 2px;
       }
 
       .close__icon {
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
         display: block;
       }
     }
@@ -822,13 +852,24 @@ function onSubmitStep2() {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+
+    @include media-down(lg) {
+      display: flex;
+      flex-direction: column;
+    }
   }
 
   .formReservation__body {
+    /** Étape 1 : marge bas = latérale. L’étape 2 surcharge avec un bas un peu plus serré (pied pleine largeur). */
     padding: 24px;
 
     @include media-down(lg) {
       padding: 16px;
+      box-sizing: border-box;
+      flex: 1 0 auto;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
     }
 
     &--step2 {
@@ -836,11 +877,41 @@ function onSubmitStep2() {
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      padding: 24px 24px 14px;
+
+      @include media-down(lg) {
+        padding: 16px 16px 12px;
+        flex: 1 0 auto;
+        min-height: 100%;
+      }
     }
 
     .body__form {
       display: flex;
       flex-direction: column;
+
+      /** Étape 1 : pied de formulaire sans barre pleine largeur — moins d’air sous les boutons. */
+      &:not(.body__form--step2) .form__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+        padding-top: 12px;
+
+        @include media-down(lg) {
+          margin-top: auto;
+          padding-top: 12px;
+        }
+      }
+
+      &:not(.body__form--step2) {
+        @include media-down(lg) {
+          flex: 1 1 auto;
+          min-height: 0;
+          width: 100%;
+        }
+      }
 
       .form__row--namePair {
         display: grid;
@@ -863,10 +934,6 @@ function onSubmitStep2() {
           margin: 0 0 20px 0;
           font-size: 14px;
           color: #6c757d;
-        }
-
-        .form__footer {
-          margin-top: 0;
         }
       }
 
@@ -916,7 +983,7 @@ function onSubmitStep2() {
             padding: 10px 12px;
             font-size: 14px;
             border: 1px solid #dee2e6;
-            border-radius: 6px;
+            border-radius: 4px;
             background: white;
             cursor: pointer;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -1005,7 +1072,7 @@ function onSubmitStep2() {
         margin-top: 20px;
         padding: 16px;
         background: #f8f9fa;
-        border-radius: 8px;
+        border-radius: 4px;
         border: 1px solid #e9ecef;
 
         .priceSummary__title {
@@ -1033,13 +1100,25 @@ function onSubmitStep2() {
         }
       }
 
-      .form__footer {
+      &--step2 .form__footer {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        padding: 16px 24px;
+        flex-wrap: wrap;
+        padding: 10px 0 8px;
+        margin-left: -24px;
+        margin-right: -24px;
+        padding-left: 24px;
+        padding-right: 24px;
         border-top: 1px solid #dee2e6;
         margin-top: auto;
+
+        @include media-down(lg) {
+          margin-left: -16px;
+          margin-right: -16px;
+          padding-left: 16px;
+          padding-right: 16px;
+        }
       }
     }
   }
@@ -1064,14 +1143,20 @@ function onSubmitStep2() {
     .formReservation__body {
       padding: 20px;
 
+      &--step2 {
+        padding: 20px 20px 12px;
+      }
+
       .body__form {
         .form__row--namePair,
         .ticketBlock__namePair {
           grid-template-columns: 1fr;
         }
 
-        .form__footer {
-          padding: 12px 20px;
+        &--step2 .form__footer {
+          margin-left: -20px;
+          margin-right: -20px;
+          padding: 10px 20px 8px;
           flex-direction: column;
           gap: 8px;
         }

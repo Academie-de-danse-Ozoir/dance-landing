@@ -220,25 +220,30 @@
               class="seatMap__toolbarTrigger"
               :aria-expanded="mapToolbarMenuOpen"
               :aria-controls="mapToolbarPanelId"
-              @pointerdown="onSeatMapToolbarPointerDown"
               @click.stop="toggleMapToolbarMenu"
             >
               {{ mapUi.toolbarMenuTrigger }}
             </button>
-            <div :id="mapToolbarPanelId" class="seatMap__toolbarHintsPanel">
-              <section
-                class="seatMap__hints seatMap__hints--inPopover"
-                :aria-labelledby="mapHintsTitlePopoverId"
+            <Transition name="seatMapPopoverFade">
+              <div
+                v-if="mapToolbarMenuOpen"
+                :id="mapToolbarPanelId"
+                class="seatMap__toolbarHintsPanel"
               >
-                <h2 :id="mapHintsTitlePopoverId" class="hints__title">{{ mapUi.hintsTitle }}</h2>
-                <dl class="hints__list">
-                  <template v-for="(row, i) in mapUi.hintsRows" :key="i">
-                    <dt>{{ row.label }}</dt>
-                    <dd v-html="seatMapLayoutMobile ? row.textMobile : row.textDesktop" />
-                  </template>
-                </dl>
-              </section>
-            </div>
+                <section
+                  class="seatMap__hints seatMap__hints--inPopover"
+                  :aria-labelledby="mapHintsTitlePopoverId"
+                >
+                  <h2 :id="mapHintsTitlePopoverId" class="hints__title">{{ mapUi.hintsTitle }}</h2>
+                  <dl class="hints__list">
+                    <template v-for="(row, i) in mapUi.hintsRows" :key="i">
+                      <dt>{{ row.label }}</dt>
+                      <dd v-html="seatMapLayoutMobile ? row.textMobile : row.textDesktop" />
+                    </template>
+                  </dl>
+                </section>
+              </div>
+            </Transition>
           </div>
         </div>
         <div class="seatMap__toolbar" role="toolbar" :aria-label="mapUi.toolbarLabel">
@@ -247,7 +252,6 @@
             class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomOut"
             :disabled="mapZoom <= mapZoomMinEffective + 1e-6"
-            @pointerdown="onSeatMapToolbarPointerDown"
             @click="zoomMapByStep(1 / MAP_ZOOM_STEP)"
           >
             <span class="toolbarRow__label">{{ mapUi.zoomOutCaption }}</span>
@@ -258,7 +262,6 @@
             class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomIn"
             :disabled="mapZoom >= MAP_ZOOM_MAX - 1e-6"
-            @pointerdown="onSeatMapToolbarPointerDown"
             @click="zoomMapByStep(MAP_ZOOM_STEP)"
           >
             <span class="toolbarRow__label">{{ mapUi.zoomInCaption }}</span>
@@ -268,7 +271,6 @@
             type="button"
             class="seatMap__toolbarRow seatMap__toolbarRow--reset"
             :aria-label="mapUi.resetView"
-            @pointerdown="onSeatMapToolbarPointerDown"
             @click="resetMapView"
           >
             <span class="toolbarRow__label">{{ mapUi.resetViewCaption }}</span>
@@ -284,37 +286,42 @@
             class="seatMap__toolbarTrigger seatMap__legendMenuTrigger"
             :aria-expanded="mapLegendMenuOpen"
             :aria-controls="mapLegendPanelId"
-            @pointerdown="onSeatMapToolbarPointerDown"
             @click.stop="toggleMapLegendMenu"
           >
             {{ mapUi.legendMenuTrigger }}
           </button>
-          <div :id="mapLegendPanelId" class="seatMap__legendPopoverPanel">
+          <Transition name="seatMapPopoverFade">
             <div
-              class="seatMap__legend seatMap__legend--inPopover"
-              role="group"
-              :aria-labelledby="mapLegendPopoverTitleId"
+              v-if="mapLegendMenuOpen"
+              :id="mapLegendPanelId"
+              class="seatMap__legendPopoverPanel"
             >
-              <h2 :id="mapLegendPopoverTitleId" class="hints__title">{{ mapUi.legendTitle }}</h2>
-              <ul class="legend__list">
-                <li
-                  v-for="row in seatStatusLegendRows"
-                  :key="'p-' + row.key"
-                  class="legend__item"
-                >
-                  <span
-                    class="legend__swatch"
-                    :class="[`legend__swatch--${row.key}`, { 'legend__swatch--border': row.border }]"
-                    aria-hidden="true"
-                  />
-                  <span class="legend__label">{{ row.label }}</span>
-                </li>
-              </ul>
-              <p class="legend__foot legend__foot--strong">
-                {{ legendMaxPerOrderLine }}
-              </p>
+              <div
+                class="seatMap__legend seatMap__legend--inPopover"
+                role="group"
+                :aria-labelledby="mapLegendPopoverTitleId"
+              >
+                <h2 :id="mapLegendPopoverTitleId" class="hints__title">{{ mapUi.legendTitle }}</h2>
+                <ul class="legend__list">
+                  <li
+                    v-for="row in seatStatusLegendRows"
+                    :key="'p-' + row.key"
+                    class="legend__item"
+                  >
+                    <span
+                      class="legend__swatch"
+                      :class="[`legend__swatch--${row.key}`, { 'legend__swatch--border': row.border }]"
+                      aria-hidden="true"
+                    />
+                    <span class="legend__label">{{ row.label }}</span>
+                  </li>
+                </ul>
+                <p class="legend__foot legend__foot--strong">
+                  {{ legendMaxPerOrderLine }}
+                </p>
+              </div>
             </div>
-          </div>
+          </Transition>
         </div>
       </div>
       <Transition name="seatMapZoomBadge">
@@ -392,13 +399,6 @@ import {
   rowIsBalcony,
   seatMapViewBoxString
 } from '../../utils/yerresSeatLayout'
-import {
-  cancelAndAnimate,
-  SEAT_MAP_TOOLBAR_TAP_MS,
-  seatMapToolbarIconTapKeyframes,
-  seatMapToolbarSurfaceTapKeyframes
-} from '../../utils/tapPulse'
-
 type MapHintRow = { label: string; textDesktop: string; textMobile: string }
 
 type SeatMapNavCopy = {
@@ -443,25 +443,6 @@ const seatMapLayoutMobile = ref(false)
 function closeMobileMapPopovers() {
   mapToolbarMenuOpen.value = false
   mapLegendMenuOpen.value = false
-}
-
-function seatMapCoarseTap(): boolean {
-  if (import.meta.server) return false
-  return window.matchMedia('(hover: none)').matches
-}
-
-/** Tactile : WAAPI pour relancer le flash à chaque tap (évite `:active` + CSS qui ne redémarre pas si spam). */
-function onSeatMapToolbarPointerDown(e: PointerEvent) {
-  if (!seatMapCoarseTap()) return
-  if (e.pointerType === 'mouse' && e.button !== 0) return
-  const el = e.currentTarget
-  if (!(el instanceof HTMLButtonElement) || el.disabled) return
-
-  cancelAndAnimate(el, seatMapToolbarSurfaceTapKeyframes(), SEAT_MAP_TOOLBAR_TAP_MS)
-  const icon = el.querySelector('.toolbarRow__icon')
-  if (icon instanceof HTMLElement) {
-    cancelAndAnimate(icon, seatMapToolbarIconTapKeyframes(), SEAT_MAP_TOOLBAR_TAP_MS)
-  }
 }
 
 const SEAT_SIZE = 13
@@ -1887,7 +1868,7 @@ function handleSeatClick(seat: Seat) {
     justify-content: center;
     padding: 12px;
     box-sizing: border-box;
-    border-radius: 8px;
+    border-radius: 4px;
     pointer-events: auto;
     cursor: not-allowed;
     background: rgba(15, 23, 42, 0.38);
@@ -1951,7 +1932,7 @@ function handleSeatClick(seat: Seat) {
     padding: 14px 16px 16px;
     text-align: center;
     background: rgba(255, 255, 255, 0.96);
-    border-radius: 10px;
+    border-radius: 4px;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
     border: 1px solid rgba(255, 255, 255, 0.8);
   }
@@ -2021,7 +2002,7 @@ function handleSeatClick(seat: Seat) {
     margin: 0;
     padding: 9px 12px 10px;
     background: $color-surface-panel;
-    border-radius: 8px;
+    border-radius: 4px;
     box-shadow: 0 1px 6px $seat-map-ui-shadow-soft;
     pointer-events: none;
 
@@ -2196,19 +2177,25 @@ function handleSeatClick(seat: Seat) {
     color: $seat-map-hint-text;
     background: $seat-map-ui-surface;
     border: 1px solid $seat-map-ui-border;
-    border-radius: 8px;
+    border-radius: 4px;
     box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     transition:
+      transform 0.12s ease,
       background 0.25s ease,
       color 0.25s ease,
       border-color 0.25s ease,
       box-shadow 0.25s ease;
 
+    &:active {
+      transform: scale(0.94);
+      box-shadow: inset 0 1px 2px rgba(33, 37, 41, 0.12);
+    }
+
     @media (hover: hover) {
-      &:hover,
-      &:active {
+      &:hover {
         background: $seat-map-hint-text;
         border-color: $seat-map-hint-text;
         color: $seat-map-ui-surface-solid;
@@ -2225,12 +2212,13 @@ function handleSeatClick(seat: Seat) {
     display: none;
 
     @include media-down(lg) {
+      display: block;
       margin-top: 6px;
       margin-left: 0;
       padding: 10px 11px;
       background: $seat-map-ui-surface-elevated;
       border: 1px solid $seat-map-ui-border;
-      border-radius: 10px;
+      border-radius: 4px;
       box-shadow: $seat-map-ui-shadow-popover-up;
       min-width: 0;
       /* Gauche : inset · droite : inset + colonne icônes + marge — évite le chevauchement */
@@ -2246,11 +2234,12 @@ function handleSeatClick(seat: Seat) {
     display: none;
 
     @include media-down(lg) {
+      display: block;
       margin: 0;
       padding: 10px 11px;
       background: $seat-map-ui-surface-elevated;
       border: 1px solid $seat-map-ui-border;
-      border-radius: 10px;
+      border-radius: 4px;
       box-shadow: $seat-map-ui-shadow-popover-down;
       min-width: 0;
       width: max-content;
@@ -2262,11 +2251,14 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
-  .seatMap__toolbarHost--open .seatMap__toolbarHintsPanel,
-  .seatMap__legendHelp--open .seatMap__legendPopoverPanel {
-    @include media-down(lg) {
-      display: block;
-    }
+  .seatMapPopoverFade-enter-active,
+  .seatMapPopoverFade-leave-active {
+    transition: opacity 0.16s ease;
+  }
+
+  .seatMapPopoverFade-enter-from,
+  .seatMapPopoverFade-leave-to {
+    opacity: 0;
   }
 
   .seatMap__toolbar {
@@ -2301,20 +2293,26 @@ function handleSeatClick(seat: Seat) {
     color: $seat-map-hint-text;
     background: $seat-map-ui-surface;
     border: 1px solid $seat-map-ui-border;
-    border-radius: 8px;
+    border-radius: 4px;
     box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     transition:
+      transform 0.12s ease,
       background 0.25s ease,
       color 0.25s ease,
       border-color 0.25s ease,
       opacity 0.25s ease,
       box-shadow 0.25s ease;
 
+    &:active:not(:disabled) {
+      transform: scale(0.94);
+      box-shadow: inset 0 1px 2px rgba(33, 37, 41, 0.12);
+    }
+
     @media (hover: hover) {
-      &:hover:not(:disabled),
-      &:active:not(:disabled) {
+      &:hover:not(:disabled) {
         background: $seat-map-hint-text;
         border-color: $seat-map-hint-text;
         color: $seat-map-ui-surface-solid;
@@ -2377,7 +2375,7 @@ function handleSeatClick(seat: Seat) {
     font-weight: 600;
     color: $color-text-secondary;
     background: $color-surface-panel;
-    border-radius: 6px;
+    border-radius: 4px;
     box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     pointer-events: none;
   }
@@ -2400,7 +2398,7 @@ function handleSeatClick(seat: Seat) {
     max-width: min(16rem, calc(100vw - 96px));
     padding: 8px 10px 9px;
     background: rgba(255, 255, 255, 0.94);
-    border-radius: 8px;
+    border-radius: 4px;
     box-shadow: 0 1px 6px $seat-map-ui-shadow-medium;
     pointer-events: none;
 
@@ -2444,7 +2442,7 @@ function handleSeatClick(seat: Seat) {
     flex-shrink: 0;
     width: 11px;
     height: 11px;
-    border-radius: 2px;
+    border-radius: 4px;
 
     &--border {
       box-shadow: inset 0 0 0 1px $seat-map-legend-swatch-border;
@@ -2497,7 +2495,7 @@ function handleSeatClick(seat: Seat) {
     display: block;
     overflow: hidden;
     border: 2px solid $seat-map-viewport-border;
-    border-radius: 8px;
+    border-radius: 4px;
     background: $seat-map-viewport-bg;
     user-select: none;
     cursor: grab;

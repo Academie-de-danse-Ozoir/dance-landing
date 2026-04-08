@@ -2,7 +2,8 @@
   <div class="selectionInfo">
     <p :class="['selectionInfo__text', { 'selectionInfo__text--empty': seatCount === 0 }]">
       <template v-if="seatCount > 0">
-        <strong class="text__count">{{ seatCount }}</strong> {{ seatCount > 1 ? content.home.selection.multiple : content.home.selection.one }}
+        <strong class="text__count">{{ seatCount }}</strong>
+        {{ seatCount > 1 ? content.home.selection.multiple : content.home.selection.one }}
       </template>
       <template v-else>{{ content.home.selection.none }}</template>
     </p>

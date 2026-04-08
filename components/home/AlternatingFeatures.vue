@@ -54,6 +54,12 @@ const billingEmail = content.brand.senderEmail
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:color';
+
+/** Colonne image identique sur toutes les rangées + même écart texte ↔ image (le 2ᵉ bloc était plus resserré avec l’ancien --mediaLeft). */
+$alt-features-visual-col: minmax(0, clamp(280px, 38vw, 440px));
+$alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
+
 .altFeatures {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: $color-surface-page;
@@ -78,16 +84,13 @@ const billingEmail = content.brand.senderEmail
     min-height: 100vh;
     box-sizing: border-box;
     max-width: min(1320px, 100%);
-    /* Colonne texte plus large qu’avant + grand écart avant la figure */
-    grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr);
-    column-gap: clamp(160px, 20vw, 420px);
+    grid-template-columns: minmax(0, 1fr) #{$alt-features-visual-col};
+    column-gap: #{$alt-features-column-gap-lg};
     row-gap: clamp(32px, 4vh, 48px);
     padding: clamp(32px, 5dvh, 64px) clamp(28px, 4vw, 56px);
 
-    /** Image à gauche : figure un peu plus étroite que le texte pour équilibrer la lecture. */
     &--mediaLeft {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.22fr);
-      column-gap: clamp(96px, 13vw, 240px);
+      grid-template-columns: #{$alt-features-visual-col} minmax(0, 1fr);
     }
   }
 }
@@ -120,17 +123,18 @@ const billingEmail = content.brand.senderEmail
   line-height: 1.7;
   max-width: min(28rem, 100%);
   color: $color-text-secondary;
+  width: unset;
 
   @include media-up(lg) {
     /* Taille fixe + largeur max : plus de variation au gré du viewport. */
     font-size: 1.0625rem;
     line-height: 1.72;
-    max-width: min(30rem, 100%);
+    width: min(30rem, 100%);
   }
 }
 
 .altFeatures__emailLink {
-  color: mix($color-primary, $color-text-secondary, 40%);
+  color: color.mix($color-primary, $color-text-secondary, 40%);
   font-weight: 500;
   transition: color 0.28s ease;
   overflow-wrap: anywhere;
@@ -149,21 +153,17 @@ const billingEmail = content.brand.senderEmail
 
 .altFeatures__figure {
   margin: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .altFeatures__visual {
   width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: 4px;
+  aspect-ratio: 4 / 5;
+  border-radius: 0;
   background-size: cover;
   background-position: center;
   box-shadow: 0 16px 48px rgba(33, 37, 41, 0.1);
-
-  @include media-up(lg) {
-    border-radius: 3px;
-    aspect-ratio: 4 / 5;
-    min-height: clamp(360px, 54dvh, 620px);
-  }
 
   &--v1 {
     background-image: linear-gradient(135deg, rgba(45, 31, 78, 0.45) 0%, rgba(102, 126, 234, 0.35) 100%),

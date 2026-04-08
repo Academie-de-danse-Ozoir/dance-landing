@@ -104,7 +104,6 @@ defineProps<{
 .organicGallery__cell {
   position: relative;
   overflow: hidden;
-  border-radius: clamp(2px, 0.2vw, 4px);
   box-shadow: 0 14px 40px rgba(33, 37, 41, 0.1);
 
   @include media-up(lg) {
