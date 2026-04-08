@@ -317,7 +317,9 @@
           </div>
         </div>
       </div>
-      <div v-if="mapZoomPercent > 100" class="seatMap__zoomBadge">{{ mapZoomBadgeText }}</div>
+      <Transition name="seatMapZoomBadge">
+        <div v-if="mapZoomPercent > 100" class="seatMap__zoomBadge">{{ mapZoomBadgeText }}</div>
+      </Transition>
       <div
         class="seatMap__legend seatMap__legend--desktop"
         role="group"
@@ -2378,6 +2380,16 @@ function handleSeatClick(seat: Seat) {
     border-radius: 6px;
     box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     pointer-events: none;
+  }
+
+  .seatMapZoomBadge-enter-active,
+  .seatMapZoomBadge-leave-active {
+    transition: opacity 0.2s ease;
+  }
+
+  .seatMapZoomBadge-enter-from,
+  .seatMapZoomBadge-leave-to {
+    opacity: 0;
   }
 
   .seatMap__legend--desktop {

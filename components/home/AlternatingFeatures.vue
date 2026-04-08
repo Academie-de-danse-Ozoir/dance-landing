@@ -72,6 +72,24 @@ const billingEmail = content.brand.senderEmail
   &:last-child {
     border-bottom: none;
   }
+
+  @include media-up(lg) {
+    min-height: 100dvh;
+    min-height: 100vh;
+    box-sizing: border-box;
+    max-width: min(1320px, 100%);
+    /* Colonne texte plus large qu’avant + grand écart avant la figure */
+    grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr);
+    column-gap: clamp(160px, 20vw, 420px);
+    row-gap: clamp(32px, 4vh, 48px);
+    padding: clamp(32px, 5dvh, 64px) clamp(28px, 4vw, 56px);
+
+    /** Image à gauche : figure un peu plus étroite que le texte pour équilibrer la lecture. */
+    &--mediaLeft {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.22fr);
+      column-gap: clamp(96px, 13vw, 240px);
+    }
+  }
 }
 
 .altFeatures__row--mediaLeft .altFeatures__copy {
@@ -89,13 +107,26 @@ const billingEmail = content.brand.senderEmail
   letter-spacing: -0.02em;
   color: $color-text-primary;
   line-height: 1.2;
+
+  @include media-up(lg) {
+    font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+    margin-bottom: 1.15rem;
+  }
 }
 
 .altFeatures__text {
   margin: 0;
   font-size: 1rem;
   line-height: 1.7;
+  max-width: min(28rem, 100%);
   color: $color-text-secondary;
+
+  @include media-up(lg) {
+    /* Taille fixe + largeur max : plus de variation au gré du viewport. */
+    font-size: 1.0625rem;
+    line-height: 1.72;
+    max-width: min(30rem, 100%);
+  }
 }
 
 .altFeatures__emailLink {
@@ -123,10 +154,16 @@ const billingEmail = content.brand.senderEmail
 .altFeatures__visual {
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: 6px;
+  border-radius: 4px;
   background-size: cover;
   background-position: center;
   box-shadow: 0 16px 48px rgba(33, 37, 41, 0.1);
+
+  @include media-up(lg) {
+    border-radius: 3px;
+    aspect-ratio: 4 / 5;
+    min-height: clamp(360px, 54dvh, 620px);
+  }
 
   &--v1 {
     background-image: linear-gradient(135deg, rgba(45, 31, 78, 0.45) 0%, rgba(102, 126, 234, 0.35) 100%),
@@ -152,6 +189,11 @@ const billingEmail = content.brand.senderEmail
   font-size: 0.8125rem;
   line-height: 1.45;
   color: $color-text-muted;
+
+  @include media-up(lg) {
+    font-size: 0.875rem;
+    margin-top: 0.75rem;
+  }
 }
 
 @media (max-width: 880px) {

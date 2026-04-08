@@ -65,6 +65,9 @@
   },
   "home": {
     "title": "Plan de salle interactif",
+    "organicGallery": {
+      "ariaLabel": "Aperçu visuel — ambiance du spectacle"
+    },
     "activeOrder": {
       "title": "Réservation en cours",
       "timeRemaining": "Temps restant :",

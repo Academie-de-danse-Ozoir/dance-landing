@@ -7,6 +7,8 @@
       :cta-scroll="content.home.hero.ctaScroll"
     />
 
+    <HomeOrganicGallery :ariaLabel="content.home.organicGallery.ariaLabel" />
+
     <StatementSection
       :eyebrow="content.home.statement.eyebrow"
       :title="content.home.statement.title"
@@ -29,6 +31,7 @@
 import { onMounted } from 'vue'
 import content from '../locales/fr.json'
 import HeroBlock from '../components/home/HeroBlock.vue'
+import HomeOrganicGallery from '../components/home/HomeOrganicGallery.vue'
 import StatementSection from '../components/home/StatementSection.vue'
 import AlternatingFeatures, {
   type AlternatingFeatureRow
