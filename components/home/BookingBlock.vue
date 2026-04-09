@@ -46,8 +46,7 @@
               variant="primary"
               :label="content.home.actions.reserve"
               :disabled="
-                isSubmitting ||
-                  (blockNewReserve && !canReopenReservation) ||
+                (blockNewReserve && !canReopenReservation) ||
                   (!canReopenReservation && selectedSeatIds.length === 0)
               "
               @click="openModal"
@@ -633,6 +632,7 @@ function toggleSeat(id: string) {
 }
 
 async function openModal() {
+  if (isSubmitting.value) return
   cancelModalCloseReset()
   keepModalChromeDuringLeave.value = false
 

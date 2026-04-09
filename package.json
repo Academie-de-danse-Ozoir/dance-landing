@@ -16,6 +16,7 @@
   "dependencies": {
     "@nuxtjs/supabase": "^2.0.4",
     "google-auth-library": "^10.6.2",
+    "gsap": "^3.14.2",
     "lenis": "^1.3.21",
     "node-mailjet": "^6.0.11",
     "nuxt": "^3.13.0",

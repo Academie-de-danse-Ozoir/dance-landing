@@ -2,11 +2,13 @@
   <section class="eventLocation" aria-labelledby="location-title">
     <div class="eventLocation__inner">
       <header class="eventLocation__header">
-        <h2 id="location-title" class="eventLocation__title">{{ content.home.location.title }}</h2>
-        <p class="eventLocation__address">
+        <AnimatedTextElt tag="h2" id="location-title" class="eventLocation__title" :delay="0">{{
+          content.home.location.title
+        }}</AnimatedTextElt>
+        <AnimatedTextElt tag="p" class="eventLocation__address" :delay="0.06">
           {{ content.home.location.addressLine1 }}<br />
           {{ content.home.location.addressLine2 }}
-        </p>
+        </AnimatedTextElt>
       </header>
       <a
         href="https://maps.google.com/maps?q=Théâtre%20de%20Yerres"
@@ -14,6 +16,7 @@
         rel="noopener noreferrer"
         ref="mapContainerRef"
         class="eventLocation__mapContainer"
+        :class="{ 'eventLocation__mapContainer--revealed': mapRevealed }"
         title="Ouvrir sur Google Maps"
         aria-label="Ouvrir sur Google Maps"
       >
@@ -33,7 +36,56 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
 import content from '../../locales/fr.json'
+import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
+
+const mapContainerRef = ref<HTMLElement | null>(null)
+const mapRevealed = ref(false)
+
+/** Position absolue du conteneur (coordonnées document, mis à jour au resize). */
+let mapRectTop = 0
+let mapRectHeight = 0
+
+function measureMapRect() {
+  const el = mapContainerRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  mapRectTop = rect.top + window.scrollY
+  mapRectHeight = rect.height
+}
+
+function checkMapVisibility() {
+  const scrollY = window.scrollY
+  const ih = window.innerHeight
+  const top = mapRectTop - scrollY
+  const bottom = top + mapRectHeight
+  if (top < ih * 0.92 && bottom > 0) {
+    if (!mapRevealed.value) mapRevealed.value = true
+  } else {
+    mapRevealed.value = false
+  }
+}
+
+function handleResize() {
+  measureMapRect()
+  checkMapVisibility()
+}
+
+onMounted(() => {
+  if (import.meta.server) return
+  window.addEventListener('scroll', checkMapVisibility, { passive: true })
+  window.addEventListener('resize', handleResize, { passive: true })
+  measureMapRect()
+  checkMapVisibility()
+})
+
+onUnmounted(() => {
+  if (import.meta.client) {
+    window.removeEventListener('scroll', checkMapVisibility)
+    window.removeEventListener('resize', handleResize)
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -82,15 +134,16 @@ import content from '../../locales/fr.json'
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(33, 37, 41, 0.08);
   border: 1px solid $color-border-subtle;
+  opacity: 0;
+  transform: scale(0.94);
   transition:
-    transform 0.25s ease,
+    transform 0.7s cubic-bezier(0.4, 0, 0, 1),
+    opacity 0.7s cubic-bezier(0.4, 0, 0, 1),
     box-shadow 0.25s ease;
 
-  @media (hover: hover) {
-    &:hover {
-      transform: scale(0.995);
-      box-shadow: 0 6px 18px rgba(33, 37, 41, 0.12);
-    }
+  &--revealed {
+    opacity: 1;
+    transform: scale(1);
   }
 
   &:active {

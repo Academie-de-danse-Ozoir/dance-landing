@@ -239,7 +239,7 @@
       "sectionAria": "Guide de réservation : tarifs, plan interactif et conditions",
       "eyebrow": "Billetterie",
       "title": "Tout savoir avant de réserver",
-      "intro": "Cette page regroupe l’essentiel pour réserver : tarifs, lecture du plan (balcon, parterre, scène), limites de commande et utilisation de la carte. Le **récapitulatif des montants** s’affiche juste avant le paiement.",
+      "intro": "Cette page regroupe l’essentiel pour réserver : tarifs, lecture du plan (balcon, parterre, scène), limites de commande et utilisation de la carte.\nLe **récapitulatif des montants** s’affiche\njuste navant le paiement.",
       "pricing": {
         "title": "Prix des billets",
         "lead": "Les montants ci-dessous s’appliquent à chaque place au moment où vous validez le paiement. Ils sont indiqués toutes taxes comprises (TTC).",

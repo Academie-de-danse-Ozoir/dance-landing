@@ -7,8 +7,10 @@
       :class="{ 'altFeatures__row--mediaLeft': row.imageSide === 'left' }"
     >
       <div class="altFeatures__copy">
-        <h2 class="altFeatures__title">{{ row.title }}</h2>
-        <p class="altFeatures__text">
+        <AnimatedTextElt tag="h2" class="altFeatures__title" :delay="0">{{
+          row.title
+        }}</AnimatedTextElt>
+        <AnimatedTextElt tag="p" class="altFeatures__text" :delay="0.06">
           {{ row.text }}
           <template v-if="row.billingEmailLink">
             <UnderlineLink class="altFeatures__emailLink" :href="`mailto:${billingEmail}`">{{
@@ -18,14 +20,16 @@
               row.textAfterEmail
             }}</span>
           </template>
-        </p>
+        </AnimatedTextElt>
       </div>
       <figure class="altFeatures__figure">
-        <div
+        <ParallaxMediaElt
           class="altFeatures__visual"
           :class="`altFeatures__visual--v${(i % 3) + 1}`"
-          role="img"
-          :aria-label="row.caption"
+          :src="ROW_IMAGES[i % 3]"
+          :alt="row.caption"
+          :has-parallax-position="isDesktop"
+          :parallax-position-amount="i % 2 === 0 ? 20 : -20"
         />
         <figcaption class="altFeatures__caption">{{ row.caption }}</figcaption>
       </figure>
@@ -35,7 +39,27 @@
 
 <script setup lang="ts">
 import UnderlineLink from '~/components/buttons/UnderlineLink.vue'
+import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
+import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
 import content from '../../locales/fr.json'
+
+const ROW_IMAGES = [
+  'https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=1000&q=80',
+  'https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=1000&q=80',
+  'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1000&q=80'
+]
+
+const isDesktop = ref(true)
+
+onMounted(() => {
+  const mq = window.matchMedia('(min-width: 1100px)')
+  isDesktop.value = mq.matches
+  const handler = (e: MediaQueryListEvent) => {
+    isDesktop.value = e.matches
+  }
+  mq.addEventListener('change', handler)
+  onUnmounted(() => mq.removeEventListener('change', handler))
+})
 
 export type AlternatingFeatureRow = {
   title: string

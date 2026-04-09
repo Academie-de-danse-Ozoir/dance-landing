@@ -1,14 +1,16 @@
 <template>
   <section class="statementSection" aria-labelledby="statementSectionTitle">
     <div class="statementSection__frame">
-      <p class="statementSection__eyebrow">{{ eyebrow }}</p>
-      <h2 id="statementSectionTitle" class="statementSection__title">{{ title }}</h2>
-      <p class="statementSection__lead">{{ lead }}</p>
+      <AnimatedTextElt tag="p" class="statementSection__eyebrow" :delay="0">{{ eyebrow }}</AnimatedTextElt>
+      <AnimatedTextElt tag="h2" id="statementSectionTitle" class="statementSection__title" :delay="0.06">{{ title }}</AnimatedTextElt>
+      <AnimatedTextElt tag="p" class="statementSection__lead" :delay="0.12">{{ lead }}</AnimatedTextElt>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
+
 defineProps<{
   eyebrow: string
   title: string

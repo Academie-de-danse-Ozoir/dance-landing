@@ -1,55 +1,37 @@
 <template>
   <section class="organicGallery" :aria-label="ariaLabel">
     <div class="organicGallery__grid">
-      <div class="organicGallery__cell organicGallery__cell--1">
-        <img
-          class="organicGallery__img"
-          src="https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=900&q=80"
-          alt=""
-          width="900"
-          height="1125"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <div class="organicGallery__cell organicGallery__cell--2">
-        <img
-          class="organicGallery__img"
-          src="https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=1200&q=80"
-          alt=""
-          width="1200"
-          height="675"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <div class="organicGallery__cell organicGallery__cell--3">
-        <img
-          class="organicGallery__img"
-          src="https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=900&q=80"
-          alt=""
-          width="900"
-          height="1125"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <div class="organicGallery__cell organicGallery__cell--4">
-        <img
-          class="organicGallery__img"
-          src="https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=1200&q=80"
-          alt=""
-          width="1200"
-          height="675"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
+      <ParallaxMediaElt
+        class="organicGallery__cell organicGallery__cell--1"
+        src="https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=900&q=80"
+        :has-parallax-position="true"
+        :parallax-position-amount="14"
+      />
+      <ParallaxMediaElt
+        class="organicGallery__cell organicGallery__cell--2"
+        src="https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=1200&q=80"
+        :has-parallax-position="true"
+        :parallax-position-amount="-12"
+      />
+      <ParallaxMediaElt
+        class="organicGallery__cell organicGallery__cell--3"
+        src="https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=900&q=80"
+        :has-parallax-position="true"
+        :parallax-position-amount="12"
+      />
+      <ParallaxMediaElt
+        class="organicGallery__cell organicGallery__cell--4"
+        src="https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=1200&q=80"
+        :has-parallax-position="true"
+        :parallax-position-amount="-14"
+      />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
+
 defineProps<{
   ariaLabel: string
 }>()
@@ -87,8 +69,6 @@ defineProps<{
 
 .organicGallery__cell {
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 14px 40px rgba(33, 37, 41, 0.1);
 
   &--1 {
     grid-row: 1;
@@ -134,13 +114,5 @@ defineProps<{
     margin-top: clamp(-16px, -1.5vw, -9px);
     z-index: 3;
   }
-}
-
-.organicGallery__img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  object-position: center;
 }
 </style>

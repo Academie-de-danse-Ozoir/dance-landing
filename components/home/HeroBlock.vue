@@ -1,6 +1,11 @@
 <template>
   <section :id="HOME_TOP_SECTION_ID" class="heroBlock" aria-labelledby="heroBlockTitle">
-    <div class="heroBlock__bg" aria-hidden="true" />
+    <ParallaxMediaElt
+      class="heroBlock__bg"
+      src="https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1920&q=80"
+      :parallax-mask-amount="25"
+      aria-hidden="true"
+    />
     <div class="heroBlock__overlay" aria-hidden="true" />
     <div class="heroBlock__inner">
       <p class="heroBlock__kicker">{{ kicker }}</p>
@@ -22,11 +27,8 @@
 <script setup lang="ts">
 import { HOME_TOP_SECTION_ID } from '../../constants'
 import { useScrollToBooking } from '../../composables/useScrollToBooking'
-import {
-  cancelAndAnimate,
-  heroCtaTapKeyframes,
-  DEFAULT_BUTTON_TAP_MS
-} from '../../utils/tapPulse'
+import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
+import { cancelAndAnimate, heroCtaTapKeyframes, DEFAULT_BUTTON_TAP_MS } from '../../utils/tapPulse'
 
 defineProps<{
   kicker: string
@@ -58,18 +60,17 @@ function handleTap(e: PointerEvent) {
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .heroBlock__bg {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
   background-color: #2d1f4e;
-  background-image: linear-gradient(120deg, rgba(45, 31, 78, 0.35) 0%, rgba(102, 126, 234, 0.3) 100%),
-    url('https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1920&q=80');
-  background-size: cover;
-  background-position: center 30%;
 }
 
 .heroBlock__overlay {

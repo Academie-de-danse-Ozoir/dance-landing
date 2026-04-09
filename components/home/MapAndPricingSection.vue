@@ -2,16 +2,19 @@
   <section class="mapPricingSection" :aria-labelledby="titleId">
     <div class="mapPricingSection__inner">
       <header class="mapPricingSection__header">
-        <p class="mapPricingSection__eyebrow">{{ content.home.mapAndPricing.eyebrow }}</p>
-        <h2 :id="titleId" class="mapPricingSection__title">
+        <AnimatedTextElt tag="p" class="mapPricingSection__eyebrow" :delay="0">{{ content.home.mapAndPricing.eyebrow }}</AnimatedTextElt>
+        <AnimatedTextElt tag="h2" :id="titleId" class="mapPricingSection__title" :delay="0.06">
           {{ content.home.mapAndPricing.title }}
-        </h2>
-        <p class="mapPricingSection__intro">
-          <span v-for="(seg, i) in introSegments" :key="i">
-            <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
-            <template v-else>{{ seg.text }}</template>
-          </span>
-        </p>
+        </AnimatedTextElt>
+        <AnimatedTextElt tag="p" class="mapPricingSection__intro" :delay="0.12">
+          <template v-for="(seg, i) in introSegments" :key="i">
+            <template v-for="(part, j) in seg.text.split('\n')" :key="`${i}-${j}`">
+              <br v-if="j > 0" />
+              <span v-if="seg.bold" class="mapPricingSection__hl">{{ part }}</span>
+              <template v-else>{{ part }}</template>
+            </template>
+          </template>
+        </AnimatedTextElt>
       </header>
 
       <div class="mapPricingSection__grid">
@@ -184,6 +187,7 @@
 
 <script setup lang="ts">
 import UnderlineLink from '~/components/buttons/UnderlineLink.vue'
+import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import { computed } from 'vue'
 import content from '../../locales/fr.json'
 import { MAX_SEATS_PER_ORDER, PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
