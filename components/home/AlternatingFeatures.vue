@@ -29,7 +29,7 @@
           :src="ROW_IMAGES[i % 3]"
           :alt="row.caption"
           :has-parallax-position="isDesktop"
-          :parallax-position-amount="i % 2 === 0 ? 20 : -20"
+          :parallax-position-amount="i % 2 === 0 ? 20 : 20"
         />
         <figcaption class="altFeatures__caption">{{ row.caption }}</figcaption>
       </figure>
