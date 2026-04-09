@@ -82,7 +82,7 @@ function applyTransforms() {
         props.parallaxPositionRemapMax
       ) * props.parallaxPositionAmount
 
-    wStr = `translate3d(0, ${parallaxPositionProgress}%, 0)`
+    wStr = `translateY(${parallaxPositionProgress}%)`
   }
 
   if (wStr !== lastWrapperTransform) {
@@ -97,7 +97,7 @@ function applyTransforms() {
       remap(scrollY, startValue, endValue, props.parallaxMaskRemapMin, props.parallaxMaskRemapMax) *
       props.parallaxMaskAmount
 
-    mStr = `translate3d(0, ${parallaxMaskProgress}%, 0) scale(${props.scaleOffsetAmount})`
+    mStr = `translateY(${parallaxMaskProgress}%) scale(${props.scaleOffsetAmount})`
   } else if (props.scaleOffsetAmount !== 1) {
     mStr = `scale(${props.scaleOffsetAmount})`
   }

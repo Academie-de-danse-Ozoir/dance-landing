@@ -31,148 +31,143 @@
             fill="transparent"
           />
           <g v-if="balconyZone" class="svg__zone svg__zone--balcony">
-        <rect
-          :x="balconyZone.x"
-          :y="balconyZone.y"
-          :width="balconyZone.w"
-          :height="balconyZone.h"
-          rx="3"
-          ry="3"
-          class="svg__zoneRect svg__zoneRect--balcony"
-        />
-        <text :x="balconyZone.titleX" :y="balconyZone.titleY" class="svg__zoneTitle">Balcon</text>
-        <text :x="balconyZone.subtitleX" :y="balconyZone.subtitleY" class="svg__zoneSubtitle">
-          Rangées P à X
-        </text>
-      </g>
-      <g v-if="parterreZone" class="svg__zone svg__zone--parterre">
-        <rect
-          :x="parterreZone.x"
-          :y="parterreZone.y"
-          :width="parterreZone.w"
-          :height="parterreZone.h"
-          rx="3"
-          ry="3"
-          class="svg__zoneRect svg__zoneRect--parterre"
-        />
-        <text :x="parterreZone.titleX" :y="parterreZone.titleY" class="svg__zoneTitle">Parterre</text>
-        <text :x="parterreZone.subtitleX" :y="parterreZone.subtitleY" class="svg__zoneSubtitle">
-          Rangées O à A
-        </text>
-      </g>
-      <g v-if="accessibilityZone" class="svg__zone svg__zone--accessibility">
-        <rect
-          :x="accessibilityZone.x"
-          :y="accessibilityZone.y"
-          :width="accessibilityZone.w"
-          :height="accessibilityZone.h"
-          rx="3"
-          ry="3"
-          class="svg__zoneRect svg__zoneRect--accessibility"
-        />
-        <text
-          :x="accessibilityZone.titleX"
-          :y="accessibilityZone.titleY"
-          class="svg__zoneTitle svg__zoneTitle--end"
-          text-anchor="end"
-        >
-          {{ mapUi.accessibilityZoneTitle }}
-        </text>
-        <text
-          :x="accessibilityZone.subtitleX"
-          :y="accessibilityZone.subtitleY"
-          class="svg__zoneSubtitle svg__zoneSubtitle--end"
-          text-anchor="end"
-        >
-          {{ mapUi.accessibilityZoneSubtitle }}
-        </text>
-      </g>
-      <g v-if="stageBlock" class="svg__stage">
-        <rect
-          :x="stageBlock.x"
-          :y="stageBlock.y"
-          :width="stageBlock.w"
-          :height="stageBlock.h"
-          rx="2"
-          ry="2"
-          class="svg__stageRect"
-        />
-        <text
-          :x="stageBlock.cx"
-          :y="stageBlock.cy"
-          class="svg__stageLabel"
-          dominant-baseline="middle"
-        >
-          Scène
-        </text>
-      </g>
-      <rect
-        v-for="seat in seats"
-        :key="seat.id"
-        :x="seat.x"
-        :y="seat.y"
-        :width="SEAT_SIZE"
-        :height="SEAT_SIZE"
-        :rx="SEAT_RADIUS"
-        :ry="SEAT_RADIUS"
-        :transform="seatArcTransform(seat)"
-        :class="[
-          'svg__seat',
-          seatVisualClass(seat),
-          {
-            'svg__seat--clickable': isSeatClickable(seat),
-            'svg__seat--disabled': !isSeatClickable(seat)
-          }
-        ]"
-        :title="getSeatTitle(seat)"
-        @click="handleSeatClick(seat)"
-      />
-      <text
-        v-for="seat in seats"
-        :key="seat.id + '-label'"
-        :x="seat.x + SEAT_SIZE / 2"
-        :y="seat.y + SEAT_SIZE / 2 + 1.5"
-        :transform="seatArcTransform(seat)"
-        class="svg__label"
-      >
-        {{ seat.label }}
-      </text>
-      <g v-if="pmrZoneBelowG26to30" class="svg__zone svg__zone--pmr">
-        <title>{{ mapUi.pmrZoneAreaLabel }}</title>
-        <path
-          :d="pmrZoneBelowG26to30.zonePath"
-          class="svg__zoneRect svg__zoneRect--pmr"
-        />
-        <!-- Icône fauteuil (Font Awesome–style, repère 512 après translate/scale) -->
-        <g
-          class="svg__pmrIcon"
-          :transform="pmrZoneBelowG26to30.iconTransform"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <g transform="translate(0,512) scale(0.1,-0.1)">
-            <path
-              d="M2021 5104 c-181 -49 -322 -203 -354 -388 -15 -89 1 -189 47 -280 144 -291 526 -354 756 -125 225 226 166 610 -118 754 -103 53 -226 67 -331 39z"
+            <rect
+              :x="balconyZone.x"
+              :y="balconyZone.y"
+              :width="balconyZone.w"
+              :height="balconyZone.h"
+              rx="3"
+              ry="3"
+              class="svg__zoneRect svg__zoneRect--balcony"
             />
-            <path
-              d="M2037 3866 c-94 -26 -181 -113 -207 -204 -6 -24 -10 -385 -10 -1032 0 -946 1 -997 19 -1035 22 -48 54 -79 103 -100 32 -13 121 -15 660 -15 l623 0 475 -475 c529 -528 518 -519 645 -519 116 0 214 59 265 161 21 41 25 62 25 138 0 75 -4 98 -24 135 -16 30 -203 225 -579 603 l-557 557 -527 0 -528 0 0 305 0 304 578 3 577 3 47 27 c218 129 206 430 -21 537 l-56 26 -562 3 -561 3 -4 177 c-3 155 -6 183 -25 224 -63 139 -216 214 -356 174z"
-            />
-            <path
-              d="M1389 3127 c-456 -232 -771 -643 -881 -1150 -19 -88 -22 -133 -23 -322 0 -194 3 -233 23 -329 154 -720 733 -1242 1459 -1317 491 -50 978 126 1331 482 89 91 212 243 212 264 0 18 -209 220 -218 210 -4 -6 -30 -44 -57 -85 -63 -94 -237 -269 -335 -337 -445 -304 -1014 -322 -1473 -46 -95 58 -244 181 -310 257 -168 195 -284 442 -323 689 -26 159 -15 387 24 537 93 359 303 639 625 835 l77 46 0 160 c0 127 -3 159 -14 159 -7 0 -60 -24 -117 -53z"
-            />
+            <text :x="balconyZone.titleX" :y="balconyZone.titleY" class="svg__zoneTitle">
+              Balcon
+            </text>
+            <text :x="balconyZone.subtitleX" :y="balconyZone.subtitleY" class="svg__zoneSubtitle">
+              Rangées P à X
+            </text>
           </g>
-        </g>
-      </g>
+          <g v-if="parterreZone" class="svg__zone svg__zone--parterre">
+            <rect
+              :x="parterreZone.x"
+              :y="parterreZone.y"
+              :width="parterreZone.w"
+              :height="parterreZone.h"
+              rx="3"
+              ry="3"
+              class="svg__zoneRect svg__zoneRect--parterre"
+            />
+            <text :x="parterreZone.titleX" :y="parterreZone.titleY" class="svg__zoneTitle">
+              Parterre
+            </text>
+            <text :x="parterreZone.subtitleX" :y="parterreZone.subtitleY" class="svg__zoneSubtitle">
+              Rangées O à A
+            </text>
+          </g>
+          <g v-if="accessibilityZone" class="svg__zone svg__zone--accessibility">
+            <rect
+              :x="accessibilityZone.x"
+              :y="accessibilityZone.y"
+              :width="accessibilityZone.w"
+              :height="accessibilityZone.h"
+              rx="3"
+              ry="3"
+              class="svg__zoneRect svg__zoneRect--accessibility"
+            />
+            <text
+              :x="accessibilityZone.titleX"
+              :y="accessibilityZone.titleY"
+              class="svg__zoneTitle svg__zoneTitle--end"
+              text-anchor="end"
+            >
+              {{ mapUi.accessibilityZoneTitle }}
+            </text>
+            <text
+              :x="accessibilityZone.subtitleX"
+              :y="accessibilityZone.subtitleY"
+              class="svg__zoneSubtitle svg__zoneSubtitle--end"
+              text-anchor="end"
+            >
+              {{ mapUi.accessibilityZoneSubtitle }}
+            </text>
+          </g>
+          <g v-if="stageBlock" class="svg__stage">
+            <rect
+              :x="stageBlock.x"
+              :y="stageBlock.y"
+              :width="stageBlock.w"
+              :height="stageBlock.h"
+              rx="2"
+              ry="2"
+              class="svg__stageRect"
+            />
+            <text
+              :x="stageBlock.cx"
+              :y="stageBlock.cy"
+              class="svg__stageLabel"
+              dominant-baseline="middle"
+            >
+              Scène
+            </text>
+          </g>
+          <rect
+            v-for="seat in seats"
+            :key="seat.id"
+            :x="seat.x"
+            :y="seat.y"
+            :width="SEAT_SIZE"
+            :height="SEAT_SIZE"
+            :rx="SEAT_RADIUS"
+            :ry="SEAT_RADIUS"
+            :transform="seatArcTransform(seat)"
+            :class="[
+              'svg__seat',
+              seatVisualClass(seat),
+              {
+                'svg__seat--clickable': isSeatClickable(seat),
+                'svg__seat--disabled': !isSeatClickable(seat)
+              }
+            ]"
+            :title="getSeatTitle(seat)"
+            @click="handleSeatClick(seat)"
+          />
+          <text
+            v-for="seat in seats"
+            :key="seat.id + '-label'"
+            :x="seat.x + SEAT_SIZE / 2"
+            :y="seat.y + SEAT_SIZE / 2 + 1.5"
+            :transform="seatArcTransform(seat)"
+            class="svg__label"
+          >
+            {{ seat.label }}
+          </text>
+          <g v-if="pmrZoneBelowG26to30" class="svg__zone svg__zone--pmr">
+            <title>{{ mapUi.pmrZoneAreaLabel }}</title>
+            <path :d="pmrZoneBelowG26to30.zonePath" class="svg__zoneRect svg__zoneRect--pmr" />
+            <!-- Icône fauteuil (Font Awesome–style, repère 512 après translate/scale) -->
+            <g
+              class="svg__pmrIcon"
+              :transform="pmrZoneBelowG26to30.iconTransform"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <g transform="translate(0,512) scale(0.1,-0.1)">
+                <path
+                  d="M2021 5104 c-181 -49 -322 -203 -354 -388 -15 -89 1 -189 47 -280 144 -291 526 -354 756 -125 225 226 166 610 -118 754 -103 53 -226 67 -331 39z"
+                />
+                <path
+                  d="M2037 3866 c-94 -26 -181 -113 -207 -204 -6 -24 -10 -385 -10 -1032 0 -946 1 -997 19 -1035 22 -48 54 -79 103 -100 32 -13 121 -15 660 -15 l623 0 475 -475 c529 -528 518 -519 645 -519 116 0 214 59 265 161 21 41 25 62 25 138 0 75 -4 98 -24 135 -16 30 -203 225 -579 603 l-557 557 -527 0 -528 0 0 305 0 304 578 3 577 3 47 27 c218 129 206 430 -21 537 l-56 26 -562 3 -561 3 -4 177 c-3 155 -6 183 -25 224 -63 139 -216 214 -356 174z"
+                />
+                <path
+                  d="M1389 3127 c-456 -232 -771 -643 -881 -1150 -19 -88 -22 -133 -23 -322 0 -194 3 -233 23 -329 154 -720 733 -1242 1459 -1317 491 -50 978 126 1331 482 89 91 212 243 212 264 0 18 -209 220 -218 210 -4 -6 -30 -44 -57 -85 -63 -94 -237 -269 -335 -337 -445 -304 -1014 -322 -1473 -46 -95 58 -244 181 -310 257 -168 195 -284 442 -323 689 -26 159 -15 387 24 537 93 359 303 639 625 835 l77 46 0 160 c0 127 -3 159 -14 159 -7 0 -60 -24 -117 -53z"
+                />
+              </g>
+            </g>
+          </g>
         </g>
       </svg>
       <Transition name="seatMapActiveOrderLock">
-        <div
-          v-if="activeOrder"
-          class="seatMap__activeOrderLock"
-          role="status"
-          aria-live="polite"
-          @pointerdown.stop
-        >
+        <div v-if="activeOrder" class="seatMap__activeOrderLock" role="status" aria-live="polite">
           <div class="seatMap__activeOrderLockCard">
             <svg
               class="activeOrderLock__icon"
@@ -195,10 +190,7 @@
       </Transition>
     </div>
     <div class="seatMap__overlay" role="region" :aria-label="mapUi.viewportLabel">
-      <section
-        class="seatMap__hints seatMap__hints--desktop"
-        :aria-labelledby="mapHintsTitleId"
-      >
+      <section class="seatMap__hints seatMap__hints--desktop" :aria-labelledby="mapHintsTitleId">
         <h2 :id="mapHintsTitleId" class="hints__title">{{ mapUi.hintsTitle }}</h2>
         <dl class="hints__list">
           <template v-for="(row, i) in mapUi.hintsRows" :key="i">
@@ -315,7 +307,10 @@
                   >
                     <span
                       class="legend__swatch"
-                      :class="[`legend__swatch--${row.key}`, { 'legend__swatch--border': row.border }]"
+                      :class="[
+                        `legend__swatch--${row.key}`,
+                        { 'legend__swatch--border': row.border }
+                      ]"
                       aria-hidden="true"
                     />
                     <span class="legend__label">{{ row.label }}</span>
@@ -339,11 +334,7 @@
       >
         <h2 :id="mapLegendTitleId" class="hints__title">{{ mapUi.legendTitle }}</h2>
         <ul class="legend__list">
-          <li
-            v-for="row in seatStatusLegendRows"
-            :key="row.key"
-            class="legend__item"
-          >
+          <li v-for="row in seatStatusLegendRows" :key="row.key" class="legend__item">
             <span
               class="legend__swatch"
               :class="[`legend__swatch--${row.key}`, { 'legend__swatch--border': row.border }]"
@@ -361,16 +352,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onBeforeUnmount,
-  ref,
-  useId,
-  watch,
-  type Ref
-} from 'vue'
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, useId, watch, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Seat, ActiveOrder } from '../../types'
 import content from '../../locales/fr.json'
@@ -743,7 +725,15 @@ function computeBalconyArcSpec(seat: Seat): BalconyArcSpec {
   const dty = hasDepth ? ty : 0
 
   if (hasRot && hasScaleX) {
-    return { mode: hasDepth ? 'depthRotScale' : 'rotScale', tx: dtx, ty: dty, cx, cy, deg, sx: scaleX }
+    return {
+      mode: hasDepth ? 'depthRotScale' : 'rotScale',
+      tx: dtx,
+      ty: dty,
+      cx,
+      cy,
+      deg,
+      sx: scaleX
+    }
   }
   if (hasRot) {
     return { mode: hasDepth ? 'depthRot' : 'rot', tx: dtx, ty: dty, cx, cy, deg }
@@ -751,7 +741,11 @@ function computeBalconyArcSpec(seat: Seat): BalconyArcSpec {
   return { mode: hasDepth ? 'depthScale' : 'scale', tx: dtx, ty: dty, cx, cy, sx: scaleX }
 }
 
-function mapBalconyArcPoint(px: number, py: number, spec: BalconyArcSpec): { x: number; y: number } {
+function mapBalconyArcPoint(
+  px: number,
+  py: number,
+  spec: BalconyArcSpec
+): { x: number; y: number } {
   if (spec.mode === 'identity') return { x: px, y: py }
 
   switch (spec.mode) {
@@ -796,14 +790,14 @@ function seatArcTransform(seat: Seat): string | undefined {
   const cx = seat.x + SEAT_SIZE / 2
   const cy = seat.y + SEAT_SIZE / 2
   const hasDepth =
-    spec.mode === 'depthRotScale' ||
-    spec.mode === 'depthRot' ||
-    spec.mode === 'depthScale'
+    spec.mode === 'depthRotScale' || spec.mode === 'depthRot' || spec.mode === 'depthScale'
 
   const parts: string[] = []
   if (hasDepth) parts.push(`translate(${spec.tx} ${spec.ty})`)
   if (spec.mode === 'depthRotScale' || spec.mode === 'rotScale') {
-    parts.push(`translate(${cx} ${cy}) rotate(${spec.deg}) scale(${spec.sx} 1) translate(${-cx} ${-cy})`)
+    parts.push(
+      `translate(${cx} ${cy}) rotate(${spec.deg}) scale(${spec.sx} 1) translate(${-cx} ${-cy})`
+    )
   } else if (spec.mode === 'depthRot' || spec.mode === 'rot') {
     parts.push(`rotate(${spec.deg} ${cx} ${cy})`)
   } else if (spec.mode === 'depthScale' || spec.mode === 'scale') {
@@ -812,7 +806,10 @@ function seatArcTransform(seat: Seat): string | undefined {
   return parts.join(' ')
 }
 
-function rowHorizontalExtent(seats: Seat[], rowLetter: string): { minX: number; maxX: number } | null {
+function rowHorizontalExtent(
+  seats: Seat[],
+  rowLetter: string
+): { minX: number; maxX: number } | null {
   const R = rowLetter.toUpperCase()
   let minX = Infinity
   let maxX = -Infinity
@@ -953,8 +950,7 @@ function accessibilityZoneFrameFromBounds(b: SeatBounds) {
   const subtitleX = titleX
   const lineStep = ZONE_FRAME_LABEL_LINE_STEP
   const blockApprox = 6.5 + lineStep + 4.25
-  const titleY =
-    y + Math.max(0, (h - blockApprox) / 2) + ACCESSIBILITY_ZONE_TEXT_OFFSET_DOWN
+  const titleY = y + Math.max(0, (h - blockApprox) / 2) + ACCESSIBILITY_ZONE_TEXT_OFFSET_DOWN
   const subtitleY = titleY + lineStep
   return { x, y, w, h, titleX, titleY, subtitleX, subtitleY }
 }
@@ -1103,10 +1099,7 @@ const pmrZoneBelowG26to30 = computed(() => {
   const h = SEAT_SIZE * 2 + padTop + padBottom
   const x = b.minX
   const y = b.maxY + SEAT_MAP_PMR_ZONE_GAP_BELOW_ROW_G - padTop
-  const w = Math.max(
-    SEAT_SIZE,
-    b.maxX - b.minX - SEAT_MAP_PMR_ZONE_INSET_RIGHT_SVG
-  )
+  const w = Math.max(SEAT_SIZE, b.maxX - b.minX - SEAT_MAP_PMR_ZONE_INSET_RIGHT_SVG)
   const skew = SEAT_MAP_PMR_ZONE_RIGHT_SKEW_SVG
   const zonePath = roundedConvexPolygonPath(
     [
@@ -1157,7 +1150,9 @@ const mapOverlayRects = computed(() => {
   return out.length ? out : undefined
 })
 
-const svgViewBox = computed(() => seatMapViewBoxString(props.seats, SEAT_SIZE, 18, mapOverlayRects.value))
+const svgViewBox = computed(() =>
+  seatMapViewBoxString(props.seats, SEAT_SIZE, 18, mapOverlayRects.value)
+)
 
 const MAP_ZOOM_MIN = 1
 /** Sous `NARROW_VIEWPORT_MQ` : zoom mini > 1 (carte lisible sur petits viewports). */
@@ -1245,7 +1240,10 @@ let mapPanDownClientY = 0
 let suppressNextSeatClick = false
 
 const viewBoxParsed = computed(() => {
-  const parts = svgViewBox.value.trim().split(/[\s,]+/).map(Number)
+  const parts = svgViewBox.value
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number)
   const x = parts[0] ?? 0
   const y = parts[1] ?? 0
   const w = parts[2] ?? 560
@@ -1335,8 +1333,7 @@ function syncMapNavTargetsFromDisplay() {
 
 function mapNavSmoothingTick(ts: number) {
   mapNavRafId = 0
-  const dt =
-    mapNavLastTs > 0 ? Math.min(0.05, Math.max(0, (ts - mapNavLastTs) / 1000)) : 1 / 60
+  const dt = mapNavLastTs > 0 ? Math.min(0.05, Math.max(0, (ts - mapNavLastTs) / 1000)) : 1 / 60
   mapNavLastTs = ts
 
   const zoomDiffBefore = Math.abs(mapZoom.value - mapTargetZoom.value)
@@ -1385,7 +1382,9 @@ const mapNavTransform = computed(() => {
 })
 
 const mapZoomPercent = computed(() => Math.round(mapZoom.value * 100))
-const mapZoomBadgeText = computed(() => mapUi.zoomPercent.replace('{n}', String(mapZoomPercent.value)))
+const mapZoomBadgeText = computed(() =>
+  mapUi.zoomPercent.replace('{n}', String(mapZoomPercent.value))
+)
 
 watch(
   svgViewBox,
@@ -1565,9 +1564,7 @@ onMounted(() => {
         clientY: number
       }
       ev.preventDefault()
-      const scale = isSeatMapMobileViewport()
-        ? ev.scale
-        : dampenDesktopSafariPinchScale(ev.scale)
+      const scale = isSeatMapMobileViewport() ? ev.scale : dampenDesktopSafariPinchScale(ev.scale)
       const z = safariGestureBaseZoom * scale
       const p = clientToSvgPoint(ev.clientX, ev.clientY)
       setMapZoomAtPoint(z, p.x, p.y)
@@ -1837,7 +1834,8 @@ function isSeatClickable(seat: Seat) {
 }
 
 function getSeatTitle(seat: Seat) {
-  if (props.activeOrder && seat.status === 'free') return content.home.seats.tooltip.reservationInProgress
+  if (props.activeOrder && seat.status === 'free')
+    return content.home.seats.tooltip.reservationInProgress
   if (seat.status !== 'free') return content.home.seats.tooltip.seatUnavailable
   return ''
 }
@@ -1881,6 +1879,14 @@ function handleSeatClick(seat: Seat) {
     }
   }
 
+  &--activeOrderLock {
+    pointer-events: none;
+
+    .seatMap__viewport {
+      touch-action: auto;
+    }
+  }
+
   .seatMap__activeOrderLock {
     position: absolute;
     inset: 0;
@@ -1891,8 +1897,6 @@ function handleSeatClick(seat: Seat) {
     padding: 12px;
     box-sizing: border-box;
     border-radius: 4px;
-    pointer-events: auto;
-    cursor: not-allowed;
     background: rgba(15, 23, 42, 0.38);
     backdrop-filter: blur(4px) saturate(0.92);
     -webkit-backdrop-filter: blur(4px) saturate(0.92);
@@ -2192,6 +2196,17 @@ function handleSeatClick(seat: Seat) {
     justify-content: center;
     min-height: 36px;
     padding: 0 12px;
+
+    @include media-down(lg) {
+      position: relative;
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -6px -6px;
+        z-index: 1;
+      }
+    }
+
     margin: 0;
     font: inherit;
     font-size: 0.72rem;
@@ -2354,7 +2369,9 @@ function handleSeatClick(seat: Seat) {
     line-height: 1.25;
     color: currentColor;
     justify-self: start;
-    transition: color 0.25s ease, opacity 0.25s ease;
+    transition:
+      color 0.25s ease,
+      opacity 0.25s ease;
   }
 
   .toolbarRow__icon {
@@ -2368,7 +2385,9 @@ function handleSeatClick(seat: Seat) {
     line-height: 1;
     justify-self: end;
     color: currentColor;
-    transition: color 0.25s ease, opacity 0.25s ease;
+    transition:
+      color 0.25s ease,
+      opacity 0.25s ease;
   }
 
   .seatMap__toolbarRow--reset .toolbarRow__icon {
@@ -2377,10 +2396,23 @@ function handleSeatClick(seat: Seat) {
 
   @include media-down(lg) {
     .seatMap__toolbarRow {
+      position: relative;
       grid-template-columns: 36px;
       width: 40px;
       padding: 0;
       justify-items: center;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -4px -12px;
+        z-index: 1;
+      }
+
+      .toolbarRow__icon {
+        width: 36px;
+        height: 36px;
+      }
 
       .toolbarRow__label {
         display: none !important;

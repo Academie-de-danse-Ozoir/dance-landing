@@ -28,10 +28,16 @@ const props = withDefaults(
   defineProps<{
     tag?: AnimatedTextTag
     delay?: number
+    duration?: number
+    stagger?: number
+    manual?: boolean
   }>(),
   {
     tag: 'div',
-    delay: 0
+    delay: 0,
+    duration: 0.8,
+    stagger: 0.06,
+    manual: false
   }
 )
 
@@ -82,6 +88,7 @@ function splitByLines() {
 function playReveal() {
   if (!splitInstance?.lines?.length || !gsapModule) return
 
+  isVisible = true // On marque comme visible pour que le resize sache qu'il doit ré-animer
   revealTimeline?.kill()
 
   const gsap = gsapModule.default
@@ -92,9 +99,9 @@ function playReveal() {
     { yPercent: 100 },
     {
       yPercent: 0,
-      duration: 0.8,
+      duration: props.duration,
       ease: 'reveal',
-      stagger: 0.06
+      stagger: props.stagger
     },
     props.delay
   )
@@ -104,16 +111,17 @@ function playReveal() {
     { opacity: 0 },
     {
       opacity: 1,
-      duration: 0.8,
+      duration: props.duration,
       ease: 'power2.inOut',
-      stagger: 0.06
+      stagger: props.stagger
     },
     props.delay
   )
 }
 
 function handleScroll() {
-  if (!splitInstance?.lines?.length) return
+  // Si on est en mode manuel, on laisse le parent gérer.
+  if (props.manual || !splitInstance?.lines?.length) return
 
   const scrollY = window.scrollY
   const visibleTrigger = computeVisibleTrigger(scrollY)
@@ -122,10 +130,23 @@ function handleScroll() {
     playReveal()
     isVisible = true
   }
-  if (visibleTrigger <= 0) {
+
+  if (visibleTrigger <= 0 && isVisible) {
     isVisible = false
+    if (gsapModule && splitInstance?.lines) {
+      const gsap = gsapModule.default
+      gsap.killTweensOf(splitInstance.lines)
+      gsap.set(splitInstance.lines, {
+        yPercent: 100,
+        opacity: 0
+      })
+    }
   }
 }
+
+defineExpose({
+  playReveal
+})
 
 function destroy() {
   revealTimeline?.kill()
@@ -139,6 +160,7 @@ function destroy() {
 
 function handleResize() {
   if (!animatedTextEltRef.value) return
+  if (window.innerWidth < 1025) return
 
   const wasVisible = isVisible
 

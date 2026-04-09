@@ -93,7 +93,10 @@ onUnmounted(() => {
 
 .eventLocation {
   background: white;
-  padding: clamp(40px, 6vw, 60px) clamp(20px, 4vw, 40px);
+  padding-top: clamp(40px, 6vw, 60px);
+  padding-bottom: clamp(100px, 14vh, 180px); // Plus d'espace avant le footer
+  padding-left: clamp(20px, 4vw, 40px);
+  padding-right: clamp(20px, 4vw, 40px);
   border-bottom: 1px solid $color-border-subtle;
 }
 

@@ -4,7 +4,7 @@
  *
  * Durée = celle du CSS (.page-opacity-* dans assets/styles/page-transitions.scss).
  */
-const PAGE_TRANSITION_MS = 320
+const PAGE_TRANSITION_MS = 600
 
 function delayScroll(
   position: { left: number; top: number } | { el: string; top?: number }

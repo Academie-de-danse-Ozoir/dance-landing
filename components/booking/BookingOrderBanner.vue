@@ -170,7 +170,7 @@ onUnmounted(() => {
     top: max(16px, env(safe-area-inset-top));
     left: max(20px, env(safe-area-inset-left));
     right: auto;
-    z-index: 50;
+    z-index: 110;
     width: fit-content;
     max-width: min(32rem, calc(100vw - 40px));
     margin: 0;
@@ -187,7 +187,7 @@ onUnmounted(() => {
     top: max(10px, env(safe-area-inset-top));
     left: 12px;
     right: 12px;
-    z-index: 50;
+    z-index: 110;
     width: auto;
     max-width: none;
     margin: 0;

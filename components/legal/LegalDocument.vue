@@ -6,11 +6,7 @@
       <p v-if="intro" class="legalDocument__intro">{{ intro }}</p>
     </header>
 
-    <section
-      v-for="(section, i) in sections"
-      :key="i"
-      class="legalDocument__section"
-    >
+    <section v-for="(section, i) in sections" :key="i" class="legalDocument__section">
       <h2 class="section__title">{{ section.title }}</h2>
       <template v-for="(p, j) in section.paragraphs || []" :key="'p-' + j">
         <p class="section__p">{{ p }}</p>
@@ -41,8 +37,8 @@ defineProps<{
 
 <style lang="scss" scoped>
 .legalDocument {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: #212529;
   font-size: 15px;
   line-height: 1.65;

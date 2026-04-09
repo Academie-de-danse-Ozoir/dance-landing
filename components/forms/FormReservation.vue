@@ -158,7 +158,9 @@
                         :autocomplete="`section-place-${idx} given-name`"
                         :model-value="ticket.firstName"
                         :error="ticketErrors[idx]?.firstName"
+                        :touched="ticketTouched[idx]?.firstName"
                         @update:model-value="updateTicketDetail(idx, 'firstName', $event)"
+                        @blur="handleTicketFieldBlur(idx, 'firstName')"
                       />
                       <FormField
                         :field-key="`ticket-${idx}-lastName`"
@@ -168,7 +170,9 @@
                         :autocomplete="`section-place-${idx} family-name`"
                         :model-value="ticket.lastName"
                         :error="ticketErrors[idx]?.lastName"
+                        :touched="ticketTouched[idx]?.lastName"
                         @update:model-value="updateTicketDetail(idx, 'lastName', $event)"
+                        @blur="handleTicketFieldBlur(idx, 'lastName')"
                       />
                     </div>
                     <div class="ticketBlock__type">
@@ -392,6 +396,7 @@ const emit = defineEmits<{
 
 const ticketDetails = ref<TicketDetail[]>([])
 const ticketErrors = ref<Record<number, { firstName?: string; lastName?: string }>>({})
+const ticketTouched = ref<Record<number, { firstName?: boolean; lastName?: boolean }>>({})
 
 let prevFormStep: 1 | 2 | undefined
 
@@ -418,6 +423,7 @@ watch(
           ticketType: prevTickets[i]?.ticketType ?? 'adult'
         }))
         ticketErrors.value = {}
+        ticketTouched.value = {}
       }
     }
 
@@ -534,6 +540,25 @@ function handleFieldBlur(key: string) {
   emit('field-blur', key)
 }
 
+function handleTicketFieldBlur(idx: number, field: 'firstName' | 'lastName') {
+  if (!ticketTouched.value[idx]) ticketTouched.value[idx] = {}
+  ticketTouched.value[idx][field] = true
+
+  const t = ticketDetails.value[idx]
+  const val = t[field]?.trim()
+
+  if (!ticketErrors.value[idx]) ticketErrors.value[idx] = {}
+
+  if (!val) {
+    ticketErrors.value[idx][field] = content.home.modal.validation.required
+  } else {
+    delete ticketErrors.value[idx][field]
+    if (Object.keys(ticketErrors.value[idx]).length === 0) {
+      delete ticketErrors.value[idx]
+    }
+  }
+}
+
 function triggerCloseTap(e: PointerEvent) {
   if (e.pointerType !== 'touch') return
   const el = e.currentTarget as HTMLElement
@@ -545,6 +570,10 @@ function validateStep2(): boolean {
   const errs: Record<number, { firstName?: string; lastName?: string }> = {}
   let valid = true
   ticketDetails.value.forEach((t, i) => {
+    if (!ticketTouched.value[i]) ticketTouched.value[i] = {}
+    ticketTouched.value[i].firstName = true
+    ticketTouched.value[i].lastName = true
+
     const f = t.firstName?.trim()
     const l = t.lastName?.trim()
     if (!f || !l) {

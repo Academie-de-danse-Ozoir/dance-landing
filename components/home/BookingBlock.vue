@@ -1,11 +1,6 @@
 <template>
   <section :id="SEAT_SELECTION_SECTION_ID" class="bookingBlock" aria-label="Réservation">
-    <div
-      v-if="!seatsReady"
-      class="bookingBlock__loader"
-      role="status"
-      aria-live="polite"
-    >
+    <div v-if="!seatsReady" class="bookingBlock__loader" role="status" aria-live="polite">
       <span class="bookingBlock__loaderSpinner" aria-hidden="true" />
       <span class="bookingBlock__visuallyHidden">{{ content.home.seats.map.mapLoading }}</span>
     </div>
@@ -47,7 +42,7 @@
               :label="content.home.actions.reserve"
               :disabled="
                 (blockNewReserve && !canReopenReservation) ||
-                  (!canReopenReservation && selectedSeatIds.length === 0)
+                (!canReopenReservation && selectedSeatIds.length === 0)
               "
               @click="openModal"
             />
@@ -67,7 +62,11 @@
         <FormReservation
           v-model:form="form"
           :show="showModal"
-          :seat-count="formStep === 1 ? selectedSeatIds.length : (activeOrder?.seatCount ?? selectedSeatIds.length)"
+          :seat-count="
+            formStep === 1
+              ? selectedSeatIds.length
+              : (activeOrder?.seatCount ?? selectedSeatIds.length)
+          "
           :step="formStep"
           :seat-items="step2SeatItems"
           :errors="errors"
@@ -204,8 +203,7 @@ function getSeatMapAreaHeightPx(): number | null {
   for (const child of flexItems) {
     if (child === wrap) continue
     const m = getComputedStyle(child)
-    used +=
-      child.offsetHeight + (parseFloat(m.marginTop) || 0) + (parseFloat(m.marginBottom) || 0)
+    used += child.offsetHeight + (parseFloat(m.marginTop) || 0) + (parseFloat(m.marginBottom) || 0)
   }
   if (flexItems.length > 1 && rowGap > 0) {
     used += rowGap * (flexItems.length - 1)
@@ -413,16 +411,12 @@ async function startSeatsRealtime() {
   const channelTopic = `seat_reservation:${EVENT_ID}:${crypto.randomUUID()}`
   realtimeChannel = supabase
     .channel(channelTopic)
-    .on(
-      'postgres_changes',
-      opts,
-      (payload) => {
-        if (import.meta.dev) {
-          console.log('[Realtime] seat_reservation changé → loadSeats()', payload.eventType, payload)
-        }
-        loadSeats()
+    .on('postgres_changes', opts, (payload) => {
+      if (import.meta.dev) {
+        console.log('[Realtime] seat_reservation changé → loadSeats()', payload.eventType, payload)
       }
-    )
+      loadSeats()
+    })
     .subscribe((status, err) => {
       if (import.meta.dev) {
         console.log('[Realtime] seat_reservation status:', status, err ?? '')
@@ -543,7 +537,9 @@ async function restoreOrderFromStorage() {
       startTimerFromExpiresAt(res.expiresAt)
     } else {
       if (res.status === 'expired' && token) {
-        console.info('[billetterie:booking] restoreOrderFromStorage → cancel-order (timer)', { orderId })
+        console.info('[billetterie:booking] restoreOrderFromStorage → cancel-order (timer)', {
+          orderId
+        })
         await $fetch('/api/cancel-order', {
           method: 'POST',
           body: { orderId, orderToken: token, reason: CANCEL_REASON.TIMER }
@@ -566,9 +562,13 @@ function onPageShow(ev: PageTransitionEvent) {
 onMounted(async () => {
   try {
     await loadSeats()
-    await startSeatsRealtime()
+    try {
+      await startSeatsRealtime()
+    } catch (rtErr) {
+      if (import.meta.dev) console.warn('[Booking:Realtime] Initial subscription failed:', rtErr)
+    }
   } catch (err) {
-    error.value = getErrorMessage(err)
+    if (import.meta.dev) console.error('[Booking:Init] Failed to load seats or setup:', err)
   }
 
   startMainAnimationLoop()
@@ -869,7 +869,9 @@ async function submitStep2(payload: {
   }
 }
 
-async function cancelActiveOrder(reason: (typeof CANCEL_REASON)[keyof typeof CANCEL_REASON] = CANCEL_REASON.USER) {
+async function cancelActiveOrder(
+  reason: (typeof CANCEL_REASON)[keyof typeof CANCEL_REASON] = CANCEL_REASON.USER
+) {
   if (!activeOrder.value) return
 
   console.info('[billetterie:booking] cancelActiveOrder', {
@@ -968,8 +970,8 @@ async function pay(turnstileToken?: string) {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /** Pleine largeur sur desktop : évite que le shrink-to-fit du flex parent change la largeur du plan quand le bandeau apparaît. */
@@ -1077,7 +1079,9 @@ $booking-seat-map-max-height-desktop: 70dvh;
 }
 
 .bookingBlockReveal-enter-active {
-  transition: opacity 0.45s ease, transform 0.45s ease;
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
 }
 
 .bookingBlockReveal-enter-from {
@@ -1103,7 +1107,6 @@ $booking-seat-map-max-height-desktop: 70dvh;
   .bookingBlockReveal-enter-active {
     transition-duration: 0.01ms;
   }
-
 }
 
 .bookingBlock__seatMap {
@@ -1112,11 +1115,14 @@ $booking-seat-map-max-height-desktop: 70dvh;
 
 .bookingBlock__alert {
   padding: 12px 16px;
-  margin-bottom: 16px;
+  margin: 8px 0 16px 0;
   border: 1px solid transparent;
   border-radius: 6px;
   font-size: 14px;
-  transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    background-color 0.3s ease,
+    color 0.3s ease;
 
   &.bookingBlock__alert--danger {
     color: $color-danger-text;

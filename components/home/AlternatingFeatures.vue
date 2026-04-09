@@ -29,7 +29,7 @@
           :src="ROW_IMAGES[i % 3]"
           :alt="row.caption"
           :has-parallax-position="isDesktop"
-          :parallax-position-amount="i % 2 === 0 ? 20 : 20"
+          :parallax-position-amount="i % 2 === 0 ? -20 : 20"
         />
         <figcaption class="altFeatures__caption">{{ row.caption }}</figcaption>
       </figure>
@@ -171,6 +171,7 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
 .altFeatures__emailFollow {
   display: block;
   margin-top: 0.65rem;
+  white-space: nowrap;
 }
 
 .altFeatures__figure {
@@ -235,7 +236,6 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   }
 
   .altFeatures__copy {
-    margin: 0 auto;
     max-width: min(32rem, 100%);
   }
 

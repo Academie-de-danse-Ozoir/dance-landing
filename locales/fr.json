@@ -34,7 +34,7 @@
     }
   },
   "brand": {
-    "eventDate": "Dimanche 28 juin 2026",
+    "eventDate": "Dimanche 21 juin 2026",
     "eventTimes": "Ouverture des portes à 16h30, lever de rideau à 17h",
     "eventVenue": "Théâtre de Yerres",
     "spectacleName": "Spectacle de l'Académie de Danse d'Ozoir",
@@ -202,8 +202,8 @@
     "hero": {
       "kicker": "Billetterie officielle",
       "title": "Spectacle de l'Académie de Danse d'Ozoir",
-      "subtitle": "Le dimanche 28 juin 2026 au Théâtre de Yerres, ouverture des portes à 16h30 et lever de rideau à 17h. Une après-midi où la danse rencontre l'élégance. Offrez-vous ce rendez-vous — les meilleures places partent vite, et ce moment ne se vit qu'une fois.",
-      "ctaScroll": "Réserver mes places"
+      "subtitle": "Le dimanche 21 juin 2026 au Théâtre de Yerres, ouverture des portes à 16h30 et lever de rideau à 17h. Une après-midi où la danse rencontre l'élégance. Offrez-vous ce rendez-vous — les meilleures places partent vite, et ce moment ne se vit qu'une fois.",
+      "ctaScroll": "Défile pour en savoir plus"
     },
     "statement": {
       "eyebrow": "Le spectacle",
@@ -239,7 +239,7 @@
       "sectionAria": "Guide de réservation : tarifs, plan interactif et conditions",
       "eyebrow": "Billetterie",
       "title": "Tout savoir avant de réserver",
-      "intro": "Cette page regroupe l’essentiel pour réserver : tarifs, lecture du plan (balcon, parterre, scène), limites de commande et utilisation de la carte.\nLe **récapitulatif des montants** s’affiche\njuste navant le paiement.",
+      "intro": "Cette page regroupe l’essentiel pour réserver : tarifs, lecture du plan (balcon, parterre, scène), limites de commande et utilisation de la carte.\nLe **récapitulatif des montants** s’affiche\njuste avant le paiement.",
       "pricing": {
         "title": "Prix des billets",
         "lead": "Les montants ci-dessous s’appliquent à chaque place au moment où vous validez le paiement. Ils sont indiqués toutes taxes comprises (TTC).",
@@ -251,7 +251,7 @@
       "saleInfo": {
         "title": "Infos vente",
         "items": [
-          "Représentation : **dimanche 28 juin 2026**",
+          "Représentation : **dimanche 21 juin 2026**",
           "Ouverture des portes à **16h30**.",
           "Lever de rideau à **17h**.",
           "Aucune entrée n’est autorisée une fois le spectacle commencé",
@@ -315,6 +315,10 @@
         "phoneLabel": "Téléphone",
         "mailLabel": "Email"
       }
+    },
+    "orientation": {
+      "title": "Mode portrait recommandé",
+      "hint": "Pour une meilleure expérience de réservation,\nmerci de tourner votre appareil en mode portrait."
     }
   },
   "success": {

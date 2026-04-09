@@ -24,7 +24,9 @@ import SiteFooter from '~/components/layout/SiteFooter.vue'
 }
 
 .legalPage__inner {
-  padding: 28px 16px 0;
+  padding-top: clamp(100px, 14vh, 160px); // Évite le chevauchement avec le logo fixe
+  padding-left: clamp(20px, 4vw, 36px);
+  padding-right: clamp(20px, 4vw, 36px);
   flex: 1 0 auto;
   width: 100%;
   max-width: 720px;

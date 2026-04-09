@@ -2,7 +2,9 @@
   <section class="mapPricingSection" :aria-labelledby="titleId">
     <div class="mapPricingSection__inner">
       <header class="mapPricingSection__header">
-        <AnimatedTextElt tag="p" class="mapPricingSection__eyebrow" :delay="0">{{ content.home.mapAndPricing.eyebrow }}</AnimatedTextElt>
+        <AnimatedTextElt tag="p" class="mapPricingSection__eyebrow" :delay="0">{{
+          content.home.mapAndPricing.eyebrow
+        }}</AnimatedTextElt>
         <AnimatedTextElt tag="h2" :id="titleId" class="mapPricingSection__title" :delay="0.06">
           {{ content.home.mapAndPricing.title }}
         </AnimatedTextElt>
@@ -345,6 +347,7 @@ const pmrTelHref = computed(() => {
   margin: 0 0 1rem 0;
   font-size: 0.9375rem;
   line-height: 1.65;
+  display: none;
   color: $color-text-secondary;
 }
 
