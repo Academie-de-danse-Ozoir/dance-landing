@@ -23,6 +23,8 @@
 
     <BookingBlock />
 
+    <EventLocationMap />
+
     <SiteFooter />
   </div>
 </template>
@@ -38,6 +40,7 @@ import AlternatingFeatures, {
 } from '../components/home/AlternatingFeatures.vue'
 import MapAndPricingSection from '../components/home/MapAndPricingSection.vue'
 import BookingBlock from '../components/home/BookingBlock.vue'
+import EventLocationMap from '../components/home/EventLocationMap.vue'
 import SiteFooter from '../components/layout/SiteFooter.vue'
 import { useScrollToBooking } from '../composables/useScrollToBooking'
 import { PENDING_SCROLL_TO_HOME_KEY, SCROLL_TO_SEATS_AFTER_NAV_MS } from '../constants'

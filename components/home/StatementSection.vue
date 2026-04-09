@@ -18,7 +18,8 @@ defineProps<{
 
 <style lang="scss" scoped>
 .statementSection {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   min-height: 100dvh;
   min-height: 100vh;
   display: flex;
@@ -32,7 +33,6 @@ defineProps<{
     $color-surface-page 38%,
     $color-gray-100 100%
   );
-  border-bottom: 1px solid $color-border-subtle;
 }
 
 .statementSection__frame {
@@ -40,6 +40,10 @@ defineProps<{
   max-width: 44rem;
   margin: 0 auto;
   text-align: center;
+
+  @include media-down(lg) {
+    max-width: 20.5rem;
+  }
 }
 
 .statementSection__eyebrow {

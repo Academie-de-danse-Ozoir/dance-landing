@@ -14,7 +14,9 @@
             <UnderlineLink class="altFeatures__emailLink" :href="`mailto:${billingEmail}`">{{
               billingEmail
             }}</UnderlineLink>
-            <span v-if="row.textAfterEmail" class="altFeatures__emailFollow">{{ row.textAfterEmail }}</span>
+            <span v-if="row.textAfterEmail" class="altFeatures__emailFollow">{{
+              row.textAfterEmail
+            }}</span>
           </template>
         </p>
       </div>
@@ -61,7 +63,8 @@ $alt-features-visual-col: minmax(0, clamp(280px, 38vw, 440px));
 $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
 
 .altFeatures {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: $color-surface-page;
 }
 
@@ -73,11 +76,6 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   max-width: 1120px;
   margin: 0 auto;
   padding: clamp(56px, 9vw, 96px) clamp(20px, 4vw, 40px);
-  border-bottom: 1px solid $color-border-subtle;
-
-  &:last-child {
-    border-bottom: none;
-  }
 
   @include media-up(lg) {
     min-height: 100dvh;
@@ -121,7 +119,7 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   margin: 0;
   font-size: 1rem;
   line-height: 1.7;
-  max-width: min(28rem, 100%);
+  max-width: min(32rem, 100%);
   color: $color-text-secondary;
   width: unset;
 
@@ -166,19 +164,22 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   box-shadow: 0 16px 48px rgba(33, 37, 41, 0.1);
 
   &--v1 {
-    background-image: linear-gradient(135deg, rgba(45, 31, 78, 0.45) 0%, rgba(102, 126, 234, 0.35) 100%),
+    background-image:
+      linear-gradient(135deg, rgba(45, 31, 78, 0.45) 0%, rgba(102, 126, 234, 0.35) 100%),
       url('https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=1000&q=80');
     background-blend-mode: overlay;
   }
 
   &--v2 {
-    background-image: linear-gradient(135deg, rgba(118, 75, 162, 0.5) 0%, rgba(13, 110, 253, 0.25) 100%),
+    background-image:
+      linear-gradient(135deg, rgba(118, 75, 162, 0.5) 0%, rgba(13, 110, 253, 0.25) 100%),
       url('https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=1000&q=80');
     background-blend-mode: multiply;
   }
 
   &--v3 {
-    background-image: linear-gradient(120deg, rgba(26, 26, 46, 0.4) 0%, rgba(45, 31, 78, 0.5) 100%),
+    background-image:
+      linear-gradient(120deg, rgba(26, 26, 46, 0.4) 0%, rgba(45, 31, 78, 0.5) 100%),
       url('https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1000&q=80');
     background-blend-mode: overlay;
   }
@@ -189,6 +190,7 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   font-size: 0.8125rem;
   line-height: 1.45;
   color: $color-text-muted;
+  display: none;
 
   @include media-up(lg) {
     font-size: 0.875rem;
@@ -208,8 +210,16 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
     order: unset;
   }
 
+  .altFeatures__copy {
+    margin: 0 auto;
+    max-width: min(32rem, 100%);
+  }
+
   .altFeatures__figure {
     order: -1;
+    width: 100%;
+    margin: 0 auto;
+    max-width: min(32rem, 100%);
   }
 
   .altFeatures__row--mediaLeft .altFeatures__figure {

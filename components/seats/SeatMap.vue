@@ -220,6 +220,7 @@
               class="seatMap__toolbarTrigger"
               :aria-expanded="mapToolbarMenuOpen"
               :aria-controls="mapToolbarPanelId"
+              @pointerdown="triggerToolbarTap"
               @click.stop="toggleMapToolbarMenu"
             >
               {{ mapUi.toolbarMenuTrigger }}
@@ -252,6 +253,7 @@
             class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomOut"
             :disabled="mapZoom <= mapZoomMinEffective + 1e-6"
+            @pointerdown="triggerToolbarTap"
             @click="zoomMapByStep(1 / MAP_ZOOM_STEP)"
           >
             <span class="toolbarRow__label">{{ mapUi.zoomOutCaption }}</span>
@@ -262,6 +264,7 @@
             class="seatMap__toolbarRow"
             :aria-label="mapUi.zoomIn"
             :disabled="mapZoom >= MAP_ZOOM_MAX - 1e-6"
+            @pointerdown="triggerToolbarTap"
             @click="zoomMapByStep(MAP_ZOOM_STEP)"
           >
             <span class="toolbarRow__label">{{ mapUi.zoomInCaption }}</span>
@@ -271,6 +274,7 @@
             type="button"
             class="seatMap__toolbarRow seatMap__toolbarRow--reset"
             :aria-label="mapUi.resetView"
+            @pointerdown="triggerToolbarTap"
             @click="resetMapView"
           >
             <span class="toolbarRow__label">{{ mapUi.resetViewCaption }}</span>
@@ -286,6 +290,7 @@
             class="seatMap__toolbarTrigger seatMap__legendMenuTrigger"
             :aria-expanded="mapLegendMenuOpen"
             :aria-controls="mapLegendPanelId"
+            @pointerdown="triggerToolbarTap"
             @click.stop="toggleMapLegendMenu"
           >
             {{ mapUi.legendMenuTrigger }}
@@ -399,6 +404,12 @@ import {
   rowIsBalcony,
   seatMapViewBoxString
 } from '../../utils/yerresSeatLayout'
+import {
+  cancelAndAnimate,
+  seatMapToolbarSurfaceTapKeyframes,
+  seatMapToolbarIconTapKeyframes,
+  SEAT_MAP_TOOLBAR_TAP_MS
+} from '../../utils/tapPulse'
 type MapHintRow = { label: string; textDesktop: string; textMobile: string }
 
 type SeatMapNavCopy = {
@@ -439,6 +450,17 @@ const mapToolbarMenuOpen = ref(false)
 const mapLegendMenuOpen = ref(false)
 /** Aligné sur `NARROW_VIEWPORT_MQ` (constants.ts) / `$bp-lg` — UI plan mobile + zoom par défaut. */
 const seatMapLayoutMobile = ref(false)
+
+function triggerToolbarTap(e: PointerEvent) {
+  if (e.pointerType !== 'touch') return
+  const btn = e.currentTarget as HTMLElement
+  if (!btn) return
+  cancelAndAnimate(btn, seatMapToolbarSurfaceTapKeyframes(), SEAT_MAP_TOOLBAR_TAP_MS)
+  const icon = btn.querySelector('.toolbarRow__icon') as HTMLElement
+  if (icon) {
+    cancelAndAnimate(icon, seatMapToolbarIconTapKeyframes(), SEAT_MAP_TOOLBAR_TAP_MS)
+  }
+}
 
 function closeMobileMapPopovers() {
   mapToolbarMenuOpen.value = false

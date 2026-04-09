@@ -10,6 +10,7 @@
         v-if="ctaScroll"
         type="button"
         class="heroBlock__cta"
+        @pointerdown="handleTap"
         @click="scrollToBooking"
       >
         {{ ctaScroll }}
@@ -21,6 +22,11 @@
 <script setup lang="ts">
 import { HOME_TOP_SECTION_ID } from '../../constants'
 import { useScrollToBooking } from '../../composables/useScrollToBooking'
+import {
+  cancelAndAnimate,
+  heroCtaTapKeyframes,
+  DEFAULT_BUTTON_TAP_MS
+} from '../../utils/tapPulse'
 
 defineProps<{
   kicker: string
@@ -33,6 +39,13 @@ const { scrollToBookingSection } = useScrollToBooking()
 
 function scrollToBooking() {
   void scrollToBookingSection()
+}
+
+function handleTap(e: PointerEvent) {
+  if (e.pointerType !== 'touch') return
+  const el = e.currentTarget as HTMLElement
+  if (!el) return
+  cancelAndAnimate(el, heroCtaTapKeyframes(), DEFAULT_BUTTON_TAP_MS)
 }
 </script>
 

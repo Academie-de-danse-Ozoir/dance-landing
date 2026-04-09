@@ -47,7 +47,13 @@
             <h2 :id="dialogTitleId" class="header__title">
               {{ displayedStep === 1 ? content.home.modal.title : content.home.modal.step2Title }}
             </h2>
-            <button type="button" class="header__close" @click="$emit('close')" :aria-label="content.home.modal.close">
+            <button
+              type="button"
+              class="header__close"
+              :aria-label="content.home.modal.close"
+              @pointerdown="triggerCloseTap"
+              @click="$emit('close')"
+            >
               <svg
                 class="close__icon"
                 xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +133,7 @@
                     variant="primary"
                     type="button"
                     :label="content.home.modal.next"
-                    :disabled="isSavingContact"
+                    :disabled="isSavingContact || !isStep1Valid"
                     @click="onNext"
                   />
                 </div>
@@ -218,7 +224,7 @@
                     variant="primary"
                     type="submit"
                     :label="isSubmitting ? content.home.modal.submitting : content.home.modal.submit"
-                    :disabled="isSubmitting"
+                    :disabled="isSubmitting || !isStep2Valid"
                   />
                 </div>
               </form>
@@ -238,6 +244,11 @@ import { formatFrenchPhoneInput } from '../../utils/phoneInput'
 import FormField from './FormField.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
 import TurnstileField from '../TurnstileField.vue'
+import {
+  cancelAndAnimate,
+  seatMapToolbarSurfaceTapKeyframes,
+  SEAT_MAP_TOOLBAR_TAP_MS
+} from '../../utils/tapPulse'
 
 function formatEuros(cents: number): string {
   const value = (cents / 100).toFixed(2).replace('.', ',')
@@ -435,6 +446,28 @@ const priceSummary = computed(() => {
   }
 })
 
+const isStep1Valid = computed(() => {
+  const f = props.form
+  const p = f.phone?.replace(/\D/g, '') || ''
+  const email = f.email?.trim() || ''
+
+  return (
+    (f.firstName?.trim() || '').length > 0 &&
+    (f.lastName?.trim() || '').length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+    /^(\+33|0)[1-9]\d{8}$/.test(p)
+  )
+})
+
+const isStep2Valid = computed(() => {
+  const ticketsValid = ticketDetails.value.every(
+    (t) => (t.firstName?.trim() || '').length > 0 && (t.lastName?.trim() || '').length > 0
+  )
+  const captchaValid = turnstileSiteKey.value ? !!turnstileToken.value : true
+  return ticketsValid && captchaValid
+})
+
+
 /** 10 chiffres + 4 espaces (groupes de 2). */
 const PHONE_INPUT_MAX_LEN = 14
 
@@ -499,6 +532,13 @@ function updateTicketDetail(index: number, field: keyof TicketDetail, value: str
 
 function handleFieldBlur(key: string) {
   emit('field-blur', key)
+}
+
+function triggerCloseTap(e: PointerEvent) {
+  if (e.pointerType !== 'touch') return
+  const el = e.currentTarget as HTMLElement
+  if (!el) return
+  cancelAndAnimate(el, seatMapToolbarSurfaceTapKeyframes(), SEAT_MAP_TOOLBAR_TAP_MS)
 }
 
 function validateStep2(): boolean {

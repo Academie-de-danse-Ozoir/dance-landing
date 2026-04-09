@@ -75,3 +75,11 @@ export function seatMapToolbarIconTapKeyframes(): Keyframe[] {
     { color: '#3d454d' }
   ]
 }
+/** Même logique que le Hero CTA (blanc -> sombre -> blanc). */
+export function heroCtaTapKeyframes(): Keyframe[] {
+  return [
+    { color: '#1a1a2e', backgroundColor: '#ffffff', borderColor: '#ffffff' },
+    { color: '#ffffff', backgroundColor: '#1a1a2e', borderColor: '#1a1a2e', offset: 0.4 },
+    { color: '#1a1a2e', backgroundColor: '#ffffff', borderColor: '#ffffff' }
+  ]
+}

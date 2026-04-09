@@ -34,7 +34,8 @@
     }
   },
   "brand": {
-    "eventDate": "Dimanche 28 juin 2026 — ouverture des portes à 16h30, lever de rideau à 17h",
+    "eventDate": "Dimanche 28 juin 2026",
+    "eventTimes": "Ouverture des portes à 16h30, lever de rideau à 17h",
     "eventVenue": "Théâtre de Yerres",
     "spectacleName": "Spectacle de l'Académie de Danse d'Ozoir",
     "spectacleNameStripe": "Spectacle de l'Académie de Danse d'Ozoir",
@@ -133,6 +134,12 @@
     "actions": {
       "reserve": "Réserver"
     },
+    "location": {
+      "title": "Se rendre au Théâtre",
+      "addressLine1": "CEC - Centre Educatif et Culturel",
+      "addressLine2": "2 Rue Marc Sangnier, 91330 Yerres, France",
+      "mapTitleAria": "Carte Google Maps indiquant l'emplacement du Théâtre de Yerres"
+    },
     "modal": {
       "title": "Coordonnées et réservation",
       "scrollRegionLabel": "Contenu du formulaire de réservation",
@@ -220,7 +227,7 @@
         },
         {
           "title": "Avant votre venue",
-          "text": "Les rubriques « Tout savoir avant de réserver » et « Infos vente » sur cette page précisent notamment l’ouverture des portes à 16h30, le lever de rideau à 17h, l’interdiction d’entrée après le début du spectacle et l’absence de vente sur place. Les tarifs et les conditions générales de vente s’y trouvent aussi. Pour toute précision, contactez-nous sur : ",
+          "text": "Pour rappel : l'ouverture des portes se fera à 16h30 et le lever de rideau à 17h. L'entrée sera interdite après le début du spectacle et aucune vente de billets ne s'effectuera sur place. Pour toute précision, contactez-nous sur : ",
           "textAfterEmail": "Nous vous répondons dans les meilleurs délais.",
           "billingEmailLink": true,
           "imageSide": "right",
@@ -244,10 +251,11 @@
       "saleInfo": {
         "title": "Infos vente",
         "items": [
-          "Ouverture des portes à **16h30**, lever de rideau à **17h**.",
-          "Aucune entrée n’est autorisée une fois le spectacle commencé (**à 17h**).",
+          "Représentation : **dimanche 28 juin 2026**",
+          "Ouverture des portes à **16h30**.",
+          "Lever de rideau à **17h**.",
+          "Aucune entrée n’est autorisée une fois le spectacle commencé",
           "Aucune vente de places sur place : réservation et paiement **uniquement en ligne** sur ce site.",
-          "Représentation : **dimanche 28 juin 2026** — ouverture des portes **16h30**, lever de rideau **17h**.",
           "Lieu : **Théâtre de Yerres**."
         ]
       },

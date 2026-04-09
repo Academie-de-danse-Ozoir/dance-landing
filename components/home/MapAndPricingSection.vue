@@ -3,7 +3,9 @@
     <div class="mapPricingSection__inner">
       <header class="mapPricingSection__header">
         <p class="mapPricingSection__eyebrow">{{ content.home.mapAndPricing.eyebrow }}</p>
-        <h2 :id="titleId" class="mapPricingSection__title">{{ content.home.mapAndPricing.title }}</h2>
+        <h2 :id="titleId" class="mapPricingSection__title">
+          {{ content.home.mapAndPricing.title }}
+        </h2>
         <p class="mapPricingSection__intro">
           <span v-for="(seg, i) in introSegments" :key="i">
             <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
@@ -14,7 +16,9 @@
 
       <div class="mapPricingSection__grid">
         <article class="mapPricingSection__card">
-          <h3 class="mapPricingSection__cardTitle">{{ content.home.mapAndPricing.pricing.title }}</h3>
+          <h3 class="mapPricingSection__cardTitle">
+            {{ content.home.mapAndPricing.pricing.title }}
+          </h3>
           <p class="mapPricingSection__lead">
             <span v-for="(seg, i) in pricingLeadSegments" :key="i">
               <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
@@ -50,7 +54,9 @@
         </article>
 
         <article class="mapPricingSection__card">
-          <h3 class="mapPricingSection__cardTitle">{{ content.home.mapAndPricing.saleInfo.title }}</h3>
+          <h3 class="mapPricingSection__cardTitle">
+            {{ content.home.mapAndPricing.saleInfo.title }}
+          </h3>
           <ul class="mapPricingSection__saleInfoList" role="list">
             <li
               v-for="(line, i) in content.home.mapAndPricing.saleInfo.items"
@@ -73,7 +79,9 @@
               <template v-else>{{ seg.text }}</template>
             </span>
           </p>
-          <h4 class="mapPricingSection__subTitle">{{ content.home.mapAndPricing.map.legendTitle }}</h4>
+          <h4 class="mapPricingSection__subTitle">
+            {{ content.home.mapAndPricing.map.legendTitle }}
+          </h4>
           <ul class="mapPricingSection__legend" role="list">
             <li
               v-for="row in content.home.mapAndPricing.map.legend"
@@ -94,7 +102,9 @@
         </article>
 
         <article class="mapPricingSection__card">
-          <h3 class="mapPricingSection__cardTitle">{{ content.home.mapAndPricing.controls.title }}</h3>
+          <h3 class="mapPricingSection__cardTitle">
+            {{ content.home.mapAndPricing.controls.title }}
+          </h3>
           <p class="mapPricingSection__controlsLead">
             <span v-for="(seg, i) in controlsLeadSegments" :key="i">
               <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
@@ -102,7 +112,11 @@
             </span>
           </p>
           <ul class="mapPricingSection__controlList">
-            <li v-for="(item, i) in content.home.mapAndPricing.controls.items" :key="i" class="mapPricingSection__controlItem">
+            <li
+              v-for="(item, i) in content.home.mapAndPricing.controls.items"
+              :key="i"
+              class="mapPricingSection__controlItem"
+            >
               <span class="mapPricingSection__controlLabel">{{ item.label }}</span>
               <span class="mapPricingSection__controlText">
                 <span v-for="(seg, j) in parseBoldSegments(item.text)" :key="j">
@@ -115,7 +129,9 @@
         </article>
 
         <article class="mapPricingSection__card">
-          <h3 class="mapPricingSection__cardTitle">{{ content.home.mapAndPricing.limits.title }}</h3>
+          <h3 class="mapPricingSection__cardTitle">
+            {{ content.home.mapAndPricing.limits.title }}
+          </h3>
           <p class="mapPricingSection__limitHighlight">
             <span v-for="(seg, i) in limitsHighlightSegments" :key="i">
               <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
@@ -144,19 +160,21 @@
         <div class="mapPricingSection__pmrContact">
           <p class="mapPricingSection__pmrLine">
             <span class="mapPricingSection__pmrLabel"
-              >{{ content.home.mapAndPricing.pmr.phoneLabel }} : </span
-            >
+              >{{ content.home.mapAndPricing.pmr.phoneLabel }} :
+            </span>
             <UnderlineLink class="mapPricingSection__pmrLink" :href="pmrTelHref">{{
               contactPhoneDisplay
             }}</UnderlineLink>
           </p>
           <p class="mapPricingSection__pmrLine">
             <span class="mapPricingSection__pmrLabel"
-              >{{ content.home.mapAndPricing.pmr.mailLabel }} : </span
+              >{{ content.home.mapAndPricing.pmr.mailLabel }} :
+            </span>
+            <UnderlineLink
+              class="mapPricingSection__pmrLink"
+              :href="`mailto:${content.brand.senderEmail}`"
+              >{{ content.brand.senderEmail }}</UnderlineLink
             >
-            <UnderlineLink class="mapPricingSection__pmrLink" :href="`mailto:${content.brand.senderEmail}`">{{
-              content.brand.senderEmail
-            }}</UnderlineLink>
           </p>
         </div>
       </aside>
@@ -183,18 +201,28 @@ const priceAdultFormatted = computed(() => eur.format(PRICE_ADULT_CENTS / 100))
 const priceChildFormatted = computed(() => eur.format(PRICE_CHILD_CENTS / 100))
 
 const introSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.intro))
-const pricingLeadSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.pricing.lead))
-const pricingDetailSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.pricing.detail))
-const pricingFootnoteSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.pricing.footnote))
+const pricingLeadSegments = computed(() =>
+  parseBoldSegments(content.home.mapAndPricing.pricing.lead)
+)
+const pricingDetailSegments = computed(() =>
+  parseBoldSegments(content.home.mapAndPricing.pricing.detail)
+)
+const pricingFootnoteSegments = computed(() =>
+  parseBoldSegments(content.home.mapAndPricing.pricing.footnote)
+)
 const mapLeadSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.map.lead))
-const controlsLeadSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.controls.lead))
+const controlsLeadSegments = computed(() =>
+  parseBoldSegments(content.home.mapAndPricing.controls.lead)
+)
 
 const limitsHighlightSegments = computed(() =>
   parseBoldSegments(
     content.home.mapAndPricing.limits.highlight.replace(/\{max\}/g, String(MAX_SEATS_PER_ORDER))
   )
 )
-const limitsDetailSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.limits.detail))
+const limitsDetailSegments = computed(() =>
+  parseBoldSegments(content.home.mapAndPricing.limits.detail)
+)
 
 const pmrSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.pmr.text))
 
@@ -210,7 +238,8 @@ const pmrTelHref = computed(() => {
 @use 'sass:color';
 
 .mapPricingSection {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: linear-gradient(
     180deg,
     $color-gray-50 0%,
@@ -223,13 +252,24 @@ const pmrTelHref = computed(() => {
 }
 
 .mapPricingSection__inner {
-  max-width: 1120px;
+  max-width: 56rem;
   margin: 0 auto;
+
+  @include media-down(md) {
+    max-width: 32rem;
+  }
 }
 
 .mapPricingSection__header {
-  max-width: 44rem;
-  margin-bottom: clamp(2rem, 4vw, 2.75rem);
+  max-width: 25.8rem;
+  margin-bottom: clamp(4rem, 6.5vw, 6rem);
+
+  @include media-up(lg) {
+    transform: translateX(-3rem);
+  }
+  @include media-up(xl) {
+    transform: translateX(-4.5rem);
+  }
 }
 
 .mapPricingSection__eyebrow {
@@ -477,10 +517,10 @@ const pmrTelHref = computed(() => {
 }
 
 .mapPricingSection__pmr {
-  margin-top: clamp(1.75rem, 3vw, 2.25rem);
+  margin-top: clamp(4rem, 6.5vw, 6rem);
   padding-top: clamp(1.25rem, 2.5vw, 1.75rem);
   border-top: 1px solid $color-border-subtle;
-  max-width: 44rem;
+  max-width: 25rem;
 }
 
 .mapPricingSection__pmrTitle {

@@ -19,11 +19,25 @@
           :title="content.footer.columns.contactTitle"
           :links="contactLinks"
         />
+        <div class="siteFooter__mapCol">
+          <p class="mapCol__title">{{ content.home.location.title || 'Théâtre de Yerres' }}</p>
+          <ul class="mapCol__list">
+            <li class="list__item">
+              <span class="list__text">{{ content.home.location.addressLine1 }}</span>
+            </li>
+            <li class="list__item">
+              <span class="list__text">{{ content.home.location.addressLine2 }}</span>
+            </li>
+          </ul>
+        </div>
       </nav>
 
       <div class="siteFooter__bottom">
+        <p class="bottom__venue">
+          {{ content.brand.eventVenue }} · {{ content.brand.eventDate }}<br />
+          {{ content.brand.eventTimes }}
+        </p>
         <p class="bottom__copy">{{ copyrightLine }}</p>
-        <p class="bottom__venue">{{ content.brand.eventVenue }} · {{ content.brand.eventDate }}</p>
       </div>
     </div>
   </footer>
@@ -82,7 +96,7 @@ const copyrightLine = computed(() =>
 }
 
 .siteFooter__inner {
-  max-width: 1100px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 40px 20px 28px;
 }
@@ -103,15 +117,45 @@ const copyrightLine = computed(() =>
     margin: 0;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.65);
-    max-width: 36rem;
+    max-width: 24rem;
   }
 }
 
 .siteFooter__nav {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px 32px;
   margin-bottom: 32px;
+}
+
+.siteFooter__mapCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.mapCol__title {
+  margin: 0 0 12px 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mapCol__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mapCol__list .list__item + .list__item {
+  margin-top: 8px;
+}
+
+.mapCol__list .list__text {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .siteFooter__bottom {
@@ -121,17 +165,27 @@ const copyrightLine = computed(() =>
   color: rgba(255, 255, 255, 0.5);
 
   .bottom__copy {
-    margin: 0 0 6px 0;
+    margin: 8px 0 0 0;
   }
 
   .bottom__venue {
     margin: 0;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 1280px) {
+  .siteFooter__nav {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 640px) {
   .siteFooter__nav {
     grid-template-columns: 1fr;
+  }
+  .siteFooter__mapCol {
+    grid-column: 1 / -1;
   }
 }
 </style>

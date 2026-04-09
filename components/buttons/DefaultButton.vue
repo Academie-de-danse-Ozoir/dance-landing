@@ -7,6 +7,7 @@
       `defaultButton--${variant}`,
       { 'defaultButton--disabled': disabled }
     ]"
+    @pointerdown="handleTap"
     @click="$emit('click', $event)"
   >
     {{ label }}
@@ -14,7 +15,15 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{
+import {
+  cancelAndAnimate,
+  defaultButtonPrimaryTapKeyframes,
+  defaultButtonSecondaryTapKeyframes,
+  defaultButtonCancelReservationTapKeyframes,
+  DEFAULT_BUTTON_TAP_MS
+} from '../../utils/tapPulse'
+
+const props = withDefaults(defineProps<{
   label: string
   variant?: 'primary' | 'secondary' | 'cancelReservation'
   type?: 'button' | 'submit' | 'reset'
@@ -25,9 +34,24 @@ withDefaults(defineProps<{
   disabled: false
 })
 
-defineEmits<{
+const emit = defineEmits<{
   click: [event: MouseEvent]
 }>()
+
+function handleTap(e: PointerEvent) {
+  if (props.disabled || e.pointerType !== 'touch') return
+  const el = e.currentTarget as HTMLElement
+  if (!el) return
+
+  let kf: Keyframe[] = []
+  if (props.variant === 'primary') kf = defaultButtonPrimaryTapKeyframes()
+  else if (props.variant === 'secondary') kf = defaultButtonSecondaryTapKeyframes()
+  else if (props.variant === 'cancelReservation') kf = defaultButtonCancelReservationTapKeyframes()
+
+  if (kf.length) {
+    cancelAndAnimate(el, kf, DEFAULT_BUTTON_TAP_MS)
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -103,7 +127,10 @@ defineEmits<{
   }
 
   &--disabled {
-    opacity: 0.65;
+    background-color: #e2e8f0;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+    opacity: 1;
     cursor: not-allowed;
   }
 }
