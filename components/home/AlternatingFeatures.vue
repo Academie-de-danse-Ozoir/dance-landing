@@ -43,11 +43,7 @@ import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
 import content from '../../locales/fr.json'
 
-const ROW_IMAGES = [
-  'https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=800&q=70',
-  'https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=800&q=70',
-  'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=800&q=70'
-]
+const ROW_IMAGES = ['/images/8.jpg', '/images/10.jpg', '/images/6.jpg']
 
 const isDesktop = ref(true)
 
@@ -183,34 +179,6 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
 .altFeatures__visual {
   width: 100%;
   aspect-ratio: 4 / 5;
-  border-radius: 0;
-  box-shadow: 0 16px 48px rgba(33, 37, 41, 0.1);
-  position: relative; // Pour l’overlay
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    pointer-events: none;
-    background-size: cover;
-    background-position: center;
-  }
-
-  &--v1::after {
-    background-image: linear-gradient(135deg, rgba(45, 31, 78, 0.45) 0%, rgba(102, 126, 234, 0.35) 100%);
-    background-blend-mode: overlay;
-  }
-
-  &--v2::after {
-    background-image: linear-gradient(135deg, rgba(118, 75, 162, 0.5) 0%, rgba(13, 110, 253, 0.25) 100%);
-    background-blend-mode: multiply;
-  }
-
-  &--v3::after {
-    background-image: linear-gradient(120deg, rgba(26, 26, 46, 0.4) 0%, rgba(45, 31, 78, 0.5) 100%);
-    background-blend-mode: overlay;
-  }
 }
 
 .altFeatures__caption {

@@ -3,25 +3,25 @@
     <div class="organicGallery__grid">
       <ParallaxMediaElt
         class="organicGallery__cell organicGallery__cell--1"
-        src="https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=600&q=70"
+        src="/images/5.jpg"
         :has-parallax-position="true"
         :parallax-position-amount="14"
       />
       <ParallaxMediaElt
         class="organicGallery__cell organicGallery__cell--2"
-        src="https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=600&q=70"
+        src="/images/1.jpg"
         :has-parallax-position="true"
         :parallax-position-amount="-12"
       />
       <ParallaxMediaElt
         class="organicGallery__cell organicGallery__cell--3"
-        src="https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=600&q=70"
+        src="/images/2.jpg"
         :has-parallax-position="true"
         :parallax-position-amount="12"
       />
       <ParallaxMediaElt
         class="organicGallery__cell organicGallery__cell--4"
-        src="https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=600&q=70"
+        src="/images/3.jpg"
         :has-parallax-position="true"
         :parallax-position-amount="-14"
       />

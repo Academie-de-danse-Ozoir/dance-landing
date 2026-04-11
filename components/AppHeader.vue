@@ -147,7 +147,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between; // Pour séparer Logo et Croix
-  pointer-events: auto;
 }
 
 .appHeader__logo,
@@ -156,6 +155,7 @@ onUnmounted(() => {
   border: none;
   padding: 0;
   cursor: pointer;
+  pointer-events: auto;
   transition:
     transform 0.3s ease,
     opacity 0.2s ease;
