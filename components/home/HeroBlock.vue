@@ -3,8 +3,9 @@
     <ParallaxMediaElt
       class="heroBlock__bg"
       :class="{ 'heroBlock__bg--reveal': isBgRevealed }"
-      src="https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1920&q=80"
+      src="https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1600&q=70"
       :parallax-mask-amount="25"
+      loading="eager"
       aria-hidden="true"
     />
     <div class="heroBlock__overlay" aria-hidden="true" />

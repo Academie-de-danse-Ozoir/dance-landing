@@ -60,15 +60,5 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .spectaclePage {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
-  width: 100%;
-  box-sizing: border-box;
-
-  > * {
-    flex-shrink: 0;
-  }
 }
 </style>

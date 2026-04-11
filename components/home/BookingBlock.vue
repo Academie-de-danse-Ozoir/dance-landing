@@ -559,6 +559,15 @@ function onPageShow(ev: PageTransitionEvent) {
   }
 }
 
+let resizeTimer: ReturnType<typeof setTimeout> | null = null
+function handleWindowResize() {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    scheduleSeatMapHeightMeasure()
+    resizeTimer = null
+  }, 100)
+}
+
 onMounted(async () => {
   try {
     await loadSeats()
@@ -578,7 +587,7 @@ onMounted(async () => {
   await restoreOrderFromStorage()
 
   await nextTick()
-  window.addEventListener('resize', scheduleSeatMapHeightMeasure)
+  window.addEventListener('resize', handleWindowResize)
   scheduleSeatMapHeightMeasure()
 
   window.addEventListener('pageshow', onPageShow)
@@ -596,12 +605,13 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (resizeTimer) clearTimeout(resizeTimer)
   cancelModalCloseReset()
   unregisterBookingSnap?.()
   unregisterBookingBanner?.()
   if (import.meta.client) {
     window.removeEventListener('pageshow', onPageShow)
-    window.removeEventListener('resize', scheduleSeatMapHeightMeasure)
+    window.removeEventListener('resize', handleWindowResize)
   }
   stopMainAnimationLoop()
   void stopSeatsRealtime()

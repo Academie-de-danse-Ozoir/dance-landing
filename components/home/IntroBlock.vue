@@ -15,11 +15,23 @@
       </div>
       <div class="introBlock__media">
         <figure class="introBlock__figure">
-          <div class="figure__placeholder figure__placeholder--a" role="img" :aria-label="visualAlt1" />
+          <ParallaxMediaElt
+            class="figure__media figure__media--a"
+            src="https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=800&q=70"
+            :alt="visualAlt1"
+            :has-parallax-mask="false"
+            loading="lazy"
+          />
           <figcaption class="figure__caption">{{ visualAlt1 }}</figcaption>
         </figure>
         <figure class="introBlock__figure">
-          <div class="figure__placeholder figure__placeholder--b" role="img" :aria-label="visualAlt2" />
+          <ParallaxMediaElt
+            class="figure__media figure__media--b"
+            src="https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=800&q=70"
+            :alt="visualAlt2"
+            :has-parallax-mask="false"
+            loading="lazy"
+          />
           <figcaption class="figure__caption">{{ visualAlt2 }}</figcaption>
         </figure>
         <p class="introBlock__note">{{ noteUnderVisuals }}</p>
@@ -29,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-export type IntroTextBlock = { title: string; text: string }
+import type { IntroTextBlock } from '../../types'
+import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
 
 defineProps<{
   title: string
@@ -100,23 +113,29 @@ defineProps<{
   margin: 0;
 }
 
-.figure__placeholder {
+.figure__media {
   width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: 4px;
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
   box-shadow: 0 8px 28px rgba(33, 37, 41, 0.12);
+  position: relative;
 
-  &--a {
-    background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%),
-      url('https://images.unsplash.com/photo-1518834107812-67b0b7c58434?auto=format&fit=crop&w=800&q=75');
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  &--a::after {
+    background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     background-blend-mode: overlay;
   }
 
-  &--b {
-    background-image: linear-gradient(135deg, rgba(118, 75, 162, 0.85) 0%, rgba(102, 126, 234, 0.75) 100%),
-      url('https://images.unsplash.com/photo-1547153760-18fc86324498?auto=format&fit=crop&w=800&q=75');
+  &--b::after {
+    background-image: linear-gradient(135deg, rgba(118, 75, 162, 0.85) 0%, rgba(102, 126, 234, 0.75) 100%);
     background-blend-mode: multiply;
   }
 }

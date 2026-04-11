@@ -1,16 +1,56 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { NARROW_VIEWPORT_MQ } from './constants'
 import AppLoader from '~/components/AppLoader.vue'
 import AppHeader from '~/components/AppHeader.vue'
 import OrientationGuard from '~/components/OrientationGuard.vue'
+import Lenis from 'lenis'
+import { useLenis } from '~/composables/useLenis'
 
-/** Lenis n’a pas de mode « off » : sous `NARROW_VIEWPORT_MQ` on ne monte pas VueLenis (doc : destroy / pas d’instance). */
+/** État du viewport pour désactiver Lenis sur mobile. */
 const narrowViewport = ref(
   import.meta.client && typeof window !== 'undefined'
     ? window.matchMedia(NARROW_VIEWPORT_MQ).matches
     : false
 )
+
+const lenisInstance = useLenis()
+let rafId: number | null = null
+
+function updateLenis(time: number) {
+  lenisInstance.value?.raf(time)
+  rafId = requestAnimationFrame(updateLenis)
+}
+
+function initLenis() {
+  if (import.meta.server) return
+  if (narrowViewport.value) {
+    destroyLenis()
+    return
+  }
+
+  if (!lenisInstance.value) {
+    lenisInstance.value = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true
+    })
+    rafId = requestAnimationFrame(updateLenis)
+  }
+}
+
+function destroyLenis() {
+  if (lenisInstance.value) {
+    lenisInstance.value.destroy()
+    lenisInstance.value = null
+  }
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+}
 
 onMounted(() => {
   if (import.meta.client && typeof window !== 'undefined') {
@@ -23,7 +63,22 @@ onMounted(() => {
   }
   sync()
   mq.addEventListener('change', sync)
-  onUnmounted(() => mq.removeEventListener('change', sync))
+
+  initLenis()
+
+  onUnmounted(() => {
+    mq.removeEventListener('change', sync)
+    destroyLenis()
+  })
+})
+
+// On recréé ou détruit Lenis si le breakpoint est franchi
+watch(narrowViewport, (isNarrow) => {
+  if (isNarrow) {
+    destroyLenis()
+  } else {
+    initLenis()
+  }
 })
 </script>
 
@@ -33,14 +88,11 @@ onMounted(() => {
     <ClientOnly>
       <AppHeader />
       <OrientationGuard />
-      <VueLenis v-if="!narrowViewport" root :auto-raf="true">
-        <NuxtLayout>
-          <NuxtPage />
-        </NuxtLayout>
-      </VueLenis>
-      <NuxtLayout v-else>
+
+      <NuxtLayout>
         <NuxtPage />
       </NuxtLayout>
+
       <template #fallback>
         <NuxtLayout>
           <NuxtPage />
@@ -51,9 +103,10 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
+@import 'lenis/dist/lenis.css';
+
 .appContainer {
   position: relative;
   min-height: 100vh;
 }
 </style>
-

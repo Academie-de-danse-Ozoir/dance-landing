@@ -5,6 +5,7 @@
       class="image"
       :src="props.url || props.src"
       :alt="props.alt"
+      :loading="props.loading"
       draggable="false"
       @dragstart.prevent
     />
@@ -31,7 +32,8 @@ const props = defineProps({
   parallaxPositionRemapMin: { type: Number, default: -1 },
   parallaxPositionRemapMax: { type: Number, default: 1 },
 
-  alt: { type: String, default: '' }
+  alt: { type: String, default: '' },
+  loading: { type: String, default: 'lazy' }
 })
 
 function clamp(value, min, max) {
@@ -40,10 +42,6 @@ function clamp(value, min, max) {
 
 function remap(value, low1, high1, low2, high2) {
   return low2 + ((value - low1) * (high2 - low2)) / (high1 - low1)
-}
-
-function cremap(value, low1, high1, low2, high2) {
-  return clamp(remap(value, low1, high1, low2, high2), Math.min(low2, high2), Math.max(low2, high2))
 }
 
 const parallaxMediaRef = ref()
