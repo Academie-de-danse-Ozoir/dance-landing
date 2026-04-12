@@ -53,7 +53,6 @@ function destroyLenis() {
 }
 
 onMounted(() => {
-  console.log('onMounted')
   if (import.meta.client && typeof window !== 'undefined') {
     window.history.scrollRestoration = 'manual'
   }
