@@ -160,7 +160,7 @@ $organic-design-width: 1280px;
       width: min(38vw, 168px);
       margin-top: 0;
       margin-bottom: 0;
-      margin-left: 24px;
+      margin-left: 20px;
       margin-right: auto;
     }
   }
@@ -182,7 +182,7 @@ $organic-design-width: 1280px;
       margin-top: 0;
       margin-bottom: 0;
       margin-left: auto;
-      margin-right: 12px;
+      margin-right: 40px;
     }
   }
 
@@ -203,7 +203,7 @@ $organic-design-width: 1280px;
       width: min(56vw, 180px);
       margin-top: 0;
       margin-bottom: 0;
-      margin-left: 6px;
+      margin-left: 40px;
       margin-right: auto;
     }
   }
@@ -224,7 +224,7 @@ $organic-design-width: 1280px;
       margin-top: 0;
       margin-bottom: 0;
       margin-left: auto;
-      margin-right: 6px;
+      margin-right: 20px;
     }
   }
 }
