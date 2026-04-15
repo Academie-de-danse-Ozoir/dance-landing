@@ -43,7 +43,7 @@ import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
 import content from '../../locales/fr.json'
 
-const ROW_IMAGES = ['/images/8.jpg', '/images/10.jpg', '/images/6.jpg']
+const ROW_IMAGES = ['/images/3.jpg', '/images/10.jpg', '/images/6.jpg']
 
 const isDesktop = ref(true)
 

@@ -1,43 +1,90 @@
 <template>
   <section class="organicGallery" :aria-label="ariaLabel">
-    <div class="organicGallery__grid">
-      <ParallaxMediaElt
-        class="organicGallery__cell organicGallery__cell--1"
-        src="/images/5.jpg"
-        :has-parallax-position="true"
-        :parallax-position-amount="14"
-      />
-      <ParallaxMediaElt
-        class="organicGallery__cell organicGallery__cell--2"
-        src="/images/1.jpg"
-        :has-parallax-position="true"
-        :parallax-position-amount="-12"
-      />
-      <ParallaxMediaElt
-        class="organicGallery__cell organicGallery__cell--3"
-        src="/images/2.jpg"
-        :has-parallax-position="true"
-        :parallax-position-amount="12"
-      />
-      <ParallaxMediaElt
-        class="organicGallery__cell organicGallery__cell--4"
-        src="/images/3.jpg"
-        :has-parallax-position="true"
-        :parallax-position-amount="-14"
-      />
+    <div class="organicGallery__scale">
+      <div class="organicGallery__grid">
+        <ParallaxMediaElt
+          :class="[
+            'organicGallery__cell',
+            'organicGallery__cell--1',
+            { 'organicGallery__cell--smMask': isSmDown }
+          ]"
+          src="/images/9.jpg"
+          :has-parallax-mask="true"
+          :scale-offset-amount="1.25"
+          :has-parallax-position="!isSmDown"
+          :parallax-position-amount="12"
+        />
+        <ParallaxMediaElt
+          :class="[
+            'organicGallery__cell',
+            'organicGallery__cell--2',
+            { 'organicGallery__cell--smMask': isSmDown }
+          ]"
+          src="/images/1.jpg"
+          :has-parallax-mask="true"
+          :scale-offset-amount="1.25"
+          :has-parallax-position="!isSmDown"
+          :parallax-position-amount="-12"
+        />
+        <ParallaxMediaElt
+          :class="[
+            'organicGallery__cell',
+            'organicGallery__cell--3',
+            { 'organicGallery__cell--smMask': isSmDown }
+          ]"
+          src="/images/5.jpg"
+          :has-parallax-mask="true"
+          :scale-offset-amount="1.25"
+          :has-parallax-position="!isSmDown"
+          :parallax-position-amount="12"
+        />
+        <ParallaxMediaElt
+          :class="[
+            'organicGallery__cell',
+            'organicGallery__cell--4',
+            { 'organicGallery__cell--smMask': isSmDown }
+          ]"
+          src="/images/8.jpg"
+          :has-parallax-mask="true"
+          :scale-offset-amount="1.25"
+          :has-parallax-position="!isSmDown"
+          :parallax-position-amount="-12"
+        />
+      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
+
+/** Aligné sur `@include media-down(sm)` → max-width: 640px (`_breakpoints.scss`). */
+const SM_DOWN_MQ = '(max-width: 640px)'
 
 defineProps<{
   ariaLabel: string
 }>()
+
+/** ≤ sm : masque parallax actif, pas de parallax position (scroll). */
+const isSmDown = ref(false)
+
+onMounted(() => {
+  if (!import.meta.client) return
+  const mq = window.matchMedia(SM_DOWN_MQ)
+  const sync = () => {
+    isSmDown.value = mq.matches
+  }
+  sync()
+  mq.addEventListener('change', sync)
+  onUnmounted(() => mq.removeEventListener('change', sync))
+})
 </script>
 
 <style lang="scss" scoped>
+/* Maquette de référence : tout en px pour que le zoom global reste cohérent (pas de vw dans la grille). */
+$organic-design-width: 1280px;
+
 .organicGallery {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -48,71 +95,137 @@ defineProps<{
   justify-content: center;
 }
 
-/** Grille 12 cols : placements et tailles fixes (style « organique » par chevauchements), sans rotation. */
+.organicGallery__scale {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  @include media-down(sm) {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    overflow-x: visible;
+  }
+}
+
+/** Même composition sur tous les écrans ; réduction homothétique quand la fenêtre est plus étroite que la maquette. */
 .organicGallery__grid {
   display: grid;
   box-sizing: border-box;
-  width: 100%;
-  min-width: 600px;
-  max-width: 1280px;
-  padding: clamp(32px, 5vw, 64px) clamp(24px, 4vw, 40px);
+  width: $organic-design-width;
+  flex-shrink: 0;
+  max-width: none;
+  padding: 64px 40px;
   overflow: visible;
   isolation: isolate;
 
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: clamp(14px, 2.4vw, 32px);
-  /* Pas de row-gap global : les rangées 1–2 restent resserrées ; l’écart 2↔3 vient du margin-top du bloc 3. */
+  column-gap: 32px;
   row-gap: 0;
-  min-height: clamp(400px, 74dvh, 880px);
+  min-height: 880px;
   align-items: start;
+
+  /* Réduit toute la scène comme une seule unité (même layout, plus petit). */
+  zoom: min(1, calc((100vw - 32px) / #{$organic-design-width}));
+
+  @include media-down(sm) {
+    zoom: 1;
+    width: 100%;
+    min-width: 0;
+    padding: clamp(28px, 6vw, 48px) 0;
+    min-height: auto;
+    column-gap: 0;
+    /* Espace net entre les rangées — pas de chevauchement sur mobile / tablette. */
+    row-gap: clamp(20px, 5vw, 36px);
+  }
 }
 
 .organicGallery__cell {
   position: relative;
+  box-sizing: border-box;
 
+  /** Largeurs calées sur une fenêtre de référence 1280px (équivalent des anciens clamp + vw). */
   &--1 {
     grid-row: 1;
     grid-column: 4 / span 2;
     justify-self: center;
-    width: clamp(100px, 17vw, 236px);
-    height: clamp(140px, 23vw, 312px);
-    margin-top: clamp(7px, 1.2vw, 20px);
+    width: 350px;
+    margin-top: 20px;
     z-index: 3;
+
+    @include media-down(sm) {
+      grid-column: 1 / -1;
+      justify-self: start;
+      width: min(38vw, 168px);
+      margin-top: 0;
+      margin-bottom: 0;
+      margin-left: 24px;
+      margin-right: auto;
+    }
   }
 
   &--2 {
     grid-row: 2;
-    grid-column: 7 / span 5;
+    grid-column: 8 / span 5;
     justify-self: end;
-    width: clamp(230px, 38vw, 468px);
-    height: clamp(265px, 44vw, 520px);
-    margin-top: clamp(-40px, -3.5vw, -21px);
+    width: 468px;
+    margin-top: -40px;
     margin-bottom: 0;
-    margin-right: clamp(-4px, -0.5vw, 0px);
+    margin-right: 0;
     z-index: 1;
+
+    @include media-down(sm) {
+      grid-column: 1 / -1;
+      justify-self: end;
+      width: min(54vw, 240px);
+      margin-top: 0;
+      margin-bottom: 0;
+      margin-left: auto;
+      margin-right: 12px;
+    }
   }
 
-  /** Sous le bloc 2 : grand écart volontaire (desktop + tablette via règles séparées). */
   &--3 {
     grid-row: 3;
     grid-column: 1 / span 5;
     justify-self: start;
-    width: clamp(265px, 44vw, 540px);
-    height: clamp(180px, 30vw, 380px);
-    margin-top: clamp(42px, 7vw, 120px);
-    margin-left: clamp(0px, 1vw, 12px);
+    width: 450px;
+    margin-top: 120px;
+    margin-left: 12px;
     z-index: 2;
+    aspect-ratio: 450 / 380;
+    overflow: hidden;
+
+    @include media-down(sm) {
+      grid-column: 1 / -1;
+      justify-self: start;
+      width: min(56vw, 180px);
+      margin-top: 0;
+      margin-bottom: 0;
+      margin-left: 6px;
+      margin-right: auto;
+    }
   }
 
   &--4 {
     grid-row: 4;
-    grid-column: 9 / span 3;
+    grid-column: 8 / span 3;
     justify-self: end;
     align-self: start;
-    width: clamp(100px, 17vw, 228px);
-    height: clamp(140px, 23vw, 304px);
-    margin-top: clamp(-16px, -1.5vw, -9px);
+    width: 350px;
+    margin-top: -90px;
     z-index: 3;
+
+    @include media-down(sm) {
+      grid-column: 1 / -1;
+      justify-self: end;
+      width: min(38vw, 168px);
+      margin-top: 0;
+      margin-bottom: 0;
+      margin-left: auto;
+      margin-right: 6px;
+    }
   }
 }
 </style>
