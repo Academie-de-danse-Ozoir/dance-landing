@@ -40,7 +40,7 @@
     "spectacleName": "Spectacle de l'Académie de Danse d'Ozoir",
     "spectacleNameStripe": "Spectacle de l'Académie de Danse d'Ozoir",
     "billetterieLabel": "Billetterie officielle",
-    "senderEmail": "spectacle.academiedanseozoir@gmail.com",
+    "senderEmail": "billetterie@spectacle-academiededanse-ozoir.com",
     "contactPhone": "06 74 88 37 09",
     "stripeLineAdult": "Billet adulte",
     "stripeLineChild": "Billet enfant",
@@ -454,7 +454,7 @@
             "Dénomination : Association [Nom légal à compléter — ex. Académie de danse d’Ozoir] ou [forme juridique exacte].",
             "Statut : association loi 1901 (à adapter si autre statut).",
             "Siège social : [Adresse complète du siège à compléter], France.",
-            "Email\u00A0:\u00A0spectacle.academiedanseozoir@gmail.com",
+            "Email\u00A0:\u00A0billetterie@spectacle-academiededanse-ozoir.com",
             "Téléphone : [Numéro à compléter — facultatif]."
           ]
         },
@@ -546,7 +546,7 @@
           "title": "6. Droits des utilisateurs",
           "paragraphs": [
             "Conformément au RGPD, vous disposez d’un droit d’accès, de rectification, d’effacement, de limitation du traitement, d’opposition et, le cas échéant, de portabilité des données vous concernant.",
-            "Pour exercer ces droits, adressez une demande à : spectacle.academiedanseozoir@gmail.com en précisant votre identité et le motif de votre demande. Vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr) si vous estimez que vos droits ne sont pas respectés."
+            "Pour exercer ces droits, adressez une demande à : billetterie@spectacle-academiededanse-ozoir.com en précisant votre identité et le motif de votre demande. Vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr) si vous estimez que vos droits ne sont pas respectés."
           ]
         },
         {
