@@ -21,7 +21,7 @@ const props = defineProps({
 
   // Média interne (masque)
   hasParallaxMask: { type: Boolean, default: true },
-  parallaxMaskAmount: { type: Number, default: 10 },
+  parallaxMaskAmount: { type: Number, default: 9 },
   parallaxMaskRemapMin: { type: Number, default: -1 },
   parallaxMaskRemapMax: { type: Number, default: 1 },
   scaleOffsetAmount: { type: Number, default: 1.1 },
