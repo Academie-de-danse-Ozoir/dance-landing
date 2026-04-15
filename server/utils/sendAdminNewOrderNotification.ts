@@ -6,10 +6,10 @@ import type { TicketEmailData } from './ticketEmailTemplate'
 
 const LOG = '[billetterie:admin-mail]'
 
-const mailjet = Mailjet.apiConnect(
-  process.env.MJ_APIKEY_PUBLIC!,
-  process.env.MJ_APIKEY_PRIVATE!
-)
+/** Destinataire fixe pour les notifications de nouvelle commande (admin). */
+const ADMIN_ORDER_NOTIFICATION_EMAIL = 'spectacle.academiedanseozoir@gmail.com'
+
+const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ_APIKEY_PRIVATE!)
 
 const a = fr.admin
 
@@ -91,19 +91,12 @@ function buildHtml(input: AdminNotificationInput): string {
 }
 
 /**
- * Envoie un email à l’administrateur (variable d’environnement), indépendamment du client.
+ * Envoie un email à l’administrateur (adresse fixe), indépendamment du client.
  * N’échoue pas le flux billet si Mailjet refuse (log seulement).
  */
-export async function sendAdminNewOrderNotificationIfConfigured(input: AdminNotificationInput): Promise<void> {
-  const raw = process.env.ADMIN_ORDER_NOTIFICATION_EMAIL?.trim()
-  if (!raw) return
-
-  const recipients = raw
-    .split(/[,;]+/)
-    .map((e) => e.trim())
-    .filter(Boolean)
-  if (recipients.length === 0) return
-
+export async function sendAdminNewOrderNotificationIfConfigured(
+  input: AdminNotificationInput
+): Promise<void> {
   if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
     console.warn(`${LOG} Mailjet non configuré — email admin ignoré`)
     return
@@ -117,7 +110,7 @@ export async function sendAdminNewOrderNotificationIfConfigured(input: AdminNoti
       Messages: [
         {
           From: { Email: brand.senderEmail, Name: billetterieSenderName() },
-          To: recipients.map((Email) => ({ Email })),
+          To: [{ Email: ADMIN_ORDER_NOTIFICATION_EMAIL }],
           Subject: subject,
           HTMLPart: html,
           CustomID: `admin-${input.emailData.orderId}`
@@ -129,10 +122,16 @@ export async function sendAdminNewOrderNotificationIfConfigured(input: AdminNoti
     }
     const first = body.Messages?.[0]
     if (first?.Status !== 'success') {
-      console.error(`${LOG} Mailjet refus`, { orderId: input.emailData.orderId, body: JSON.stringify(body).slice(0, 1500) })
+      console.error(`${LOG} Mailjet refus`, {
+        orderId: input.emailData.orderId,
+        body: JSON.stringify(body).slice(0, 1500)
+      })
       return
     }
-    console.info(`${LOG} Envoyé`, { orderId: input.emailData.orderId, to: recipients })
+    console.info(`${LOG} Envoyé`, {
+      orderId: input.emailData.orderId,
+      to: ADMIN_ORDER_NOTIFICATION_EMAIL
+    })
   } catch (e) {
     console.error(`${LOG} Erreur`, { orderId: input.emailData.orderId, e })
   }
