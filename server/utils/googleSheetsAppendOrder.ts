@@ -210,14 +210,14 @@ async function fetchSheetTitleByGid(
 function parseServiceAccountJson(): { client_email: string; private_key: string } | null {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim()
   if (!raw) return null
-  let jsonStr = raw
-  if (!jsonStr.startsWith('{')) {
-    try {
-      jsonStr = Buffer.from(jsonStr, 'base64').toString('utf8')
-    } catch {
-      return null
-    }
+
+  let jsonStr: string
+  try {
+    jsonStr = Buffer.from(raw, 'base64').toString('utf8')
+  } catch {
+    return null
   }
+
   try {
     const o = JSON.parse(jsonStr) as { client_email?: string; private_key?: string }
     if (!o.client_email || !o.private_key) return null

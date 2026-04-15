@@ -1858,6 +1858,7 @@ function handleSeatClick(seat: Seat) {
   margin-bottom: 24px;
   overflow: hidden;
   height: 100dvh;
+  box-shadow: 0 4px 12px rgba(33, 37, 41, 0.04);
 
   &--fillHeight {
     height: 100%;

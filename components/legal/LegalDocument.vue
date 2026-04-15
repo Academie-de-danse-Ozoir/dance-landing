@@ -9,7 +9,7 @@
     <section v-for="(section, i) in sections" :key="i" class="legalDocument__section">
       <h2 class="section__title">{{ section.title }}</h2>
       <template v-for="(p, j) in section.paragraphs || []" :key="'p-' + j">
-        <p class="section__p">{{ p }}</p>
+        <p class="section__p" :class="{ 'section__p--noWrap': p.includes('Email') }">{{ p }}</p>
       </template>
       <ul v-if="section.bullets?.length" class="section__ul">
         <li v-for="(b, k) in section.bullets" :key="'b-' + k" class="section__li">
@@ -87,6 +87,10 @@ defineProps<{
   &:last-child {
     margin-bottom: 0;
   }
+}
+
+.section__p--noWrap {
+  white-space: nowrap;
 }
 
 .section__ul {

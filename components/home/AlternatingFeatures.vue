@@ -207,7 +207,15 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   }
 
   .altFeatures__copy {
+    width: 100%;
     max-width: min(32rem, 100%);
+    margin: 0 auto;
+  }
+
+  .altFeatures__title,
+  .altFeatures__text {
+    width: 100%;
+    max-width: none;
   }
 
   .altFeatures__figure {

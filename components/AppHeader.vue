@@ -9,7 +9,6 @@ const isScrolled = ref(false)
 const isVisible = ref(true)
 let lastScrollY = 0
 
-const lenis = useLenis()
 
 // État de la variante du logo synchronisé avec la transition
 const currentLogoVariant = ref<'light' | 'dark'>('light')
@@ -57,16 +56,8 @@ function handleScroll() {
 }
 
 function goHome() {
-  if (route.path === '/') {
-    const l = lenis.value
-    if (l) {
-      l.scrollTo(0)
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  } else {
-    void navigateTo('/')
-  }
+  if (route.path === '/') return
+  void navigateTo('/')
 }
 
 // Suivi de la route pour le logo et la croix

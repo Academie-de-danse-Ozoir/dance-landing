@@ -104,11 +104,6 @@
         </g>
       </svg>
     </div>
-    <div v-if="!iconOnly && false" class="appLogo__text">
-      <span class="appLogo__line appLogo__line--main">Académie</span>
-      <span class="appLogo__line">de danse</span>
-      <span class="appLogo__line">d’Ozoir</span>
-    </div>
   </div>
 </template>
 
@@ -118,7 +113,6 @@ import { computed } from 'vue'
 const props = defineProps<{
   size?: 'sm' | 'md' | 'lg' | 'xl'
   variant?: 'light' | 'dark'
-  iconOnly?: boolean
 }>()
 
 const sizeClass = computed(() => `appLogo--${props.size || 'md'}`)
@@ -143,23 +137,31 @@ const variantClass = computed(() => `appLogo--${props.variant || 'light'}`)
 
   // Tailles agrandies pour une meilleure présence
   &--sm {
-    .appLogo__icon { width: 44px; }
+    .appLogo__icon {
+      width: 44px;
+    }
   }
   &--md {
-    .appLogo__icon { width: 100px; }
+    .appLogo__icon {
+      width: 100px;
+    }
   }
   &--lg {
-    .appLogo__icon { width: 140px; }
+    .appLogo__icon {
+      width: 140px;
+    }
   }
   &--xl {
-    .appLogo__icon { width: 180px; }
+    .appLogo__icon {
+      width: 180px;
+    }
   }
 }
 
 .appLogo__icon {
   flex-shrink: 0;
   line-height: 0;
-  
+
   svg {
     width: 100%;
     height: auto;

@@ -41,7 +41,7 @@
     "spectacleNameStripe": "Spectacle de l'Académie de Danse d'Ozoir",
     "billetterieLabel": "Billetterie officielle",
     "senderEmail": "spectacle.academiedanseozoir@gmail.com",
-    "contactPhone": "01 23 45 67 89",
+    "contactPhone": "06 74 88 37 09",
     "stripeLineAdult": "Billet adulte",
     "stripeLineChild": "Billet enfant",
     "pdfLabelEvent": "Spectacle",
@@ -138,7 +138,14 @@
       "title": "Se rendre au Théâtre",
       "addressLine1": "CEC - Centre Educatif et Culturel",
       "addressLine2": "2 Rue Marc Sangnier, 91330 Yerres, France",
-      "mapTitleAria": "Carte Google Maps indiquant l'emplacement du Théâtre de Yerres"
+      "mapTitleAria": "Carte Google Maps indiquant l'emplacement du Théâtre de Yerres",
+      "parkingInfoTitle": "Informations pratiques",
+      "parkingInfoItems": [
+        "Prévoyez un délai suffisant pour le stationnement (pas de parking spécifiquement réservé pour la salle).",
+        "Le spectacle commencera à 17h impérativement. Vous ne pourrez plus accéder à la salle de spectacle passé 17h.",
+        "De nombreux parkings existent aux alentours. Voici une carte pour vous aider."
+      ],
+      "parkingMapAlt": "Carte des parkings autour du Théâtre de Yerres"
     },
     "modal": {
       "title": "Coordonnées et réservation",
@@ -447,7 +454,7 @@
             "Dénomination : Association [Nom légal à compléter — ex. Académie de danse d’Ozoir] ou [forme juridique exacte].",
             "Statut : association loi 1901 (à adapter si autre statut).",
             "Siège social : [Adresse complète du siège à compléter], France.",
-            "Email : spectacle.academiedanseozoir@gmail.com",
+            "Email\u00A0:\u00A0spectacle.academiedanseozoir@gmail.com",
             "Téléphone : [Numéro à compléter — facultatif]."
           ]
         },

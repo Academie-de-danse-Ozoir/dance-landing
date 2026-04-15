@@ -324,7 +324,6 @@ const pmrTelHref = computed(() => {
   border: 1px solid $color-border-subtle;
   border-radius: 4px;
   padding: clamp(20px, 3vw, 28px);
-  box-shadow: 0 8px 28px rgba(33, 37, 41, 0.06);
   min-width: 0;
 }
 
@@ -554,6 +553,11 @@ const pmrTelHref = computed(() => {
 
 .mapPricingSection__pmrLine {
   margin: 0 0 0.4rem 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  white-space: nowrap;
 
   &:last-child {
     margin-bottom: 0;
@@ -563,6 +567,22 @@ const pmrTelHref = computed(() => {
 .mapPricingSection__pmrLabel {
   font-weight: 500;
   color: $color-text-primary;
+}
+
+@include media-down(md) {
+  .mapPricingSection__lead,
+  .mapPricingSection__detail,
+  .mapPricingSection__saleInfoItem,
+  .mapPricingSection__priceLabel,
+  .mapPricingSection__legendItem,
+  .mapPricingSection__controlsLead,
+  .mapPricingSection__controlLabel,
+  .mapPricingSection__controlText,
+  .mapPricingSection__limitDetail,
+  .mapPricingSection__pmrText,
+  .mapPricingSection__pmrContact {
+    font-size: 0.90625rem;
+  }
 }
 
 .mapPricingSection__pmrLink {
