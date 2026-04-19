@@ -88,17 +88,10 @@ watch(narrowViewport, (isNarrow) => {
     <ClientOnly>
       <AppHeader />
       <OrientationGuard />
-
-      <NuxtLayout>
-        <NuxtPage />
-      </NuxtLayout>
-
-      <template #fallback>
-        <NuxtLayout>
-          <NuxtPage />
-        </NuxtLayout>
-      </template>
     </ClientOnly>
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </div>
 </template>
 
