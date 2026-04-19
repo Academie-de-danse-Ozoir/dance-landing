@@ -23,10 +23,7 @@ import {
 } from './googleSheetsAppendOrder'
 import { sendAdminNewOrderNotificationIfConfigured } from './sendAdminNewOrderNotification'
 
-const mailjet = Mailjet.apiConnect(
-  process.env.MJ_APIKEY_PUBLIC!,
-  process.env.MJ_APIKEY_PRIVATE!
-)
+const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ_APIKEY_PRIVATE!)
 
 const LOG = '[billetterie:mail]'
 
@@ -72,15 +69,15 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
     Subject: emailTicketSubject(ref),
     HTMLPart: html,
     /** Mailjet : traçabilité ; un envoi par commande (pas de fusion avec un autre achat). */
-    CustomID: data.orderId,
+    CustomID: data.orderId
   }
   if (pdfBuffer && pdfBuffer.length > 0) {
     message.Attachments = [
       {
         ContentType: 'application/pdf',
         Filename: `billets-${data.orderId}.pdf`,
-        Base64Content: pdfBuffer.toString('base64'),
-      },
+        Base64Content: pdfBuffer.toString('base64')
+      }
     ]
   }
 
@@ -138,7 +135,10 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
 
 export type SendPaidOrderTicketEmailResult =
   | { sent: true }
-  | { sent: false; reason: 'order_not_found' | 'not_paid' | 'already_sent' | 'no_seats' | 'no_email' }
+  | {
+      sent: false
+      reason: 'order_not_found' | 'not_paid' | 'already_sent' | 'no_seats' | 'no_email'
+    }
 
 /**
  * Envoie l’email billet si commande PAID et ticket_sent false.
@@ -161,7 +161,16 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     return { sent: false, reason: 'not_paid' }
   }
 
-  if (order.ticket_sent) {
+  const { data: lockedOrder, error: lockError } = await supabaseAdmin
+    .from('order')
+    .update({ ticket_sent: true })
+    .eq('id', order.id)
+    .eq('ticket_sent', false) // 🔥 LA CLÉ
+    .select('id')
+    .single()
+
+  if (lockError || !lockedOrder) {
+    // quelqu’un d’autre a déjà pris le lock
     return { sent: false, reason: 'already_sent' }
   }
 
@@ -192,9 +201,9 @@ export async function sendPaidOrderTicketEmailIfNeeded(
   const lineItems: TicketEmailData['lineItems'] = []
 
   try {
-    const sessionWithCharge = await stripe.checkout.sessions.retrieve(sessionId, {
+    const sessionWithCharge = (await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['payment_intent.latest_charge']
-    }) as Stripe.Checkout.Session & {
+    })) as Stripe.Checkout.Session & {
       payment_intent?: { latest_charge?: { receipt_url?: string } }
     }
     const charge = sessionWithCharge.payment_intent?.latest_charge
@@ -243,12 +252,17 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     seatCount,
     amountTotalFormatted,
     currency,
-    lineItems: lineItems.length > 0 ? lineItems : [{
-      description: emailAggregateLineDescription(),
-      quantity: seatCount,
-      unitPriceFormatted: formatAmount(amountTotal / Math.max(1, seatCount), currency),
-      totalFormatted: formatAmount(amountTotal, currency)
-    }],
+    lineItems:
+      lineItems.length > 0
+        ? lineItems
+        : [
+            {
+              description: emailAggregateLineDescription(),
+              quantity: seatCount,
+              unitPriceFormatted: formatAmount(amountTotal / Math.max(1, seatCount), currency),
+              totalFormatted: formatAmount(amountTotal, currency)
+            }
+          ],
     ticketsUrl: null,
     ticketsInAttachment: true,
     receiptUrl: receiptUrl ?? null,
@@ -270,7 +284,14 @@ export async function sendPaidOrderTicketEmailIfNeeded(
       supabaseAdmin.from('seat').select('id, label').in('id', seatIds)
     ])
     const labelById = new Map((seats ?? []).map((s) => [s.id, s.label]))
-    const attendees = (orderWithAttendees as { ticket_attendees?: Record<string, { firstName?: string; lastName?: string; ticketType?: string }> } | null)?.ticket_attendees
+    const attendees = (
+      orderWithAttendees as {
+        ticket_attendees?: Record<
+          string,
+          { firstName?: string; lastName?: string; ticketType?: string }
+        >
+      } | null
+    )?.ticket_attendees
     tickets = seatIds.map((seatId) => {
       const label = labelById.get(seatId) ?? seatId
       const att = attendees?.[seatId]
@@ -278,7 +299,9 @@ export async function sendPaidOrderTicketEmailIfNeeded(
         seatLabel: label,
         firstName: att?.firstName ?? null,
         lastName: att?.lastName ?? null,
-        ticketType: (att?.ticketType === 'adult' || att?.ticketType === 'child' ? att.ticketType : null) as 'adult' | 'child' | null
+        ticketType: (att?.ticketType === 'adult' || att?.ticketType === 'child'
+          ? att.ticketType
+          : null) as 'adult' | 'child' | null
       }
     })
   } catch (e) {
@@ -357,19 +380,14 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     })
   }
   if (adminResult.status === 'rejected') {
-    console.error(`${LOG} email admin — promesse rejetée`, { orderId: order.id, reason: adminResult.reason })
+    console.error(`${LOG} email admin — promesse rejetée`, {
+      orderId: order.id,
+      reason: adminResult.reason
+    })
   }
 
-  const { error: ticketSentErr } = await supabaseAdmin
-    .from('order')
-    .update({ ticket_sent: true })
-    .eq('id', order.id)
-
-  if (ticketSentErr) {
-    console.error(`${LOG} Échec update ticket_sent — voir supabase/order_ticket_sent.sql`, ticketSentErr)
-    throw ticketSentErr
-  }
-
-  console.info(`${LOG} sendPaidOrderTicketEmailIfNeeded — OK (ticket_sent=true)`, { orderId: order.id })
+  console.info(`${LOG} sendPaidOrderTicketEmailIfNeeded — OK (ticket_sent=true)`, {
+    orderId: order.id
+  })
   return { sent: true }
 }
