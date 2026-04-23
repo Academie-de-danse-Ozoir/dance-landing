@@ -6,6 +6,7 @@ import {
 } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
+import { isValidEmail, isValidPersonName } from '../utils/inputValidation'
 
 function trimStr(s: unknown, max: number): string {
   const str = typeof s === 'string' ? s.trim() : ''
@@ -55,6 +56,9 @@ export default defineEventHandler(async (event) => {
 
   if (!fName || !lName || !em || !ph) {
     throw createError({ statusCode: 400, statusMessage: tApiError('missingCustomerInfo') })
+  }
+  if (!isValidPersonName(fName) || !isValidPersonName(lName) || !isValidEmail(em)) {
+    throw createError({ statusCode: 400, statusMessage: tApiError('invalidRequest') })
   }
 
   let phoneDigits = ph.replace(/\D/g, '')

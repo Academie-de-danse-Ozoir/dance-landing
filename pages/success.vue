@@ -110,6 +110,8 @@ const LOG = '[billetterie:success]'
 
 onMounted(async () => {
   const orderId = route.query.order_id as string
+  const orderTokenFromQuery = route.query.order_token as string
+  let orderToken = orderTokenFromQuery
   const t0 = performance.now()
 
   console.info(`${LOG} Page chargée`, { orderId: orderId || '(absent)', query: { ...route.query } })
@@ -120,8 +122,22 @@ onMounted(async () => {
     isLoaded.value = true
   }
 
-  if (!orderId) {
-    console.warn(`${LOG} Pas de order_id dans l’URL → redirection home`)
+  if (!orderToken && import.meta.client) {
+    try {
+      const raw = localStorage.getItem(STORAGE_ORDER_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw) as { orderId?: string; orderToken?: string }
+        if (parsed?.orderId === orderId && typeof parsed.orderToken === 'string') {
+          orderToken = parsed.orderToken
+        }
+      }
+    } catch {
+      // no-op: fallback best effort
+    }
+  }
+
+  if (!orderId || !orderToken) {
+    console.warn(`${LOG} Pas de order_id/order_token dans l’URL → redirection home`)
     await router.replace('/')
     return
   }
@@ -131,7 +147,7 @@ onMounted(async () => {
       typeof route.query.session_id === 'string' ? route.query.session_id : undefined
 
     const data = await $fetch<{ status: string }>('/api/order-status', {
-      query: { orderId }
+      query: { orderId, orderToken }
     })
     console.info(`${LOG} order-status`, {
       orderId,

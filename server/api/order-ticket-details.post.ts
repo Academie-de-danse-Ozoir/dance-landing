@@ -7,6 +7,7 @@ import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { ORDER_STATUS, SEAT_STATUS, RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
+import { isValidPersonName } from '../utils/inputValidation'
 
 type TicketPayload = {
   seatId: string
@@ -73,11 +74,15 @@ export default defineEventHandler(async (event) => {
 
   const ticketAttendees: Record<string, { firstName: string; lastName: string; ticketType: string }> = {}
   for (const t of tickets) {
-    ticketAttendees[t.seatId] = {
-      firstName: String(t.firstName).trim(),
-      lastName: String(t.lastName).trim(),
-      ticketType: t.ticketType
+    const firstName = String(t.firstName).trim()
+    const lastName = String(t.lastName).trim()
+    if (!isValidPersonName(firstName) || !isValidPersonName(lastName)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: tApiError('invalidRequest')
+      })
     }
+    ticketAttendees[t.seatId] = { firstName, lastName, ticketType: t.ticketType }
   }
 
   const { error: updateError } = await supabaseAdmin

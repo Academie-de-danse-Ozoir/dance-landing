@@ -8,6 +8,7 @@ import {
 } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
+import { isValidEmail, isValidPersonName } from '../utils/inputValidation'
 
 function trimStr(s: unknown, max: number): string {
   const str = typeof s === 'string' ? s.trim() : ''
@@ -101,6 +102,23 @@ export default defineEventHandler(async (event) => {
         statusMessage: tApiError('missingCustomerInfo')
       })
     }
+    if (!isValidPersonName(fName) || !isValidPersonName(lName) || !isValidEmail(em)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: tApiError('invalidRequest')
+      })
+    }
+    let phoneDigits = ph.replace(/\D/g, '')
+    if (phoneDigits.startsWith('33') && phoneDigits.length === 11) {
+      phoneDigits = `0${phoneDigits.slice(2)}`
+    }
+    if (!/^0[1-9]\d{8}$/.test(phoneDigits)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: tApiError('invalidRequest')
+      })
+    }
+    ph = phoneDigits
   }
 
   const { data, error } = await supabaseAdmin.rpc('hold_seats', {

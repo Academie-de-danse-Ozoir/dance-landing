@@ -525,7 +525,7 @@ async function restoreOrderFromStorage() {
 
   try {
     const res = await $fetch<OrderStatusResponse>('/api/order-status', {
-      query: { orderId }
+      query: { orderId, orderToken: storedData.orderToken }
     })
 
     const token = storedData.orderToken

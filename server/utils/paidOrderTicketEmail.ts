@@ -27,6 +27,14 @@ const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ
 
 const LOG = '[billetterie:mail]'
 
+function maskEmail(email: string | null | undefined): string {
+  const value = (email ?? '').trim()
+  const [local = '', domain = ''] = value.split('@')
+  if (!local || !domain) return '(absent)'
+  const visible = local.slice(0, Math.min(2, local.length))
+  return `${visible}***@${domain}`
+}
+
 function formatAmount(cents: number, currency: string = 'eur'): string {
   const value = (cents / 100).toFixed(2).replace('.', ',')
   return currency.toUpperCase() === 'EUR' ? `${value} €` : `${value} ${currency.toUpperCase()}`
@@ -54,7 +62,7 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
   console.info(`${LOG} Mailjet — envoi demandé`, {
     orderId: data.orderId,
     ref,
-    to: data.customerEmail,
+    to: maskEmail(data.customerEmail),
     hasPdf: !!pdfBuffer && pdfBuffer.length > 0,
     pdfBytes: pdfBuffer?.length ?? 0
   })
@@ -106,7 +114,7 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
         `Status Mailjet: ${mjStatus ?? '(absent)'}`
       console.error(`${LOG} Mailjet — refus dans le corps de réponse (pas d’envoi réel)`, {
         orderId: data.orderId,
-        to: data.customerEmail,
+        to: maskEmail(data.customerEmail),
         detail,
         full: JSON.stringify(body).slice(0, 2000)
       })
@@ -116,7 +124,7 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
     const messageUuid = first?.To?.[0]?.MessageUUID
     console.info(`${LOG} Mailjet — accepté pour envoi`, {
       orderId: data.orderId,
-      to: data.customerEmail,
+      to: maskEmail(data.customerEmail),
       messageUuid,
       hint: 'Si le mail n’arrive pas : courrier indésirable, expéditeur à valider sur app.mailjet.com, stats Mailjet.'
     })
@@ -124,7 +132,7 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
     const e = err as { statusCode?: number; response?: { body?: unknown }; message?: string }
     console.error(`${LOG} Mailjet — ERREUR`, {
       orderId: data.orderId,
-      to: data.customerEmail,
+      to: maskEmail(data.customerEmail),
       statusCode: e?.statusCode,
       message: e?.message,
       body: e?.response?.body != null ? JSON.stringify(e.response.body).slice(0, 1500) : undefined

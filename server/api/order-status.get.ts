@@ -3,12 +3,22 @@ import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 
 export default defineEventHandler(async (event) => {
-  const orderId = getQuery(event).orderId as string
+  const query = getQuery(event)
+  const orderId = query.orderId as string
+  const rawToken = query.orderToken
+  const orderToken =
+    typeof rawToken === 'string' ? rawToken.trim() : rawToken != null ? String(rawToken).trim() : ''
 
   if (!orderId) {
     throw createError({
       statusCode: 400,
       statusMessage: tApiError('missingOrderId')
+    })
+  }
+  if (!orderToken) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: tApiError('missingOrderToken')
     })
   }
 
@@ -19,6 +29,7 @@ export default defineEventHandler(async (event) => {
     .from('order')
     .select('id, status')
     .eq('id', orderId)
+    .eq('order_token', orderToken)
     .single()
 
   if (orderError || !order) {
