@@ -17,13 +17,6 @@ export default defineEventHandler(async (event) => {
   const orderToken = body?.orderToken
   const reason = body?.reason === CANCEL_REASON.TIMER ? CANCEL_REASON.TIMER : CANCEL_REASON.USER
 
-  console.info('[billetterie:cancel-order] Demande', {
-    orderId,
-    reason,
-    reasonRaw: body?.reason,
-    ip
-  })
-
   if (!orderId || !orderToken) {
     throw createError({
       statusCode: 400,
@@ -43,7 +36,6 @@ export default defineEventHandler(async (event) => {
   }
 
   if (order.status === ORDER_STATUS.PAID) {
-    console.warn('[billetterie:cancel-order] Refusé : commande déjà PAID', { orderId })
     throw createError({
       statusCode: 409,
       statusMessage: tApiError('paidOrderCannotBeCancelled')
@@ -59,13 +51,6 @@ export default defineEventHandler(async (event) => {
         : ORDER_STATUS.CANCELED
   await updateOrderStatusAndClearContact(orderId, newStatus)
 
-  console.info('[billetterie:cancel-order] Statut mis à jour', {
-    orderId,
-    ancienStatut: order.status,
-    nouveauStatut: newStatus,
-    reason
-  })
-
   // 2️⃣ Libérer les seats
   await supabaseAdmin
     .from('seat_reservation')
@@ -76,13 +61,10 @@ export default defineEventHandler(async (event) => {
   if (order.stripe_session_id) {
     try {
       await stripe.checkout.sessions.expire(order.stripe_session_id)
-      console.info('[billetterie:cancel-order] Session Stripe expirée', { stripeSessionId: order.stripe_session_id })
-    } catch (err) {
-      console.info('[billetterie:cancel-order] expire session Stripe (déjà complétée ou expirée)', err)
+    } catch {
+      // ignore expire errors
     }
   }
-
-  console.info('[billetterie:cancel-order] Terminé OK', { orderId })
   return { ok: true }
 })
 

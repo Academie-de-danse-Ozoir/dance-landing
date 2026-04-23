@@ -106,15 +106,11 @@ const formattedErrorMessage = computed(() => {
   return content.success.errorMessage.replace(/\n/g, '<br />')
 })
 
-const LOG = '[billetterie:success]'
-
 onMounted(async () => {
   const orderId = route.query.order_id as string
   const orderTokenFromQuery = route.query.order_token as string
   let orderToken = orderTokenFromQuery
   const t0 = performance.now()
-
-  console.info(`${LOG} Page chargée`, { orderId: orderId || '(absent)', query: { ...route.query } })
 
   showInitialLoader.value = !hasSeenPaymentResultPage.value
   hasSeenPaymentResultPage.value = true
@@ -137,7 +133,6 @@ onMounted(async () => {
   }
 
   if (!orderId || !orderToken) {
-    console.warn(`${LOG} Pas de order_id/order_token dans l’URL → redirection home`)
     await router.replace('/')
     return
   }
@@ -149,37 +144,13 @@ onMounted(async () => {
     const data = await $fetch<{ status: string }>('/api/order-status', {
       query: { orderId, orderToken }
     })
-    console.info(`${LOG} order-status`, {
-      orderId,
-      sessionId: sessionId ?? '(absent)',
-      status: data?.status,
-      ms: Math.round(performance.now() - t0)
-    })
-
     if (data?.status === ORDER_STATUS.PAID) {
       isValid.value = true
       localStorage.removeItem(STORAGE_ORDER_KEY)
-      console.info(`${LOG} OK → PAID, localStorage nettoyé`, {
-        totalMs: Math.round(performance.now() - t0)
-      })
-      console.info(
-        `${LOG} Les logs [billetterie:mail] sont dans le terminal du serveur (npm run dev), pas dans la console du navigateur.`
-      )
-    } else {
-      console.warn(`${LOG} Pas de PAID`, {
-        status: data?.status,
-        totalMs: Math.round(performance.now() - t0),
-        hadSessionId: !!sessionId
-      })
     }
-  } catch (err) {
-    console.error(`${LOG} Erreur`, err)
+  } catch {
+    // silently ignore and render error state
   }
-
-  console.info(`${LOG} Fin vérification`, {
-    isValid: isValid.value,
-    totalMs: Math.round(performance.now() - t0)
-  })
   isLoaded.value = true
 })
 </script>

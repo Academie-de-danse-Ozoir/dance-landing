@@ -25,16 +25,6 @@ import { sendAdminNewOrderNotificationIfConfigured } from './sendAdminNewOrderNo
 
 const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ_APIKEY_PRIVATE!)
 
-const LOG = '[billetterie:mail]'
-
-function maskEmail(email: string | null | undefined): string {
-  const value = (email ?? '').trim()
-  const [local = '', domain = ''] = value.split('@')
-  if (!local || !domain) return '(absent)'
-  const visible = local.slice(0, Math.min(2, local.length))
-  return `${visible}***@${domain}`
-}
-
 function formatAmount(cents: number, currency: string = 'eur'): string {
   const value = (cents / 100).toFixed(2).replace('.', ',')
   return currency.toUpperCase() === 'EUR' ? `${value} €` : `${value} ${currency.toUpperCase()}`
@@ -59,13 +49,7 @@ function orderRefShort(orderId: string): string {
 
 async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
   const ref = orderRefShort(data.orderId)
-  console.info(`${LOG} Mailjet — envoi demandé`, {
-    orderId: data.orderId,
-    ref,
-    to: maskEmail(data.customerEmail),
-    hasPdf: !!pdfBuffer && pdfBuffer.length > 0,
-    pdfBytes: pdfBuffer?.length ?? 0
-  })
+  void ref
 
   const html = buildTicketEmailHtml(data)
   const message: Record<string, unknown> = {
@@ -90,7 +74,6 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
   }
 
   if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
-    console.error(`${LOG} Variables MJ_APIKEY_PUBLIC / MJ_APIKEY_PRIVATE manquantes`)
     throw new Error('Mailjet: clés API manquantes')
   }
 
@@ -112,31 +95,9 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
       const detail =
         mjErrors?.map((e) => e.ErrorMessage ?? e.ErrorCode ?? String(e)).join(' | ') ||
         `Status Mailjet: ${mjStatus ?? '(absent)'}`
-      console.error(`${LOG} Mailjet — refus dans le corps de réponse (pas d’envoi réel)`, {
-        orderId: data.orderId,
-        to: maskEmail(data.customerEmail),
-        detail,
-        full: JSON.stringify(body).slice(0, 2000)
-      })
       throw new Error(`Mailjet: ${detail}`)
     }
-
-    const messageUuid = first?.To?.[0]?.MessageUUID
-    console.info(`${LOG} Mailjet — accepté pour envoi`, {
-      orderId: data.orderId,
-      to: maskEmail(data.customerEmail),
-      messageUuid,
-      hint: 'Si le mail n’arrive pas : courrier indésirable, expéditeur à valider sur app.mailjet.com, stats Mailjet.'
-    })
   } catch (err: unknown) {
-    const e = err as { statusCode?: number; response?: { body?: unknown }; message?: string }
-    console.error(`${LOG} Mailjet — ERREUR`, {
-      orderId: data.orderId,
-      to: maskEmail(data.customerEmail),
-      statusCode: e?.statusCode,
-      message: e?.message,
-      body: e?.response?.body != null ? JSON.stringify(e.response.body).slice(0, 1500) : undefined
-    })
     throw err
   }
 }
@@ -183,7 +144,6 @@ export async function sendPaidOrderTicketEmailIfNeeded(
   }
 
   if (!order.email?.trim()) {
-    console.warn(`${LOG} sendPaidOrderTicketEmailIfNeeded — pas d’email client`, { orderId })
     return { sent: false, reason: 'no_email' }
   }
 
@@ -197,7 +157,6 @@ export async function sendPaidOrderTicketEmailIfNeeded(
   const seatCount = seatIds.length
 
   if (seatCount === 0) {
-    console.warn(`${LOG} sendPaidOrderTicketEmailIfNeeded — aucun siège PAID`, { orderId })
     return { sent: false, reason: 'no_seats' }
   }
 
@@ -312,8 +271,8 @@ export async function sendPaidOrderTicketEmailIfNeeded(
           : null) as 'adult' | 'child' | null
       }
     })
-  } catch (e) {
-    console.error(`${LOG} Chargement détails billets (PDF / admin):`, e)
+  } catch {
+    // ignore optional ticket detail loading failures
   }
 
   let pdfBuffer: Buffer | undefined
@@ -333,8 +292,8 @@ export async function sendPaidOrderTicketEmailIfNeeded(
         eventVenue: brand.eventVenue,
         lineItems: lineItems.length > 0 ? lineItems : undefined
       })
-    } catch (e) {
-      console.error(`${LOG} Génération PDF billets:`, e)
+    } catch {
+      // ignore PDF generation failures
     }
   }
 
@@ -381,21 +340,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
             }))
     })
   ])
-  if (sheetResult.status === 'rejected') {
-    console.error(`${LOG} append Google Sheet — promesse rejetée`, {
-      orderId: order.id,
-      reason: sheetResult.reason
-    })
-  }
-  if (adminResult.status === 'rejected') {
-    console.error(`${LOG} email admin — promesse rejetée`, {
-      orderId: order.id,
-      reason: adminResult.reason
-    })
-  }
-
-  console.info(`${LOG} sendPaidOrderTicketEmailIfNeeded — OK (ticket_sent=true)`, {
-    orderId: order.id
-  })
+  void adminResult
+  void sheetResult
   return { sent: true }
 }

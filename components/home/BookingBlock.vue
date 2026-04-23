@@ -373,7 +373,6 @@ function startTimerFromExpiresAt(expiresAt: string) {
   const t = new Date(expiresAt).getTime()
   timerHasExpired = false
   if (Number.isNaN(t)) {
-    console.error('[timer] expiresAt invalide:', expiresAt)
     timerExpiresAt = null
     remainingSeconds.value = 0
     return
@@ -421,31 +420,16 @@ async function startSeatsRealtime() {
   realtimeChannel = supabase
     .channel(channelTopic)
     .on('postgres_changes', opts, (payload) => {
-      if (import.meta.dev) {
-        console.log('[Realtime] seat_reservation changé → loadSeats()', payload.eventType, payload)
-      }
+      void payload
       loadSeats()
     })
     .subscribe((status, err) => {
-      if (import.meta.dev) {
-        console.log('[Realtime] seat_reservation status:', status, err ?? '')
-      }
       if (status === 'SUBSCRIBED') {
         realtimeResubscribeAttempts = 0
         return
       }
       if (status === 'CHANNEL_ERROR' && err) {
-        if (import.meta.dev) {
-          console.error('[Realtime] seat_reservation error:', err)
-        }
         if (realtimeResubscribeAttempts >= REALTIME_MAX_RESUBSCRIBE_ATTEMPTS) {
-          if (import.meta.dev) {
-            console.error(
-              '[Realtime] seat_reservation: abandon après',
-              REALTIME_MAX_RESUBSCRIBE_ATTEMPTS,
-              'tentatives'
-            )
-          }
           return
         }
         realtimeResubscribeAttempts++
@@ -473,7 +457,6 @@ function startMainAnimationLoop() {
       if (remainingSeconds.value <= 0) {
         timerHasExpired = true
         timerExpiresAt = null
-        console.info('[billetterie:booking] Timer expiré → cancel-order (timer)')
         await cancelActiveOrder(CANCEL_REASON.TIMER)
       }
     }
@@ -546,9 +529,6 @@ async function restoreOrderFromStorage() {
       startTimerFromExpiresAt(res.expiresAt)
     } else {
       if (res.status === 'expired' && token) {
-        console.info('[billetterie:booking] restoreOrderFromStorage → cancel-order (timer)', {
-          orderId
-        })
         await $fetch('/api/cancel-order', {
           method: 'POST',
           body: { orderId, orderToken: token, reason: CANCEL_REASON.TIMER }
@@ -585,11 +565,11 @@ onMounted(async () => {
     await loadSeats()
     try {
       await startSeatsRealtime()
-    } catch (rtErr) {
-      if (import.meta.dev) console.warn('[Booking:Realtime] Initial subscription failed:', rtErr)
+    } catch {
+      // ignore realtime startup failures
     }
-  } catch (err) {
-    if (import.meta.dev) console.error('[Booking:Init] Failed to load seats or setup:', err)
+  } catch {
+    // ignore initial setup failure logs
   }
 
   startMainAnimationLoop()
@@ -893,11 +873,6 @@ async function cancelActiveOrder(
 ) {
   if (!activeOrder.value) return
 
-  console.info('[billetterie:booking] cancelActiveOrder', {
-    reason,
-    orderId: activeOrder.value.orderId
-  })
-
   try {
     await $fetch('/api/cancel-order', {
       method: 'POST',
@@ -953,12 +928,6 @@ async function pay(turnstileToken?: string) {
     const adultCount = order.adultCount ?? seatCount
     const childCount = order.childCount ?? 0
 
-    console.info('[billetterie:booking] pay() → create-checkout-session', {
-      orderId,
-      adultCount,
-      childCount
-    })
-
     const res = await $fetch<{ url: string }>('/api/create-checkout-session', {
       method: 'POST',
       body: {
@@ -970,7 +939,6 @@ async function pay(turnstileToken?: string) {
       }
     })
 
-    console.info('[billetterie:booking] Redirection Stripe Checkout', { hasUrl: !!res.url })
     window.location.href = res.url
   } catch (err) {
     error.value = getErrorMessage(err)

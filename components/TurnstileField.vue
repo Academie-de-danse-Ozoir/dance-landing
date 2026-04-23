@@ -100,8 +100,8 @@ onMounted(async () => {
   try {
     await loadScript()
     await mountWidget()
-  } catch (e) {
-    console.error('[TurnstileField]', e)
+  } catch {
+    // ignore mount errors
   }
 })
 
@@ -114,8 +114,8 @@ watch(
     try {
       await loadScript()
       await mountWidget()
-    } catch (e) {
-      console.error('[TurnstileField]', e)
+    } catch {
+      // ignore mount errors
     }
   }
 )

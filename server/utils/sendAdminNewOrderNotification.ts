@@ -4,8 +4,6 @@ import { brand, billetterieSenderName } from '../../locales/frDisplay'
 import { escapeHtml } from './htmlEscape'
 import type { TicketEmailData } from './ticketEmailTemplate'
 
-const LOG = '[billetterie:admin-mail]'
-
 /** Destinataire fixe pour les notifications de nouvelle commande (admin). */
 const ADMIN_ORDER_NOTIFICATION_EMAIL = 'spectacle.academiedanseozoir@gmail.com'
 
@@ -98,7 +96,6 @@ export async function sendAdminNewOrderNotificationIfConfigured(
   input: AdminNotificationInput
 ): Promise<void> {
   if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
-    console.warn(`${LOG} Mailjet non configuré — email admin ignoré`)
     return
   }
 
@@ -122,17 +119,9 @@ export async function sendAdminNewOrderNotificationIfConfigured(
     }
     const first = body.Messages?.[0]
     if (first?.Status !== 'success') {
-      console.error(`${LOG} Mailjet refus`, {
-        orderId: input.emailData.orderId,
-        body: JSON.stringify(body).slice(0, 1500)
-      })
       return
     }
-    console.info(`${LOG} Envoyé`, {
-      orderId: input.emailData.orderId,
-      to: ADMIN_ORDER_NOTIFICATION_EMAIL
-    })
-  } catch (e) {
-    console.error(`${LOG} Erreur`, { orderId: input.emailData.orderId, e })
+  } catch {
+    // ignore notification failures
   }
 }

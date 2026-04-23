@@ -72,8 +72,8 @@ export default defineEventHandler(async (event) => {
     if (order.stripe_session_id) {
       try {
         await stripe.checkout.sessions.expire(order.stripe_session_id)
-      } catch (e) {
-        console.info('[billetterie:create-checkout-session] expire Stripe (pas de holds)', e)
+      } catch {
+        // ignore expire errors
       }
     }
     await updateOrderStatusAndClearContact(orderId, ORDER_STATUS.EXPIRED)
@@ -102,8 +102,8 @@ export default defineEventHandler(async (event) => {
     if (order.stripe_session_id) {
       try {
         await stripe.checkout.sessions.expire(order.stripe_session_id)
-      } catch (e) {
-        console.info('[billetterie:create-checkout-session] expire Stripe (hold expiré)', e)
+      } catch {
+        // ignore expire errors
       }
     }
 
@@ -180,12 +180,6 @@ export default defineEventHandler(async (event) => {
     .from('order')
     .update({ stripe_session_id: session.id })
     .eq('id', orderId)
-
-  console.info('[billetterie:create-checkout-session]', {
-    orderId,
-    stripeSessionId: session.id,
-    successUrlHost: process.env.PUBLIC_SITE_URL ?? '(PUBLIC_SITE_URL non défini)'
-  })
 
   return { url: session.url }
 })

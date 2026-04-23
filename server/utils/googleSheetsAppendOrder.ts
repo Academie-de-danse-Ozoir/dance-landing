@@ -1,7 +1,5 @@
 import { JWT } from 'google-auth-library'
 
-const LOG = '[billetterie:admin-sheet]'
-
 /** Nombre de colonnes écrites (A→H). */
 const SHEET_COL_COUNT = 8
 
@@ -64,8 +62,7 @@ async function sheetsValuesGet(
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(rangeA1)}`
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    console.error(`${LOG} GET values (${res.status})`, text.slice(0, 600))
+    await res.text().catch(() => '')
     return null
   }
   const body = (await res.json()) as { values?: unknown[][] }
@@ -84,8 +81,7 @@ async function sheetsValuesClear(spreadsheetId: string, rangeA1: string, token: 
     body: '{}'
   })
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    console.error(`${LOG} CLEAR (${res.status})`, text.slice(0, 600))
+    await res.text().catch(() => '')
     return false
   }
   return true
@@ -110,8 +106,7 @@ async function sheetsValuesUpdate(
     body: JSON.stringify({ values })
   })
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    console.error(`${LOG} PUT values (${res.status})`, text.slice(0, 600))
+    await res.text().catch(() => '')
     return false
   }
   return true
@@ -187,8 +182,7 @@ async function fetchSheetTitleByGid(
   const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties%28sheetId%2Ctitle%29`
   const res = await fetch(metaUrl, { headers: { Authorization: `Bearer ${token}` } })
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    console.error(`${LOG} Lecture métadonnées classeur (${res.status})`, text.slice(0, 600))
+    await res.text().catch(() => '')
     return null
   }
   const data = (await res.json()) as {
@@ -201,9 +195,6 @@ async function fetchSheetTitleByGid(
       return title ?? null
     }
   }
-  console.error(`${LOG} Aucun onglet avec sheetId/gid=${sheetGid}`, {
-    onglets: sheets.map((s) => ({ gid: s.properties?.sheetId, title: s.properties?.title }))
-  })
   return null
 }
 
@@ -280,19 +271,16 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
   const cellPart = parseAppendCellPart(rangeRaw)
   const sheetGid = resolveSheetGidFromEnv()
   if (!spreadsheetId) {
-    console.warn(`${LOG} Ignoré : GOOGLE_SHEETS_SPREADSHEET_ID manquant`)
     return
   }
 
   let token: string | null
   try {
     token = await getAccessToken()
-  } catch (e) {
-    console.error(`${LOG} Auth Google (JWT) échouée`, e)
+  } catch {
     return
   }
   if (!token) {
-    console.warn(`${LOG} Ignoré : GOOGLE_SERVICE_ACCOUNT_JSON manquant ou invalide`)
     return
   }
 
@@ -300,7 +288,6 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
   if (sheetGid != null) {
     const title = await fetchSheetTitleByGid(spreadsheetId, sheetGid, token)
     if (!title) {
-      console.error(`${LOG} Append annulé : titre d’onglet introuvable pour gid=${sheetGid}`)
       return
     }
     range = `${quoteSheetTitleForA1(title)}!${cellPart}`
@@ -313,7 +300,6 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
   const cellPartOnly = bang >= 0 ? range.slice(bang + 1) : range
   const topLeft = dataTopLeftCell(cellPartOnly)
   if (!topLeft) {
-    console.error(`${LOG} Plage invalide (attendu ex. A2:H)`, { range })
     return
   }
   const readClearCellRange = expandDataRangeForReadClear(cellPartOnly)
@@ -341,19 +327,10 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
         )
       : [padSheetRow([...buyer, '', '', '—', '—'])]
 
-  console.info(`${LOG} Mise à jour + tri (nom résa)`, {
-    orderId: row.orderId,
-    spreadsheetIdSuffix: spreadsheetId.slice(-8),
-    readRangeA1,
-    newRowCount: newRows.length,
-    sheetGid: sheetGid ?? '(nom depuis GOOGLE_SHEETS_APPEND_RANGE)'
-  })
-
   let existing: string[][] | null
   try {
     existing = await sheetsValuesGet(spreadsheetId, readRangeA1, token)
-  } catch (e) {
-    console.error(`${LOG} GET values — erreur`, { orderId: row.orderId, err: e })
+  } catch {
     return
   }
   if (existing === null) return
@@ -366,10 +343,4 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
 
   const updated = await sheetsValuesUpdate(spreadsheetId, updateRangeA1, sorted, token)
   if (!updated) return
-
-  console.info(`${LOG} Sheet mise à jour (tri nom résa)`, {
-    orderId: row.orderId,
-    totalRows: sorted.length,
-    appendedForOrder: newRows.length
-  })
 }

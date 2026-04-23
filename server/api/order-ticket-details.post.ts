@@ -91,7 +91,6 @@ export default defineEventHandler(async (event) => {
     .eq('id', orderId)
 
   if (updateError) {
-    console.error('order-ticket-details update:', updateError)
     throw createError({
       statusCode: 500,
       statusMessage: tApiError('ticketDetailsSaveFailed')

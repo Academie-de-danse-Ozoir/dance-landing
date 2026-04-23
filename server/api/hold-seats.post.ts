@@ -131,7 +131,6 @@ export default defineEventHandler(async (event) => {
   })
 
   if (error) {
-    console.error('hold_seats error:', error)
     throw createError({
       statusCode: 409,
       statusMessage: tApiError('seatsUnavailable')
@@ -156,19 +155,11 @@ export default defineEventHandler(async (event) => {
       : ''
 
   if (!orderId || !orderToken || !expiresAt) {
-    console.error('[billetterie:hold-seats] RPC row inattendu:', row)
     throw createError({
       statusCode: 500,
       statusMessage: tApiError('holdSeatsIncompleteResponse')
     })
   }
-
-  console.info('[billetterie:hold-seats] Réservation créée', {
-    orderId: String(orderId),
-    expiresAt: String(expiresAt),
-    seatCount: Array.isArray(seatIds) ? seatIds.length : 0,
-    quick: quick === true
-  })
 
   /** Hold « rapide » : le RPC pose des valeurs factices ; on les efface tant que le client n’a pas rempli l’étape 1. */
   if (quick === true) {
@@ -184,7 +175,6 @@ export default defineEventHandler(async (event) => {
       })
       .eq('id', id)
     if (clearError) {
-      console.warn('[billetterie:hold-seats] NULL refusé, repli sur chaînes vides pour effacer les placeholders RPC', clearError)
       ;({ error: clearError } = await supabaseAdmin
         .from('order')
         .update({
@@ -195,9 +185,6 @@ export default defineEventHandler(async (event) => {
           ticket_attendees: null
         })
         .eq('id', id))
-    }
-    if (clearError) {
-      console.warn('[billetterie:hold-seats] Impossible d’effacer le contact factice', clearError)
     }
   }
 

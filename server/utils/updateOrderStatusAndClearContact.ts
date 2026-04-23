@@ -19,7 +19,6 @@ export async function updateOrderStatusAndClearContact(orderId: string, newStatu
   let { error: updateError } = await supabaseAdmin.from('order').update(clearedContact).eq('id', orderId)
 
   if (updateError) {
-    console.warn('[billetterie:orderContactClear] NULL refusé, repli sur chaînes vides', updateError)
     ;({ error: updateError } = await supabaseAdmin
       .from('order')
       .update({
@@ -34,7 +33,6 @@ export async function updateOrderStatusAndClearContact(orderId: string, newStatu
   }
 
   if (updateError) {
-    console.error('[billetterie:orderContactClear] Échec mise à jour commande', updateError)
     throw createError({
       statusCode: 500,
       statusMessage: tApiError('orderUpdateFailed')
