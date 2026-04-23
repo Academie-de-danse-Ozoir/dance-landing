@@ -107,7 +107,7 @@ defineProps<{
   rows: AlternatingFeatureRow[]
 }>()
 
-const billingEmail = content.brand.senderEmail
+const billingEmail = content.brand.displayEmail
 const practicalNoticePrefix = content.home.practicalNotice.prefix
 const practicalNoticeLink = content.home.practicalNotice.link
 

@@ -57,8 +57,8 @@ function footerTelHref(phone: string) {
 
 const contactLinks = computed(() => {
   const emailLink = {
-    to: `mailto:${content.brand.senderEmail}`,
-    label: content.brand.senderEmail,
+    to: `mailto:${content.brand.displayEmail}`,
+    label: content.brand.displayEmail,
     external: true
   }
   const phone = content.brand.contactPhone?.trim()

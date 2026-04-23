@@ -188,8 +188,8 @@
             </span>
             <UnderlineLink
               class="mapPricingSection__pmrLink"
-              :href="`mailto:${content.brand.senderEmail}`"
-              >{{ content.brand.senderEmail }}</UnderlineLink
+              :href="`mailto:${content.brand.displayEmail}`"
+              >{{ content.brand.displayEmail }}</UnderlineLink
             >
           </p>
         </div>
@@ -571,9 +571,8 @@ function scrollToPracticalInfo() {
 }
 
 .mapPricingSection__pmr {
-  margin-top: clamp(4rem, 6.5vw, 6rem);
+  margin-top: clamp(2.8rem, 4.8vw, 4.4rem);
   padding-top: clamp(1.25rem, 2.5vw, 1.75rem);
-  border-top: 1px solid $color-border-subtle;
   max-width: 27rem;
 }
 
