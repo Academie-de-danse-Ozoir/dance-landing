@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, navigateTo } from '#app'
 import AppLogo from './AppLogo.vue'
 
@@ -8,7 +8,6 @@ const { isRevealed } = useAppLoader()
 const isScrolled = ref(false)
 const isVisible = ref(true)
 let lastScrollY = 0
-
 
 // État de la variante du logo synchronisé avec la transition
 const currentLogoVariant = ref<'light' | 'dark'>('light')
@@ -91,7 +90,12 @@ onUnmounted(() => {
     }"
   >
     <div class="appHeader__inner">
-      <button class="appHeader__logo" @click="goHome" aria-label="Retour à l'accueil">
+      <button
+        class="appHeader__logo"
+        :class="{ 'appHeader__logo--static': route.path === '/' }"
+        @click="goHome"
+        aria-label="Retour à l'accueil"
+      >
         <AppLogo size="md" :variant="currentLogoVariant" icon-only />
       </button>
 
@@ -103,12 +107,11 @@ onUnmounted(() => {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2.5"
+              stroke-width="1.5"
               stroke-linecap="round"
-              stroke-linejoin="round"
+              aria-hidden="true"
             >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+              <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </span>
         </button>
@@ -151,10 +154,21 @@ onUnmounted(() => {
     transform 0.3s ease,
     opacity 0.2s ease;
   -webkit-tap-highlight-color: transparent;
+}
+
+.appHeader__close:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.appHeader__logo--static {
+  cursor: default;
+  pointer-events: none;
+  transition: none;
 
   &:active {
-    transform: scale(0.95);
-    opacity: 0.8;
+    transform: none;
+    opacity: 1;
   }
 }
 

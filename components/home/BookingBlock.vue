@@ -1,5 +1,10 @@
 <template>
-  <section :id="SEAT_SELECTION_SECTION_ID" class="bookingBlock" aria-label="Réservation">
+  <section
+    ref="bookingSectionRef"
+    :id="SEAT_SELECTION_SECTION_ID"
+    class="bookingBlock"
+    aria-label="Réservation"
+  >
     <div v-if="!seatsReady" class="bookingBlock__loader" role="status" aria-live="polite">
       <span class="bookingBlock__loaderSpinner" aria-hidden="true" />
       <span class="bookingBlock__visuallyHidden">{{ content.home.seats.map.mapLoading }}</span>
@@ -93,7 +98,6 @@ import { useSupabaseClient } from '#imports'
 import type { Seat, SeatStatus, ActiveOrder, TicketDetail } from '../../types'
 import {
   PENDING_SCROLL_TO_SEATS_KEY,
-  SCROLL_TO_SEATS_AFTER_NAV_MS,
   SEAT_SELECTION_SECTION_ID,
   STORAGE_ORDER_KEY,
   CANCEL_REASON,
@@ -108,11 +112,16 @@ import SeatMap from '../seats/SeatMap.vue'
 import SelectionInfo from '../seats/SelectionInfo.vue'
 import FormReservation from '../forms/FormReservation.vue'
 import DefaultButton from '../buttons/DefaultButton.vue'
-import { useScrollToBooking } from '../../composables/useScrollToBooking'
+import {
+  clearBookingSectionLayoutCache,
+  measureBookingSectionLayout,
+  useScrollToBooking
+} from '../../composables/useScrollToBooking'
 import { useBookingSession } from '../../composables/useBookingSession'
 import { registerBookingSeatMapSnap } from '../../composables/useBookingSeatMapSnap'
 import { registerBookingBannerActions } from '../../composables/useBookingBannerActions'
 const { scrollToBookingSection, scrollToBookingSectionIfMisaligned } = useScrollToBooking()
+const bookingSectionRef = ref<HTMLElement | null>(null)
 
 const {
   activeOrder,
@@ -564,6 +573,9 @@ function handleWindowResize() {
   if (resizeTimer) clearTimeout(resizeTimer)
   resizeTimer = setTimeout(() => {
     scheduleSeatMapHeightMeasure()
+    if (import.meta.client) {
+      measureBookingSectionLayout(bookingSectionRef.value)
+    }
     resizeTimer = null
   }, 100)
 }
@@ -589,13 +601,9 @@ onMounted(async () => {
   await nextTick()
   window.addEventListener('resize', handleWindowResize)
   scheduleSeatMapHeightMeasure()
+  measureBookingSectionLayout(bookingSectionRef.value)
 
   window.addEventListener('pageshow', onPageShow)
-
-  if (sessionStorage.getItem(PENDING_SCROLL_TO_SEATS_KEY)) {
-    sessionStorage.removeItem(PENDING_SCROLL_TO_SEATS_KEY)
-    setTimeout(() => void scrollToBookingSection(), SCROLL_TO_SEATS_AFTER_NAV_MS)
-  }
 
   unregisterBookingSnap = registerBookingSeatMapSnap(snapSeatMapHeightToLayout)
   unregisterBookingBanner = registerBookingBannerActions({
@@ -612,6 +620,7 @@ onUnmounted(() => {
   if (import.meta.client) {
     window.removeEventListener('pageshow', onPageShow)
     window.removeEventListener('resize', handleWindowResize)
+    clearBookingSectionLayoutCache()
   }
   stopMainAnimationLoop()
   void stopSeatsRealtime()
@@ -980,8 +989,6 @@ async function pay(turnstileToken?: string) {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /** Pleine largeur sur desktop : évite que le shrink-to-fit du flex parent change la largeur du plan quand le bandeau apparaît. */
@@ -1018,10 +1025,10 @@ async function pay(turnstileToken?: string) {
 
 .bookingBlock__title {
   margin: 0 0 30px 0;
-  font-size: 32px;
-  font-weight: 600;
   color: $color-text-primary;
   text-align: center;
+  user-select: none;
+  @include apply-font(title-m);
 }
 
 .bookingBlock__actions {
@@ -1128,7 +1135,7 @@ $booking-seat-map-max-height-desktop: 70dvh;
   margin: 8px 0 16px 0;
   border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 14px;
+  @include apply-font(text-s);
   transition:
     border-color 0.3s ease,
     background-color 0.3s ease,
@@ -1148,12 +1155,6 @@ $booking-seat-map-max-height-desktop: 70dvh;
     color: $color-warning-text;
     background-color: $color-warning-bg;
     border-color: $color-warning-border;
-  }
-}
-
-@include media-down(xs) {
-  .bookingBlock__title {
-    font-size: 24px;
   }
 }
 </style>

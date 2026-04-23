@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 import { HOME_TOP_SECTION_ID, NARROW_VIEWPORT_MQ, SEAT_SELECTION_SECTION_ID } from '../constants'
+import { useLenis } from './useLenis'
 
 function isNarrowViewport(): boolean {
   if (import.meta.server || typeof window === 'undefined') return false
@@ -13,11 +14,44 @@ function isNarrowViewport(): boolean {
 const BOOKING_SECTION_ALIGNED_TOP_MIN_PX = -10
 const BOOKING_SECTION_ALIGNED_TOP_MAX_PX = 80
 
-function isBookingSectionAlignedToScrollTarget(): boolean {
-  if (import.meta.server || typeof document === 'undefined') return true
-  const el = document.getElementById(SEAT_SELECTION_SECTION_ID)
-  if (!el) return true
-  const top = el.getBoundingClientRect().top
+/** Côté document, mis à jour par `measureBookingSectionLayout` (mount + resize du bloc réservation). */
+let cachedBookingSectionDocTop: number | null = null
+
+/**
+ * Mis à jour à chaque exécution de `useScrollToBooking` : même règle partout (scroll natif + Lenis `scroll`).
+ * Pas d’appel de composable ici (SeatMap) — d’où le module.
+ */
+let getPageScrollY: () => number = () =>
+  import.meta.client && typeof window !== 'undefined' ? window.scrollY : 0
+
+/**
+ * `getBoundingClientRect` seulement ici, au mount / resize (cf. `HeroBlock` / `EventLocationMap`).
+ */
+export function measureBookingSectionLayout(el: HTMLElement | null) {
+  if (import.meta.server) return
+  if (!el) {
+    cachedBookingSectionDocTop = null
+    return
+  }
+  const rect = el.getBoundingClientRect()
+  cachedBookingSectionDocTop = rect.top + getPageScrollY()
+}
+
+export function clearBookingSectionLayoutCache() {
+  cachedBookingSectionDocTop = null
+}
+
+function bookingSectionViewportTopFromCache(): number | null {
+  if (import.meta.server) return null
+  if (cachedBookingSectionDocTop == null) return null
+  return cachedBookingSectionDocTop - getPageScrollY()
+}
+
+/** Même règle que `scrollToBookingSectionIfMisaligned` : sans `getBoundingClientRect` (cache + `scrollY` / `lenis.scroll`). */
+export function isBookingSectionAlignedToViewport(): boolean {
+  if (import.meta.server) return true
+  const top = bookingSectionViewportTopFromCache()
+  if (top == null) return false
   return top >= BOOKING_SECTION_ALIGNED_TOP_MIN_PX && top <= BOOKING_SECTION_ALIGNED_TOP_MAX_PX
 }
 
@@ -27,6 +61,12 @@ function isBookingSectionAlignedToScrollTarget(): boolean {
  */
 export function useScrollToBooking() {
   const lenis = useLenis()
+
+  getPageScrollY = () => {
+    if (import.meta.server) return 0
+    if (isNarrowViewport()) return window.scrollY
+    return lenis.value?.scroll ?? window.scrollY
+  }
 
   async function scrollToBookingSection() {
     await nextTick()
@@ -83,7 +123,7 @@ export function useScrollToBooking() {
 
   /** Même scroll que le CTA, seulement si la section n’est plus alignée en haut (mobile : natif, desktop : Lenis). */
   async function scrollToBookingSectionIfMisaligned() {
-    if (isBookingSectionAlignedToScrollTarget()) return
+    if (isBookingSectionAlignedToViewport()) return
     await scrollToBookingSection()
   }
 

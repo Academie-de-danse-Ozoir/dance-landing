@@ -172,7 +172,7 @@ const variantClass = computed(() => `appLogo--${props.variant || 'light'}`)
   display: flex;
   flex-direction: column;
   line-height: 1.1;
-  font-family: 'Outfit', sans-serif;
+  font-family: $font-family-display;
   font-weight: 300;
   letter-spacing: 0.02em;
 }

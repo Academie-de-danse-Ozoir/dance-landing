@@ -1,5 +1,5 @@
 <template>
-  <section class="eventLocation" aria-labelledby="location-title">
+  <section id="practical-info" class="eventLocation" aria-labelledby="location-title">
     <div class="eventLocation__inner">
       <div class="eventLocation__arrivalBlock">
         <header class="eventLocation__header">
@@ -36,11 +36,7 @@
 
       <article class="eventLocation__parkingRow">
         <div class="eventLocation__parkingCopy">
-          <AnimatedTextElt
-            tag="h3"
-            class="eventLocation__parkingInfoTitle"
-            :delay="0.08"
-          >
+          <AnimatedTextElt tag="h3" class="eventLocation__parkingInfoTitle" :delay="0.08">
             {{ content.home.location.parkingInfoTitle }}
           </AnimatedTextElt>
           <div class="eventLocation__parkingInfoList">
@@ -51,7 +47,13 @@
               class="eventLocation__parkingInfoText"
               :delay="0.12 + index * 0.06"
             >
-              {{ `• ${item}` }}
+              <template v-if="formatParkingItem(item).secondLine">
+                {{ `• ${formatParkingItem(item).firstLine}` }}<br />
+                {{ formatParkingItem(item).secondLine }}
+              </template>
+              <template v-else>
+                {{ `• ${item}` }}
+              </template>
             </AnimatedTextElt>
           </div>
         </div>
@@ -80,6 +82,16 @@ const mapContainerRef = ref<HTMLElement | null>(null)
 const mapRevealed = ref(false)
 const parkingImageRef = ref<HTMLElement | null>(null)
 const parkingImageRevealed = ref(false)
+
+function formatParkingItem(item: string) {
+  const normalized = item.replace(/\s*÷\s*/g, '\n')
+  const forcedBreak = normalized.replace(/\s+Voici\b/, '\nVoici')
+  const [firstLine, ...rest] = forcedBreak.split('\n')
+  return {
+    firstLine,
+    secondLine: rest.join(' ').trim()
+  }
+}
 
 /** Position absolue du conteneur (coordonnées document, mis à jour au resize). */
 let mapRectTop = 0
@@ -174,12 +186,14 @@ onUnmounted(() => {
 @use 'sass:color';
 
 .eventLocation {
+  font-family: $font-family-text;
   background: white;
   padding-top: clamp(40px, 6vw, 60px);
   padding-bottom: clamp(100px, 14vh, 180px); // Plus d'espace avant le footer
   padding-left: clamp(20px, 4vw, 40px);
   padding-right: clamp(20px, 4vw, 40px);
   border-bottom: 1px solid $color-border-subtle;
+  user-select: none;
 }
 
 .eventLocation__inner {
@@ -203,16 +217,14 @@ onUnmounted(() => {
 }
 
 .eventLocation__title {
-  margin: 0 0 12px 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin: 0 0 16px 0;
+  @include apply-font(title-m);
   color: $color-text-primary;
 }
 
 .eventLocation__address {
   margin: 0;
-  font-size: 1.0625rem;
+  @include apply-font(text-l);
   line-height: 1.6;
   color: $color-text-secondary;
 }
@@ -268,11 +280,8 @@ onUnmounted(() => {
 }
 
 .eventLocation__parkingInfoTitle {
-  margin: 0 0 1rem 0;
-  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  margin: 0 0 16px 0;
+  @include apply-font(title-m);
   color: $color-text-primary;
 }
 
@@ -282,9 +291,10 @@ onUnmounted(() => {
 }
 
 .eventLocation__parkingInfoText {
-  margin: 0 0 0.6rem 0;
-  font-size: 1rem;
+  margin: 0 0 16px 0;
+  @include apply-font(text-l);
   line-height: 1.7;
+  white-space: pre-line;
   color: $color-text-secondary;
 
   &:last-child {

@@ -5,6 +5,8 @@
  * Durée = celle du CSS (.page-opacity-* dans assets/styles/page-transitions.scss).
  */
 const PAGE_TRANSITION_MS = 600
+const PENDING_SCROLL_TO_SEATS_KEY = 'billetterie:pending-seat-scroll'
+const PENDING_SCROLL_TO_HOME_KEY = 'billetterie:pending-home-scroll'
 
 function delayScroll(
   position: { left: number; top: number } | { el: string; top?: number }
@@ -18,6 +20,19 @@ export default {
   scrollBehavior(to, _from, savedPosition) {
     if (import.meta.server) {
       return { left: 0, top: 0 }
+    }
+
+    // Si un scroll custom est prévu (fade out/in + jump instantané),
+    // on laisse les composants gérer entièrement le positionnement.
+    try {
+      if (
+        sessionStorage.getItem(PENDING_SCROLL_TO_SEATS_KEY) ||
+        sessionStorage.getItem(PENDING_SCROLL_TO_HOME_KEY)
+      ) {
+        return false
+      }
+    } catch {
+      /* private mode / quota */
     }
 
     if (savedPosition) {

@@ -35,7 +35,7 @@
   },
   "brand": {
     "eventDate": "Dimanche 21 juin 2026",
-    "eventTimes": "Ouverture des portes à 16h30, lever de rideau à 17h",
+    "eventTimes": "Ouverture des portes à 16h15, lever de rideau à 17h",
     "eventVenue": "Théâtre de Yerres",
     "spectacleName": "Spectacle de l'Académie de Danse d'Ozoir",
     "spectacleNameStripe": "Spectacle de l'Académie de Danse d'Ozoir",
@@ -43,7 +43,7 @@
     "senderEmail": "billetterie@spectacle-academiededanse-ozoir.com",
     "contactPhone": "06 74 88 37 09",
     "stripeLineAdult": "Billet adulte",
-    "stripeLineChild": "Billet enfant",
+    "stripeLineChild": "Billet enfant (jusqu’à 12 ans inclus)",
     "pdfLabelEvent": "Spectacle",
     "pdfPresentTicketAtEntry": "Présentez ce billet à l'entrée du spectacle."
   },
@@ -157,7 +157,7 @@
       "submit": "Payer",
       "submitting": "Traitement...",
       "step2Title": "Détails des billets",
-      "step2Intro": "Indiquez le nom complet et le type de billet (adulte ou enfant) pour chaque place.",
+      "step2Intro": "Indiquez le nom complet et le type de billet\n(adulte ou enfant) pour chaque place.",
       "place": "Place",
       "adult": "Adulte",
       "child": "Enfant",
@@ -209,32 +209,37 @@
     "hero": {
       "kicker": "Billetterie officielle",
       "title": "Spectacle de l'Académie de Danse d'Ozoir",
-      "subtitle": "Le dimanche 21 juin 2026 au Théâtre de Yerres, ouverture des portes à 16h30 et lever de rideau à 17h. Une après-midi où la danse rencontre l'élégance. Offrez-vous ce rendez-vous — les meilleures places partent vite, et ce moment ne se vit qu'une fois.",
-      "ctaScroll": "Défile pour en savoir plus"
+      "subtitle": "Le dimanche 21 juin 2026 au Théâtre de Yerres, ouverture des portes à 16h15 et lever de rideau à 17h. Une après-midi où la danse rencontre l'élégance. Offrez-vous ce rendez-vous — les meilleures places partent vite, et ce moment ne se vit qu'une fois.",
+      "ctaScroll": "Défiler pour en savoir plus",
+      "ctaBookingNow": "Réserver maintenant"
     },
     "statement": {
       "eyebrow": "Le spectacle",
       "title": "Une soirée à vivre ensemble",
       "lead": "« Quand les tissus deviennent élégance » vous invite à découvrir un spectacle alliant danse classique et modern' jazz où la mode rencontre la danse ! Au fil de chorégraphies captivantes et pleines d'émotions, laissez-vous emporter dans les coulisses du monde de la couture et l'univers fascinant des défilés. Un lieu dans lequel l'élégance prend vie."
     },
+    "practicalNotice": {
+      "prefix": "Pour le stationnement ",
+      "link": "voir les informations pratiques"
+    },
     "highlights": {
       "sectionAria": "Informations sur le spectacle et la réservation",
       "rows": [
         {
-          "title": "Votre parcours de réservation",
+          "title": "Votre parcours\nde réservation",
           "text": "Choisissez vos places libres sur le plan interactif, puis validez avec « Réserver ». Renseignez vos coordonnées, puis le nom et le type de billet (adulte ou enfant) pour chaque place. Le paiement s'effectue ensuite entièrement en ligne, sur une interface sécurisée, par carte bancaire. Dès la confirmation, un email récapitulatif confirme votre commande ; les billets au format PDF vous sont transmis automatiquement après validation du paiement.",
           "imageSide": "right",
           "caption": "Ambiance d'une salle avant le lever du rideau — visuel d'illustration."
         },
         {
-          "title": "Exigence et émotion sur scène",
+          "title": "Exigence et\n émotion sur scène",
           "text": "Costumes, lumière et mise en scène accompagnent des chorégraphies pensées pour faire dialoguer la précision du classique et l'énergie du modern' jazz. Cette production prolonge le travail de l'Académie et invite le public à un moment où le geste devient silhouette, et la silhouette, souvenir.",
           "imageSide": "left",
           "caption": "Danse, mouvement et travail du corps — visuel d'illustration."
         },
         {
           "title": "Avant votre venue",
-          "text": "Pour rappel : l'ouverture des portes se fera à 16h30 et le lever de rideau à 17h. L'entrée sera interdite après le début du spectacle et aucune vente de billets ne s'effectuera sur place. Pour toute précision, contactez-nous sur : ",
+          "text": "Pour rappel : l'ouverture des portes se fera à 16h15 et le lever de rideau à 17h. L'entrée sera interdite après le début du spectacle et aucune vente de billets ne s'effectuera sur place. Pour toute précision, contactez-nous sur : ",
           "textAfterEmail": "Nous vous répondons dans les meilleurs délais.",
           "billingEmailLink": true,
           "imageSide": "right",
@@ -245,13 +250,13 @@
     "mapAndPricing": {
       "sectionAria": "Guide de réservation : tarifs, plan interactif et conditions",
       "eyebrow": "Billetterie",
-      "title": "Tout savoir avant de réserver",
+      "title": "Tout savoir\navant de réserver",
       "intro": "Cette page regroupe l’essentiel pour réserver : tarifs, lecture du plan (balcon, parterre, scène), limites de commande et utilisation de la carte.\nLe **récapitulatif des montants** s’affiche\njuste avant le paiement.",
       "pricing": {
         "title": "Prix des billets",
         "lead": "Les montants ci-dessous s’appliquent à chaque place au moment où vous validez le paiement. Ils sont indiqués toutes taxes comprises (TTC).",
         "adultLabel": "Billet adulte",
-        "childLabel": "Billet enfant",
+        "childLabel": "Billet enfant (jusqu’à 12 ans inclus)",
         "detail": "Le total de la commande (places × tarifs) apparaît sur l’écran Stripe avant confirmation. Après paiement accepté, un email récapitule sièges, montant et coordonnées.",
         "footnote": "Paiement sécurisé par carte bancaire."
       },
@@ -259,8 +264,9 @@
         "title": "Infos vente",
         "items": [
           "Représentation : **dimanche 21 juin 2026**",
-          "Ouverture des portes à **16h30**.",
+          "Ouverture des portes à **16h15**.",
           "Lever de rideau à **17h**.",
+          "Spectacle déconseillé aux enfants\n de moins de **4 ans**.",
           "Aucune entrée n’est autorisée une fois le spectacle commencé",
           "Aucune vente de places sur place : réservation et paiement **uniquement en ligne** sur ce site.",
           "Lieu : **Théâtre de Yerres**."
@@ -289,13 +295,12 @@
           {
             "key": "paid",
             "term": "Indisponible",
-            "detail": "Place vendue, bloquée pour la vente ou réservée au personnel — affichée comme les autres places indisponibles."
+            "detail": "Place vendue, bloquée pour la vente ou réservée au personnel."
           }
         ]
       },
       "controls": {
         "title": "Contrôles du plan",
-        "lead": "Les mêmes actions sont disponibles sur ordinateur, tablette et mobile ; les libellés des boutons peuvent varier selon la taille d’écran.",
         "items": [
           {
             "label": "Zoom",
@@ -331,7 +336,7 @@
   "success": {
     "title": "Paiement confirmé",
     "message": "Nous vous remercions pour votre commande.\nVos billets sont enregistrés.",
-    "info": "Un email de confirmation vient de vous être envoyé : il récapitule votre réservation et contient les informations utiles pour le jour du spectacle.",
+    "info": "Un email de confirmation vient de vous être envoyé : il récapitule votre réservation et contient les informations utiles pour le jour du spectacle.\nPensez à vérifier vos spams si vous ne le trouvez pas dans votre boîte de réception.",
     "backToSeats": "Retour à la réservation"
   },
   "footer": {
@@ -354,8 +359,8 @@
   "legal": {
     "cgv": {
       "metaTitle": "CGV — Spectacle de Danse d’Ozoir",
-      "title": "Conditions générales de vente",
-      "updatedAt": "Dernière mise à jour : à compléter (date)",
+      "title": "Conditions \ngénérales de vente",
+      "updatedAt": "Dernière mise à jour : 01/05/2026",
       "intro": "Les présentes conditions générales de vente (CGV) régissent la vente de billets de spectacle en ligne pour l’événement « Spectacle de Danse d’Ozoir » organisé par l’association ou l’entité éditrice désignée aux mentions légales. Toute commande implique l’acceptation sans réserve des présentes CGV.",
       "sections": [
         {
@@ -445,7 +450,7 @@
     "mentions": {
       "metaTitle": "Mentions légales — Spectacle de Danse d’Ozoir",
       "title": "Mentions légales",
-      "updatedAt": "Dernière mise à jour : à compléter (date)",
+      "updatedAt": "Dernière mise à jour : 01/05/2026",
       "intro": "Conformément aux obligations légales, les informations ci-dessous identifient l’éditeur du site, l’hébergeur et les principaux interlocuteurs. Certaines données sont des exemples à remplacer par vos informations définitives (SIRET, adresse complète, etc.).",
       "sections": [
         {
@@ -497,8 +502,8 @@
     },
     "privacy": {
       "metaTitle": "Politique de confidentialité — Spectacle de Danse d’Ozoir",
-      "title": "Politique de confidentialité (RGPD)",
-      "updatedAt": "Dernière mise à jour : à compléter (date)",
+      "title": "Politique de\nconfidentialité (RGPD)",
+      "updatedAt": "Dernière mise à jour : 01/05/2026",
       "intro": "La présente politique décrit comment sont collectées et utilisées les données personnelles dans le cadre du site de billetterie du « Spectacle de Danse d’Ozoir ». Elle s’inscrit dans le respect du Règlement (UE) 2016/679 (RGPD) et de la loi Informatique et Libertés.",
       "sections": [
         {

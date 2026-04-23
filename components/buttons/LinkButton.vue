@@ -26,8 +26,8 @@ withDefaults(defineProps<{
 <style lang="scss" scoped>
 .linkButton {
   display: inline-block;
+  @include apply-font(button-m);
   font-weight: 500;
-  line-height: 1.5;
   text-align: center;
   text-decoration: none;
   vertical-align: middle;
@@ -35,7 +35,6 @@ withDefaults(defineProps<{
   user-select: none;
   border: 1px solid transparent;
   padding: 12px 24px;
-  font-size: 16px;
   border-radius: 8px;
   color: white;
   transition: all 0.15s ease-in-out;

@@ -95,8 +95,10 @@ export function mapCaretAfterPhoneFormat(
  * Touche autorisée pour le téléphone : chiffres, pavé num., ou rang AZERTY.
  */
 export function isAllowedPhoneKeyEvent(e: KeyboardEvent): boolean {
-  if (/^Digit[0-9]$/.test(e.code) || /^Numpad[0-9]$/.test(e.code)) return true
-  if (e.key.length === 1 && /\d/.test(e.key)) return true
-  if (e.key.length === 1 && FR_AZERTY_TOP_ROW_CHARS.has(e.key)) return true
+  const code = e.code ?? ''
+  if (/^Digit[0-9]$/.test(code) || /^Numpad[0-9]$/.test(code)) return true
+  const key = e.key ?? ''
+  if (key.length === 1 && /\d/.test(key)) return true
+  if (key.length === 1 && FR_AZERTY_TOP_ROW_CHARS.has(key)) return true
   return false
 }

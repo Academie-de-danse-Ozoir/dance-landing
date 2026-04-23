@@ -82,9 +82,10 @@ function onKeydown(e: KeyboardEvent) {
     'Home',
     'End'
   ]
-  if (nav.includes(e.key)) return
+  const key = e.key ?? ''
+  if (nav.includes(key)) return
   if (isAllowedPhoneKeyEvent(e)) return
-  if (e.key.length === 1) {
+  if (key.length === 1) {
     e.preventDefault()
   }
 }
@@ -121,8 +122,7 @@ function onInput(e: Event) {
   .formField__label {
     display: block;
     margin-bottom: 6px;
-    font-size: 14px;
-    font-weight: 500;
+    @include apply-font(form-label);
     color: #212529;
 
     .label__required {
@@ -134,8 +134,7 @@ function onInput(e: Event) {
     display: block;
     width: 100%;
     padding: 10px 12px;
-    font-size: 14px;
-    font-weight: 400;
+    @include apply-font(text-s);
     line-height: 1.5;
     color: #212529;
     background-color: #fff;
@@ -186,7 +185,7 @@ function onInput(e: Event) {
     line-height: 1.4;
 
     .feedback__error {
-      font-size: 13px;
+      @include apply-font(meta-13);
       color: #dc3545;
     }
 

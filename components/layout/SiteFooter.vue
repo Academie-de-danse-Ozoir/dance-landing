@@ -2,23 +2,14 @@
   <footer class="siteFooter" role="contentinfo">
     <div class="siteFooter__inner">
       <div class="siteFooter__brand">
-        <p class="brand__name">{{ content.brand.spectacleName }}</p>
+        <p class="brand__name">{{ mobileBrandName }}</p>
         <p class="brand__tagline">{{ content.footer.tagline }}</p>
       </div>
 
       <nav class="siteFooter__nav" :aria-label="content.footer.navAria">
-        <FooterLinkColumn
-          :title="content.footer.columns.bookingTitle"
-          :links="bookingLinks"
-        />
-        <FooterLinkColumn
-          :title="content.footer.columns.legalTitle"
-          :links="legalLinks"
-        />
-        <FooterLinkColumn
-          :title="content.footer.columns.contactTitle"
-          :links="contactLinks"
-        />
+        <FooterLinkColumn :title="content.footer.columns.bookingTitle" :links="bookingLinks" />
+        <FooterLinkColumn :title="content.footer.columns.legalTitle" :links="legalLinks" />
+        <FooterLinkColumn :title="content.footer.columns.contactTitle" :links="contactLinks" />
         <div class="siteFooter__mapCol">
           <p class="mapCol__title">{{ content.home.location.title || 'Théâtre de Yerres' }}</p>
           <ul class="mapCol__list">
@@ -72,11 +63,12 @@ const contactLinks = computed(() => {
   }
   const phone = content.brand.contactPhone?.trim()
   if (!phone) return [emailLink]
-  return [
-    { to: footerTelHref(phone), label: phone, external: true },
-    emailLink
-  ]
+  return [{ to: footerTelHref(phone), label: phone, external: true }, emailLink]
 })
+
+const mobileBrandName = computed(() =>
+  content.brand.spectacleName.replace("l'Académie ", "l'Académie\n")
+)
 
 const copyrightLine = computed(() =>
   content.footer.copyright.replace('{year}', String(new Date().getFullYear()))
@@ -88,11 +80,10 @@ const copyrightLine = computed(() =>
   width: 100%;
   background: #1a1a2e;
   color: #e8e8ef;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
-  font-size: 14px;
+  @include apply-font(text-s);
   line-height: 1.5;
   margin-top: auto;
+  user-select: none;
 }
 
 .siteFooter__inner {
@@ -107,15 +98,14 @@ const copyrightLine = computed(() =>
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 
   .brand__name {
-    margin: 0 0 6px 0;
-    font-size: 17px;
-    font-weight: 600;
+    margin: 0 0 12px 0;
     color: #fff;
+    @include apply-font(title-xs);
   }
 
   .brand__tagline {
     margin: 0;
-    font-size: 13px;
+    @include apply-font(footer-tagline);
     color: rgba(255, 255, 255, 0.65);
     max-width: 24rem;
   }
@@ -131,14 +121,12 @@ const copyrightLine = computed(() =>
 .siteFooter__mapCol {
   display: flex;
   flex-direction: column;
+  justify-self: end;
 }
 
 .mapCol__title {
   margin: 0 0 12px 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  @include apply-font(label-micro);
   color: rgba(255, 255, 255, 0.45);
 }
 
@@ -154,14 +142,14 @@ const copyrightLine = computed(() =>
 
 .mapCol__list .list__text {
   color: rgba(255, 255, 255, 0.88);
-  font-size: 14px;
+  @include apply-font(text-s);
   line-height: 1.5;
 }
 
 .siteFooter__bottom {
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 12px;
+  @include apply-font(footer-tagline);
   color: rgba(255, 255, 255, 0.5);
 
   .bottom__copy {
@@ -178,14 +166,27 @@ const copyrightLine = computed(() =>
   .siteFooter__nav {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .siteFooter__mapCol {
+    justify-self: stretch;
+  }
 }
 
-@media (max-width: 640px) {
+@include media-down(sm) {
+  .siteFooter {
+    min-height: 100dvh;
+  }
+
+  .brand__name {
+    white-space: pre-line;
+  }
+
   .siteFooter__nav {
     grid-template-columns: 1fr;
   }
   .siteFooter__mapCol {
     grid-column: 1 / -1;
+    justify-self: stretch;
   }
 }
 </style>

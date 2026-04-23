@@ -1,5 +1,10 @@
 <template>
-  <section :id="HOME_TOP_SECTION_ID" class="heroBlock" aria-labelledby="heroBlockTitle">
+  <section
+    ref="heroBlockRef"
+    :id="HOME_TOP_SECTION_ID"
+    class="heroBlock"
+    aria-labelledby="heroBlockTitle"
+  >
     <ParallaxMediaElt
       class="heroBlock__bg"
       :class="{ 'heroBlock__bg--reveal': isBgRevealed }"
@@ -43,16 +48,25 @@
       >
         {{ subtitle }}
       </AnimatedTextElt>
-
       <div class="heroBlock__ctaWrapper" :class="{ 'heroBlock__ctaWrapper--reveal': isCtaVisible }">
         <button
-          v-if="ctaScroll"
+          v-if="ctaBookingNow"
           type="button"
           class="heroBlock__cta"
           @pointerdown="handleTap"
+          @click="scrollToBookingSlow"
+        >
+          {{ ctaBookingNow }}
+        </button>
+        <button
+          v-if="ctaScroll"
+          type="button"
+          class="heroBlock__cta heroBlock__cta--withArrow"
+          @pointerdown="handleTap"
           @click="scrollToNext"
         >
-          {{ ctaScroll }}
+          <span>{{ ctaScroll }}</span>
+          <span class="heroBlock__ctaArrow" aria-hidden="true">↓</span>
         </button>
       </div>
     </div>
@@ -60,9 +74,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { HOME_TOP_SECTION_ID } from '../../constants'
-import { useScrollToBooking } from '../../composables/useScrollToBooking'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { HOME_TOP_SECTION_ID, SEAT_SELECTION_SECTION_ID } from '../../constants'
+import { useLenis } from '../../composables/useLenis'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
 import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import { useAppLoader } from '../../composables/useAppLoader'
@@ -73,10 +87,12 @@ defineProps<{
   title: string
   subtitle: string
   ctaScroll?: string
+  ctaBookingNow?: string
 }>()
 
 const { isRevealed } = useAppLoader()
 const lenis = useLenis()
+const isBookingJumpInProgress = ref(false)
 
 // On détecte si c'est une visite retour (déjà révélé au montage)
 const isFastMode = ref(false)
@@ -88,6 +104,17 @@ const isBgRevealed = ref(false)
 const kickerRef = ref<InstanceType<typeof AnimatedTextElt> | null>(null)
 const titleRef = ref<InstanceType<typeof AnimatedTextElt> | null>(null)
 const subtitleRef = ref<InstanceType<typeof AnimatedTextElt> | null>(null)
+const heroBlockRef = ref<HTMLElement | null>(null)
+let heroTop = 0
+let heroHeight = 0
+
+function measureHeroBounds() {
+  const heroEl = heroBlockRef.value
+  if (!heroEl) return
+  const rect = heroEl.getBoundingClientRect()
+  heroTop = rect.top + window.scrollY
+  heroHeight = rect.height
+}
 
 function triggerAllAnimations() {
   if (!isRevealed.value) return
@@ -109,6 +136,9 @@ watch(isRevealed, (val) => {
 })
 
 onMounted(() => {
+  measureHeroBounds()
+  window.addEventListener('resize', measureHeroBounds, { passive: true })
+
   // Si déjà révélé (ex: navigation inter-page), on active le mode rapide
   if (isRevealed.value) {
     isCtaVisible.value = false
@@ -117,13 +147,59 @@ onMounted(() => {
   }
 })
 
+onUnmounted(() => {
+  window.removeEventListener('resize', measureHeroBounds)
+})
+
 function scrollToNext() {
+  if (!heroHeight) measureHeroBounds()
+  const heroBottom = heroTop + heroHeight
+
   const l = lenis.value
   if (l) {
-    l.scrollTo(window.innerHeight)
+    l.scrollTo(heroBottom)
   } else {
-    window.scrollBy({ top: window.innerHeight, behavior: 'smooth' })
+    window.scrollTo({ top: heroBottom, behavior: 'smooth' })
   }
+}
+
+function scrollToBookingSlow() {
+  if (isBookingJumpInProgress.value) return
+  const bookingEl = document.getElementById(SEAT_SELECTION_SECTION_ID)
+  if (!bookingEl) return
+  isBookingJumpInProgress.value = true
+  const FADE_OUT_MS = 380
+  const FADE_IN_MS = 620
+  const appRoot = document.querySelector('.appContainer') as HTMLElement | null
+
+  if (appRoot) {
+    appRoot.style.transition = `opacity ${FADE_OUT_MS}ms ease`
+    appRoot.style.opacity = '0'
+  }
+
+  window.setTimeout(() => {
+    const l = lenis.value
+    if (l) {
+      l.scrollTo(bookingEl, { offset: 0, immediate: true, force: true })
+    } else {
+      const top = bookingEl.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({ top, behavior: 'auto' })
+    }
+
+    requestAnimationFrame(() => {
+      if (appRoot) {
+        appRoot.style.transition = `opacity ${FADE_IN_MS}ms ease`
+        appRoot.style.opacity = '1'
+      }
+      window.setTimeout(() => {
+        if (appRoot) {
+          appRoot.style.transition = ''
+          appRoot.style.opacity = ''
+        }
+        isBookingJumpInProgress.value = false
+      }, FADE_IN_MS)
+    })
+  }, FADE_OUT_MS)
 }
 
 function handleTap(e: PointerEvent) {
@@ -144,8 +220,8 @@ function handleTap(e: PointerEvent) {
   justify-content: center;
   color: #fff;
   overflow: hidden;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: $font-family-text;
+  user-select: none;
 }
 
 .heroBlock__bg {
@@ -186,36 +262,33 @@ function handleTap(e: PointerEvent) {
 }
 
 .heroBlock__kicker {
-  margin: 0 0 16px 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  margin: 0 0 24px 0;
+  @include apply-font(label-s);
   color: rgba(255, 255, 255, 0.72);
 }
 
 .heroBlock__title {
   margin: 0 0 24px 0;
-  font-size: clamp(2.5rem, 6.5vw, 4rem); // Un peu plus grand
-  font-weight: 700;
-  line-height: 1.04;
-  letter-spacing: -0.02em;
   text-shadow: 0 4px 40px rgba(0, 0, 0, 0.35);
+  @include apply-font(title-xl);
 }
 
 .heroBlock__subtitle {
   margin: 0 0 40px 0;
-  font-size: clamp(1.1rem, 2.4vw, 1.3rem); // Un peu plus grand
-  line-height: 1.6;
   max-width: 34rem;
   margin-left: auto;
   margin-right: auto;
   color: rgba(255, 255, 255, 0.88);
+  @include apply-font(text-l);
 }
 
 .heroBlock__ctaWrapper {
   opacity: 0;
   transform: translateY(50px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   transition:
     opacity 1.2s ease 0.675s,
     transform 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.675s;
@@ -232,9 +305,9 @@ function handleTap(e: PointerEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  width: min(100%, 360px);
   padding: 16px 40px;
-  font-size: 16px;
-  font-weight: 600;
   color: $cta-fg;
   background: $cta-bg;
   border: 2px solid $cta-bg;
@@ -249,6 +322,7 @@ function handleTap(e: PointerEvent) {
     background 0.25s ease,
     border-color 0.25s ease,
     box-shadow 0.25s ease;
+  @include apply-font(button-m);
 
   &:active {
     transform: scale(0.94);
@@ -277,5 +351,14 @@ function handleTap(e: PointerEvent) {
     outline: 2px solid #fff;
     outline-offset: 4px;
   }
+}
+
+.heroBlock__ctaArrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82em;
+  line-height: 1;
+  transform: translateY(1px);
 }
 </style>

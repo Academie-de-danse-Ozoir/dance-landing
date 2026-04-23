@@ -1,9 +1,19 @@
 <template>
   <section class="statementSection" aria-labelledby="statementSectionTitle">
     <div class="statementSection__frame">
-      <AnimatedTextElt tag="p" class="statementSection__eyebrow" :delay="0">{{ eyebrow }}</AnimatedTextElt>
-      <AnimatedTextElt tag="h2" id="statementSectionTitle" class="statementSection__title" :delay="0.06">{{ title }}</AnimatedTextElt>
-      <AnimatedTextElt tag="p" class="statementSection__lead" :delay="0.12">{{ lead }}</AnimatedTextElt>
+      <AnimatedTextElt tag="p" class="statementSection__kicker" :delay="0">{{
+        eyebrow
+      }}</AnimatedTextElt>
+      <AnimatedTextElt
+        tag="h2"
+        id="statementSectionTitle"
+        class="statementSection__title"
+        :delay="0.06"
+        >{{ title }}</AnimatedTextElt
+      >
+      <AnimatedTextElt tag="p" class="statementSection__lead" :delay="0.12">{{
+        lead
+      }}</AnimatedTextElt>
     </div>
   </section>
 </template>
@@ -20,8 +30,7 @@ defineProps<{
 
 <style lang="scss" scoped>
 .statementSection {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: $font-family-text;
   min-height: 100dvh;
   min-height: 100vh;
   display: flex;
@@ -29,6 +38,7 @@ defineProps<{
   justify-content: center;
   box-sizing: border-box;
   padding: clamp(48px, 10vh, 120px) clamp(20px, 5vw, 56px);
+  user-select: none;
   background: linear-gradient(
     165deg,
     $color-gray-50 0%,
@@ -48,29 +58,28 @@ defineProps<{
   }
 }
 
-.statementSection__eyebrow {
-  margin: 0 0 1rem 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+.statementSection__kicker {
+  margin: 0 0 24px 0;
   color: $color-text-muted;
+  @include apply-font(label-s);
 }
 
 .statementSection__title {
-  margin: 0 0 clamp(1.25rem, 3vw, 2rem) 0;
-  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
-  font-weight: 700;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
+  margin: 0 auto 24px;
+  max-width: 12.5ch;
   color: $color-text-primary;
+  @include apply-font(title-xl);
+  overflow-wrap: normal;
+  word-break: normal;
+
+  @include media-down(lg) {
+    max-width: 8ch;
+  }
 }
 
 .statementSection__lead {
   margin: 0;
-  font-size: clamp(1.0625rem, 2.1vw, 1.3125rem);
-  line-height: 1.75;
   color: $color-text-secondary;
-  font-weight: 400;
+  @include apply-font(text-l);
 }
 </style>

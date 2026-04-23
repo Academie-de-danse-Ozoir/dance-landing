@@ -1,0 +1,343 @@
+@use 'sass:map';
+
+$font-family-display: 'title', 'Williwaw Book', 'Times New Roman', serif;
+$font-family-text: 'text', 'PP Neue Montreal', Arial, sans-serif;
+
+$font-tokens: (
+  title-xl: (
+    family: $font-family-display,
+    size: clamp(4rem, 6.5vw, 5rem),
+    line-height: 1.1
+  ),
+  title-l: (
+    family: $font-family-display,
+    size: clamp(2.5rem, 4.5vw, 4rem),
+    line-height: 1.1
+  ),
+  title-m: (
+    family: $font-family-display,
+    size: clamp(2.5rem, 4.5vw, 3rem),
+    line-height: 1.1
+  ),
+  title-s: (
+    family: $font-family-display,
+    size: clamp(30px, 2.2vw + 1rem, 35px),
+    line-height: 1.3
+  ),
+  title-s-2: (
+    family: $font-family-display,
+    size: clamp(30px, 2.2vw + 1rem, 38px),
+    line-height: 1.3
+  ),
+
+  title-xs: (
+    family: $font-family-display,
+    size: 30px,
+    line-height: 1.3
+  ),
+  text-l: (
+    family: $font-family-text,
+    size: clamp(0.96rem, 2.2vw, 1.3rem),
+    line-height: 1.6
+  ),
+  text-s: (
+    family: $font-family-text,
+    size: 0.95rem,
+    letter-spacing: 0.02em
+  ),
+  label-s: (
+    family: $font-family-text,
+    size: 0.8125rem,
+    weight: 600,
+    line-height: 1.2,
+    letter-spacing: 0.18em,
+    text-transform: uppercase
+  ),
+  button-m: (
+    family: $font-family-text,
+    size: clamp(1rem, 2.2vw, 1.1rem)
+  ),
+  intro-title: (
+    family: $font-family-display,
+    size: 1.5rem,
+    weight: 600,
+    line-height: 1.25
+  ),
+  body-md: (
+    family: $font-family-text,
+    size: 15px,
+
+    line-height: 1.65
+  ),
+  text-sm-body: (
+    family: $font-family-text,
+    size: 1rem,
+
+    line-height: 1.65
+  ),
+  text-sm-body-mobile: (
+    family: $font-family-text,
+    size: 0.875rem,
+
+    line-height: 1.65
+  ),
+  text-sm-body-tight: (
+    family: $font-family-text,
+    size: 0.9375rem,
+
+    line-height: 1.6
+  ),
+  card-title: (
+    family: $font-family-display,
+    size: 2rem,
+    line-height: 1.1
+  ),
+  title-price: (
+    family: $font-family-display,
+    size: 1.25rem,
+    weight: 600,
+    line-height: 1.2
+  ),
+  label-subsection: (
+    family: $font-family-text,
+    size: 0.8125rem,
+    weight: 600,
+    line-height: 1.2,
+    letter-spacing: 0.06em,
+    text-transform: uppercase
+  ),
+  caption-12: (
+    family: $font-family-text,
+    size: 12px,
+
+    line-height: 1.4
+  ),
+  caption-sm: (
+    family: $font-family-text,
+    size: 0.8125rem,
+
+    line-height: 1.55
+  ),
+  caption-11: (
+    family: $font-family-text,
+    size: 11px,
+
+    line-height: 1.45
+  ),
+  meta-13: (
+    family: $font-family-text,
+    size: 14px,
+    letter-spacing: 0.02em
+  ),
+  footer-tagline: (
+    family: $font-family-text,
+    size: 14px,
+    letter-spacing: 0.03em,
+    line-height: 1.45
+  ),
+  footer-fine: (
+    family: $font-family-text,
+    size: 14px,
+    letter-spacing: 0.02em
+  ),
+  label-micro: (
+    family: $font-family-text,
+    size: 11px,
+    weight: 600,
+    line-height: 1.2,
+    letter-spacing: 0.15em,
+    text-transform: uppercase
+  ),
+  success-message: (
+    family: $font-family-text,
+    size: 18px,
+    line-height: 1.5
+  ),
+  form-label: (
+    family: $font-family-text,
+    size: 14px,
+    line-height: 1.5,
+    letter-spacing: 0.02em
+  ),
+  control-label: (
+    family: $font-family-text,
+    size: 0.9375rem,
+    weight: 600,
+    line-height: 1.2
+  ),
+  limit-highlight: (
+    family: $font-family-text,
+    size: 1rem,
+
+    line-height: 1.55
+  ),
+  modal-title: (
+    family: $font-family-display,
+    size: 25px,
+    line-height: 1.2
+  ),
+  form-subtitle: (
+    family: $font-family-display,
+    size: 20px,
+    line-height: 1.3
+  ),
+  timer-eyebrow: (
+    family: $font-family-text,
+    size: 0.72rem,
+    weight: 700,
+    line-height: 1.2,
+    letter-spacing: 0.06em,
+    text-transform: uppercase
+  ),
+  timer-clock: (
+    family: $font-family-text,
+    size: 1.9rem,
+    weight: 800,
+    line-height: 1,
+    letter-spacing: 0.08em
+  ),
+  timer-clock-mobile: (
+    family: $font-family-text,
+    size: 1.45rem,
+    weight: 800,
+    line-height: 1
+  ),
+  price-summary-title: (
+    family: $font-family-text,
+    size: 13px,
+    weight: 600,
+    line-height: 1.2,
+    letter-spacing: 0.075em,
+    text-transform: uppercase
+  ),
+  price-summary-total: (
+    family: $font-family-text,
+    size: 16px,
+    weight: 700,
+    letter-spacing: 0.03em,
+    line-height: 1.3
+  ),
+  orientation-title: (
+    family: $font-family-display,
+    size: 25px
+  ),
+  orientation-hint: (
+    family: $font-family-text,
+    size: 15px,
+    letter-spacing: 0.02em,
+
+    line-height: 1.5
+  ),
+  selection-text: (
+    family: $font-family-text,
+    size: 16px,
+
+    line-height: 1.4
+  ),
+  selection-limit: (
+    family: $font-family-text,
+    size: 14px
+  ),
+  map-lock-title: (
+    family: $font-family-display,
+    size: 1.5rem,
+    line-height: 1.3
+  ),
+  map-lock-hint: (
+    family: $font-family-text,
+    size: 0.85rem,
+    line-height: 1.4
+  ),
+  map-heading-xs: (
+    family: $font-family-text,
+    size: 0.7rem,
+    weight: 700,
+    line-height: 1.3,
+    letter-spacing: 0.1em,
+    text-transform: uppercase
+  ),
+  map-text-sm: (
+    family: $font-family-text,
+    size: 0.75rem,
+    line-height: 1.5,
+    letter-spacing: 0.03em
+  ),
+  map-button-label: (
+    family: $font-family-text,
+    size: 0.7rem,
+    letter-spacing: 0em
+  ),
+  map-toolbar-icon: (
+    family: $font-family-text,
+    size: 1.15rem,
+    weight: 600
+  ),
+  map-svg-seat-label: (
+    family: $font-family-text,
+    size: 4.5px,
+    weight: 600,
+    line-height: 1
+  ),
+  map-svg-stage-label: (
+    family: $font-family-display,
+    size: 16px,
+    weight: 700,
+    letter-spacing: 0.05em
+  ),
+  map-svg-zone-title: (
+    family: $font-family-display,
+    size: 6.5px,
+    weight: 700,
+    line-height: 1,
+    letter-spacing: 0.02em
+  ),
+  map-svg-zone-subtitle: (
+    family: $font-family-text,
+    size: 4.25px,
+    weight: 600,
+    line-height: 1
+  ),
+  map-svg-balcon-parterre-title: (
+    family: $font-family-display,
+    size: 12px,
+    weight: 700,
+    line-height: 1,
+    letter-spacing: 0.02em
+  ),
+  map-svg-balcon-parterre-subtitle: (
+    family: $font-family-text,
+    size: 5.25px,
+    weight: 600,
+    line-height: 1
+  )
+);
+
+@function font-token($token, $property) {
+  $config: map.get($font-tokens, $token);
+  @if $config == null {
+    @error 'Token typo inconnu: #{$token}.';
+  }
+
+  $value: map.get($config, $property);
+  @if $value == null {
+    @return null;
+  }
+  @return $value;
+}
+
+@mixin apply-font($token) {
+  font-family: font-token($token, family);
+  font-size: font-token($token, size);
+  font-weight: font-token($token, weight);
+  line-height: font-token($token, line-height);
+
+  $letter-spacing: font-token($token, letter-spacing);
+  @if $letter-spacing != null {
+    letter-spacing: $letter-spacing;
+  }
+
+  $text-transform: font-token($token, text-transform);
+  @if $text-transform != null {
+    text-transform: $text-transform;
+  }
+}

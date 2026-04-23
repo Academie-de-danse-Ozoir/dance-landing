@@ -205,38 +205,71 @@
         class="seatMap__toolbarHost"
         :class="{ 'seatMap__toolbarHost--open': mapToolbarMenuOpen }"
       >
+        <Transition name="seatMapPopoverFade">
+          <div
+            v-if="mapToolbarMenuOpen || mapLegendMenuOpen"
+            class="seatMap__mapPopoverBackdrop"
+            aria-hidden="true"
+            @click="closeMobileMapPopovers"
+          />
+        </Transition>
         <div class="seatMap__mobileLeftStack">
           <div class="seatMap__toolbarHelp">
-            <button
-              type="button"
-              class="seatMap__toolbarTrigger"
-              :aria-expanded="mapToolbarMenuOpen"
-              :aria-controls="mapToolbarPanelId"
-              @pointerdown="triggerToolbarTap"
-              @click.stop="toggleMapToolbarMenu"
-            >
-              {{ mapUi.toolbarMenuTrigger }}
-            </button>
-            <Transition name="seatMapPopoverFade">
-              <div
-                v-if="mapToolbarMenuOpen"
-                :id="mapToolbarPanelId"
-                class="seatMap__toolbarHintsPanel"
+            <div class="seatMap__toolbarTriggerWrap">
+              <button
+                type="button"
+                class="seatMap__toolbarTrigger"
+                :aria-expanded="mapToolbarMenuOpen"
+                :aria-controls="mapToolbarPanelId"
+                @pointerdown="triggerToolbarTap"
+                @click.stop="toggleMapToolbarMenu"
               >
-                <section
-                  class="seatMap__hints seatMap__hints--inPopover"
-                  :aria-labelledby="mapHintsTitlePopoverId"
+                {{ mapUi.toolbarMenuTrigger }}
+              </button>
+              <Transition name="seatMapPopoverFade">
+                <div
+                  v-if="mapToolbarMenuOpen"
+                  :id="mapToolbarPanelId"
+                  class="seatMap__toolbarHintsPanel"
+                  @click="closeMapToolbarMenuFromPanelClick"
                 >
-                  <h2 :id="mapHintsTitlePopoverId" class="hints__title">{{ mapUi.hintsTitle }}</h2>
-                  <dl class="hints__list">
-                    <template v-for="(row, i) in mapUi.hintsRows" :key="i">
-                      <dt>{{ row.label }}</dt>
-                      <dd v-html="seatMapLayoutMobile ? row.textMobile : row.textDesktop" />
-                    </template>
-                  </dl>
-                </section>
-              </div>
-            </Transition>
+                  <section
+                    class="seatMap__hints seatMap__hints--inPopover"
+                    :aria-labelledby="mapHintsTitlePopoverId"
+                  >
+                    <div class="seatMap__popoverHeader">
+                      <h2 :id="mapHintsTitlePopoverId" class="hints__title">
+                        {{ mapUi.hintsTitle }}
+                      </h2>
+                      <button
+                        type="button"
+                        class="seatMap__popoverClose"
+                        aria-label="Fermer"
+                        @click.stop="closeMapToolbarMenu"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                      </button>
+                    </div>
+                    <dl class="hints__list">
+                      <template v-for="(row, i) in mapUi.hintsRows" :key="i">
+                        <dt>{{ row.label }}</dt>
+                        <dd v-html="seatMapLayoutMobile ? row.textMobile : row.textDesktop" />
+                      </template>
+                    </dl>
+                  </section>
+                </div>
+              </Transition>
+            </div>
           </div>
         </div>
         <div class="seatMap__toolbar" role="toolbar" :aria-label="mapUi.toolbarLabel">
@@ -277,51 +310,76 @@
           class="seatMap__legendHelp"
           :class="{ 'seatMap__legendHelp--open': mapLegendMenuOpen }"
         >
-          <button
-            type="button"
-            class="seatMap__toolbarTrigger seatMap__legendMenuTrigger"
-            :aria-expanded="mapLegendMenuOpen"
-            :aria-controls="mapLegendPanelId"
-            @pointerdown="triggerToolbarTap"
-            @click.stop="toggleMapLegendMenu"
-          >
-            {{ mapUi.legendMenuTrigger }}
-          </button>
-          <Transition name="seatMapPopoverFade">
-            <div
-              v-if="mapLegendMenuOpen"
-              :id="mapLegendPanelId"
-              class="seatMap__legendPopoverPanel"
+          <div class="seatMap__legendTriggerWrap">
+            <button
+              type="button"
+              class="seatMap__toolbarTrigger seatMap__legendMenuTrigger"
+              :aria-expanded="mapLegendMenuOpen"
+              :aria-controls="mapLegendPanelId"
+              @pointerdown="triggerToolbarTap"
+              @click.stop="toggleMapLegendMenu"
             >
+              {{ mapUi.legendMenuTrigger }}
+            </button>
+            <Transition name="seatMapPopoverFade">
               <div
-                class="seatMap__legend seatMap__legend--inPopover"
-                role="group"
-                :aria-labelledby="mapLegendPopoverTitleId"
+                v-if="mapLegendMenuOpen"
+                :id="mapLegendPanelId"
+                class="seatMap__legendPopoverPanel"
+                @click="closeMapLegendMenuFromPanelClick"
               >
-                <h2 :id="mapLegendPopoverTitleId" class="hints__title">{{ mapUi.legendTitle }}</h2>
-                <ul class="legend__list">
-                  <li
-                    v-for="row in seatStatusLegendRows"
-                    :key="'p-' + row.key"
-                    class="legend__item"
-                  >
-                    <span
-                      class="legend__swatch"
-                      :class="[
-                        `legend__swatch--${row.key}`,
-                        { 'legend__swatch--border': row.border }
-                      ]"
-                      aria-hidden="true"
-                    />
-                    <span class="legend__label">{{ row.label }}</span>
-                  </li>
-                </ul>
-                <p class="legend__foot legend__foot--strong">
-                  {{ legendMaxPerOrderLine }}
-                </p>
+                <div
+                  class="seatMap__legend seatMap__legend--inPopover"
+                  role="group"
+                  :aria-labelledby="mapLegendPopoverTitleId"
+                >
+                  <div class="seatMap__popoverHeader">
+                    <h2 :id="mapLegendPopoverTitleId" class="hints__title">
+                      {{ mapUi.legendTitle }}
+                    </h2>
+                    <button
+                      type="button"
+                      class="seatMap__popoverClose"
+                      aria-label="Fermer"
+                      @click.stop="closeMapLegendMenu"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M6 6l12 12M18 6L6 18" />
+                      </svg>
+                    </button>
+                  </div>
+                  <ul class="legend__list">
+                    <li
+                      v-for="row in seatStatusLegendRows"
+                      :key="'p-' + row.key"
+                      class="legend__item"
+                    >
+                      <span
+                        class="legend__swatch"
+                        :class="[
+                          `legend__swatch--${row.key}`,
+                          { 'legend__swatch--border': row.border }
+                        ]"
+                        aria-hidden="true"
+                      />
+                      <span class="legend__label">{{ row.label }}</span>
+                    </li>
+                  </ul>
+                  <p class="legend__foot legend__foot--strong">
+                    {{ legendMaxPerOrderLine }}
+                  </p>
+                </div>
               </div>
-            </div>
-          </Transition>
+            </Transition>
+          </div>
         </div>
       </div>
       <Transition name="seatMapZoomBadge">
@@ -380,6 +438,7 @@ import {
   SEAT_MAP_PMR_ZONE_PAD_TOP_SVG,
   SEAT_MAP_PMR_ZONE_RIGHT_SKEW_SVG
 } from '../../constants'
+import { isBookingSectionAlignedToViewport } from '../../composables/useScrollToBooking'
 import {
   isAccessibilityEaseSeatLabel,
   parseTheaterSeatLabel,
@@ -848,6 +907,8 @@ const ZONE_FRAME_LABEL_CORNER_PAD_X = 6.75
 const ZONE_FRAME_LABEL_CORNER_PAD_Y = 6
 /** Écart vertical entre le haut du titre et le haut du sous-titre (`dominant-baseline: hanging`). */
 const ZONE_FRAME_LABEL_LINE_STEP = 7.85
+/** Décale « Rangées P à X » / « Rangées O à A » un peu plus bas (balcon / parterre uniquement). */
+const ZONE_BALCON_PARTERRE_SUBTITLE_NUDGE_DOWN = 3.5
 /** Allonge un peu le cadre balcon vers le bas (sièges P–X inchangés). */
 const BALCONY_ZONE_EXTRA_BOTTOM = 6
 /**
@@ -965,7 +1026,7 @@ function paddedZoneFrameFromBounds(b: SeatBounds, inset: number, opts?: ZoneFram
   const titleX = x + ZONE_FRAME_LABEL_CORNER_PAD_X
   const titleY = y + ZONE_FRAME_LABEL_CORNER_PAD_Y
   const subtitleX = titleX
-  const subtitleY = titleY + ZONE_FRAME_LABEL_LINE_STEP
+  const subtitleY = titleY + ZONE_FRAME_LABEL_LINE_STEP + ZONE_BALCON_PARTERRE_SUBTITLE_NUDGE_DOWN
   return {
     x,
     y,
@@ -1254,9 +1315,18 @@ const viewBoxParsed = computed(() => {
 const mapPivotX = computed(() => viewBoxParsed.value.x + viewBoxParsed.value.w / 2)
 const mapPivotY = computed(() => viewBoxParsed.value.y + viewBoxParsed.value.h / 2)
 
+/** Marges (unités SVG) autour du contenu pour élargir la plage de pan. */
+const MAP_PAN_CLAMP_EXTRA_MARGIN_X = 120
+const MAP_PAN_CLAMP_EXTRA_MARGIN_Y = 120
+/** Si la carte entière tient dans le viewport (au dézoom max), on garde une liberté de pan X/Y. */
+const MAP_PAN_WHEN_CONTENT_FITS = 240
+/** Liberté additionnelle (X/Y) même quand le contenu dépasse la vue. */
+const MAP_PAN_EXTRA_FREEDOM = 120
+
 /**
  * Étendue réelle de la carte (sièges + arc balcon, cadres zone, scène) — pas la viewBox avec ses marges.
- * Le clamp de pan s’aligne sur ça pour que les bords utiles touchent les bords du SVG.
+ * Le clamp de pan s’aligne sur ça ; marges X/Y agrandissent artificiellement la zone
+ * pour laisser plus de liberté de déplacement (notamment horizontal).
  */
 const mapClampBounds = computed((): SeatBounds => {
   const vb = viewBoxParsed.value
@@ -1277,7 +1347,14 @@ const mapClampBounds = computed((): SeatBounds => {
   if (!Number.isFinite(minX)) {
     return { minX: vb.x, minY: vb.y, maxX: vb.x + vb.w, maxY: vb.y + vb.h }
   }
-  return { minX, minY, maxX, maxY }
+  const mx = MAP_PAN_CLAMP_EXTRA_MARGIN_X
+  const my = MAP_PAN_CLAMP_EXTRA_MARGIN_Y
+  return {
+    minX: minX - mx,
+    minY: minY - my,
+    maxX: maxX + mx,
+    maxY: maxY + my
+  }
 })
 
 /**
@@ -1298,12 +1375,19 @@ function clampPanXYForZoom(z: number, px: Ref<number>, py: Ref<number>) {
 
   if (pxMin > pxMax) {
     const mid = (pxMin + pxMax) / 2
-    pxMin = pxMax = mid
+    pxMin = mid - MAP_PAN_WHEN_CONTENT_FITS
+    pxMax = mid + MAP_PAN_WHEN_CONTENT_FITS
   }
   if (pyMin > pyMax) {
     const mid = (pyMin + pyMax) / 2
-    pyMin = pyMax = mid
+    pyMin = mid - MAP_PAN_WHEN_CONTENT_FITS
+    pyMax = mid + MAP_PAN_WHEN_CONTENT_FITS
   }
+
+  pxMin -= MAP_PAN_EXTRA_FREEDOM
+  pxMax += MAP_PAN_EXTRA_FREEDOM
+  pyMin -= MAP_PAN_EXTRA_FREEDOM
+  pyMax += MAP_PAN_EXTRA_FREEDOM
 
   px.value = Math.min(pxMax, Math.max(pxMin, px.value))
   py.value = Math.min(pyMax, Math.max(pyMin, py.value))
@@ -1439,17 +1523,31 @@ function isMapNavLocked() {
   return !!props.activeOrder
 }
 
+let lastBookingScrollEmitTs = 0
+const BOOKING_SCROLL_EMIT_THROTTLE_MS = 500
+
+function requestBookingSectionScrollIfNeeded() {
+  if (!import.meta.client) return
+  if (isBookingSectionAlignedToViewport()) return
+  const now = performance.now()
+  if (now - lastBookingScrollEmitTs < BOOKING_SCROLL_EMIT_THROTTLE_MS) return
+  lastBookingScrollEmitTs = now
+  emit('booking-section-scroll-if-needed')
+}
+
 /** Met à jour les cibles (zoom autour du point focus) puis lisse vers l’affichage via rAF. */
 function setMapZoomAtPoint(z1: number, focusX: number, focusY: number) {
   if (isMapNavLocked()) return
-  const z0 = mapTargetZoom.value
+  // Ancre le zoom sur l'état réellement affiché (plus fidèle au curseur pendant les gestes successifs).
+  const z0 = mapZoom.value
+  if (z0 < 1e-9) return
   const next = Math.min(MAP_ZOOM_MAX, Math.max(mapZoomMinEffective.value, z1))
   if (Math.abs(next - z0) < 1e-9) return
   const cx = mapPivotX.value
   const cy = mapPivotY.value
   const r = next / z0
-  mapTargetPanX.value = focusX - cx - r * (focusX - mapTargetPanX.value - cx)
-  mapTargetPanY.value = focusY - cy - r * (focusY - mapTargetPanY.value - cy)
+  mapTargetPanX.value = focusX - cx - r * (focusX - mapPanX.value - cx)
+  mapTargetPanY.value = focusY - cy - r * (focusY - mapPanY.value - cy)
   mapTargetZoom.value = next
   clampTargetMapPan()
   closeMobileMapPopovers()
@@ -1458,7 +1556,7 @@ function setMapZoomAtPoint(z1: number, focusX: number, focusY: number) {
 
 function zoomMapByStep(mult: number) {
   if (isMapNavLocked()) return
-  emit('booking-section-scroll-if-needed')
+  requestBookingSectionScrollIfNeeded()
   const svg = svgRef.value
   if (!svg) return
   const r = svg.getBoundingClientRect()
@@ -1468,7 +1566,7 @@ function zoomMapByStep(mult: number) {
 
 function resetMapView() {
   if (isMapNavLocked()) return
-  emit('booking-section-scroll-if-needed')
+  requestBookingSectionScrollIfNeeded()
   const z = defaultMapZoomForViewport()
   mapTargetPanX.value = 0
   mapTargetPanY.value = 0
@@ -1485,6 +1583,14 @@ function closeMapToolbarMenu() {
 
 function closeMapLegendMenu() {
   mapLegendMenuOpen.value = false
+}
+
+function closeMapToolbarMenuFromPanelClick() {
+  closeMapToolbarMenu()
+}
+
+function closeMapLegendMenuFromPanelClick() {
+  closeMapLegendMenu()
 }
 
 function toggleMapToolbarMenu() {
@@ -1552,7 +1658,7 @@ onMounted(() => {
     const onGestureStart = (e: Event) => {
       if (isMapNavLocked()) return
       ;(e as unknown as { preventDefault(): void }).preventDefault()
-      emit('booking-section-scroll-if-needed')
+      requestBookingSectionScrollIfNeeded()
       safariGestureBaseZoom = mapTargetZoom.value
     }
     const onGestureChange = (e: Event) => {
@@ -1578,7 +1684,7 @@ onMounted(() => {
     const onWheelPinch = (e: WheelEvent) => {
       if (isMapNavLocked()) return
       if (!e.ctrlKey) return
-      emit('booking-section-scroll-if-needed')
+      requestBookingSectionScrollIfNeeded()
       e.preventDefault()
       const step = isSeatMapMobileViewport() ? MAP_ZOOM_STEP : MAP_DESKTOP_TRACKPAD_PINCH_STEP
       const mult = e.deltaY < 0 ? step : 1 / step
@@ -1593,7 +1699,7 @@ onMounted(() => {
     const onTouchStart = (e: TouchEvent) => {
       if (isMapNavLocked()) return
       if (e.touches.length === 2) {
-        emit('booking-section-scroll-if-needed')
+        requestBookingSectionScrollIfNeeded()
         stopMapNavRaf()
         isMapPanning.value = false
         mapPanAwaitingThreshold.value = false
@@ -1649,7 +1755,7 @@ onBeforeUnmount(() => {
 
 function beginMapPan(e: PointerEvent) {
   if (isMapNavLocked()) return
-  emit('booking-section-scroll-if-needed')
+  requestBookingSectionScrollIfNeeded()
   e.preventDefault()
   stopMapNavRaf()
   syncMapNavTargetsFromDisplay()
@@ -1664,7 +1770,7 @@ function onMapPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
   if (isMapNavLocked()) return
   if (isSeatMapMobileViewport()) {
-    emit('booking-section-scroll-if-needed')
+    requestBookingSectionScrollIfNeeded()
   }
   viewportRef.value?.focus({ preventScroll: true })
   const target = e.target as Element | null
@@ -1974,18 +2080,14 @@ function handleSeatClick(seat: Seat) {
 
   .activeOrderLock__title {
     margin: 0 0 6px;
-    font-size: 0.875rem;
-    font-weight: 700;
     color: $color-text-primary;
-    line-height: 1.3;
+    @include apply-font(map-lock-title);
   }
 
   .activeOrderLock__hint {
     margin: 0;
-    font-size: 0.75rem;
-    font-weight: 500;
     color: $color-text-secondary;
-    line-height: 1.4;
+    @include apply-font(map-lock-hint);
   }
 
   &.seatMap--activeOrderLock {
@@ -2042,12 +2144,8 @@ function handleSeatClick(seat: Seat) {
     margin: 0 0 0.55em;
     padding: 0;
     border: none;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: $seat-map-ui-text-muted;
-    line-height: 1.3;
+    @include apply-font(map-heading-xs);
   }
 
   .hints__list {
@@ -2061,18 +2159,19 @@ function handleSeatClick(seat: Seat) {
 
     dt {
       margin: 0;
-      font-size: 0.68rem;
-      font-weight: 600;
       color: $seat-map-ui-text-strong;
-      line-height: 1.35;
+      @include apply-font(map-text-sm);
     }
 
     dd {
       margin: 0;
-      font-size: 0.68rem;
-      font-weight: 500;
-      line-height: 1.4;
       color: $seat-map-ui-text-soft;
+      @include apply-font(map-text-sm);
+
+      :deep(strong) {
+        color: $seat-map-pmr-icon;
+        font-weight: inherit;
+      }
     }
   }
 
@@ -2111,7 +2210,20 @@ function handleSeatClick(seat: Seat) {
       box-shadow: none;
       border-radius: 0;
       border: none;
-      pointer-events: none;
+      pointer-events: auto;
+    }
+  }
+
+  .seatMap__mapPopoverBackdrop {
+    display: none;
+
+    @include media-down(lg) {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: rgba(15, 12, 28, 0.12);
+      pointer-events: auto;
     }
   }
 
@@ -2155,13 +2267,20 @@ function handleSeatClick(seat: Seat) {
 
   .seatMap__toolbarHelp {
     display: none;
-    flex-direction: column;
-    align-items: flex-start;
 
     @include media-down(lg) {
-      display: flex;
+      display: block;
       position: static;
       pointer-events: none;
+    }
+  }
+
+  .seatMap__toolbarTriggerWrap,
+  .seatMap__legendTriggerWrap {
+    @include media-down(lg) {
+      position: relative;
+      width: max-content;
+      max-width: 100%;
     }
   }
 
@@ -2172,16 +2291,13 @@ function handleSeatClick(seat: Seat) {
 
   .seatMap__legendHelp {
     display: none;
-    flex-direction: column-reverse;
-    align-items: flex-end;
-    gap: 6px;
 
     @include media-down(lg) {
-      display: flex;
+      display: block;
       position: absolute;
       right: 12px;
       bottom: 14px;
-      z-index: 2;
+      z-index: 1;
       pointer-events: none;
     }
   }
@@ -2210,8 +2326,6 @@ function handleSeatClick(seat: Seat) {
 
     margin: 0;
     font: inherit;
-    font-size: 0.72rem;
-    font-weight: 600;
     color: $seat-map-hint-text;
     background: $seat-map-ui-surface;
     border: 1px solid $seat-map-ui-border;
@@ -2226,6 +2340,7 @@ function handleSeatClick(seat: Seat) {
       color 0.25s ease,
       border-color 0.25s ease,
       box-shadow 0.25s ease;
+    @include apply-font(map-button-label);
 
     &:active {
       transform: scale(0.94);
@@ -2251,16 +2366,20 @@ function handleSeatClick(seat: Seat) {
 
     @include media-down(lg) {
       display: block;
-      margin-top: 6px;
-      margin-left: 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+      margin: 0;
       padding: 10px 11px;
       background: $seat-map-ui-surface-elevated;
       border: 1px solid $seat-map-ui-border;
       border-radius: 4px;
       box-shadow: $seat-map-ui-shadow-popover-up;
-      min-width: 0;
+      min-width: 100%;
       /* Gauche : inset · droite : inset + colonne icônes + marge — évite le chevauchement */
       max-width: min(calc(100vw - 12px - 44px - 12px - 10px), 16.77rem);
+      width: max-content;
       box-sizing: border-box;
       max-height: min(52dvh, 22rem);
       overflow-y: auto;
@@ -2273,19 +2392,85 @@ function handleSeatClick(seat: Seat) {
 
     @include media-down(lg) {
       display: block;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      z-index: 2;
       margin: 0;
       padding: 10px 11px;
       background: $seat-map-ui-surface-elevated;
       border: 1px solid $seat-map-ui-border;
       border-radius: 4px;
       box-shadow: $seat-map-ui-shadow-popover-down;
-      min-width: 0;
+      min-width: 100%;
       width: max-content;
       max-width: min(calc(100vw - 12px - 44px - 12px - 10px), 14rem);
       box-sizing: border-box;
       max-height: min(48dvh, 20rem);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  .seatMap__popoverHeader {
+    display: none;
+
+    @include media-down(lg) {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 0.55em;
+      min-width: 0;
+
+      .hints__title {
+        margin: 0;
+        flex: 1;
+        min-width: 0;
+      }
+    }
+  }
+
+  .seatMap__popoverClose {
+    display: none;
+
+    @include media-down(lg) {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin: 0;
+      padding: 0;
+      font: inherit;
+      color: $seat-map-hint-text;
+      background: $seat-map-ui-surface;
+      border: 1px solid $seat-map-ui-border;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px $seat-map-ui-shadow-soft;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+
+      svg {
+        width: 16px;
+        height: 16px;
+        display: block;
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          color: $seat-map-hint-text;
+          background: $seat-map-ui-surface-solid;
+          border-color: $seat-map-hint-text;
+        }
+      }
+
+      &:active {
+        transform: scale(0.96);
+        box-shadow: inset 0 1px 2px rgba(33, 37, 41, 0.1);
+      }
     }
   }
 
@@ -2365,14 +2550,12 @@ function handleSeatClick(seat: Seat) {
   }
 
   .toolbarRow__label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    line-height: 1.25;
     color: currentColor;
     justify-self: start;
     transition:
       color 0.25s ease,
       opacity 0.25s ease;
+    @include apply-font(map-text-sm);
   }
 
   .toolbarRow__icon {
@@ -2381,14 +2564,12 @@ function handleSeatClick(seat: Seat) {
     justify-content: center;
     width: 36px;
     height: 36px;
-    font-size: 1.15rem;
-    font-weight: 600;
-    line-height: 1;
     justify-self: end;
     color: currentColor;
     transition:
       color 0.25s ease,
       opacity 0.25s ease;
+    @include apply-font(map-toolbar-icon);
   }
 
   .seatMap__toolbarRow--reset .toolbarRow__icon {
@@ -2426,13 +2607,12 @@ function handleSeatClick(seat: Seat) {
     bottom: 14px;
     left: 12px;
     padding: 4px 9px;
-    font-size: 0.7rem;
-    font-weight: 600;
     color: $color-text-secondary;
     background: $color-surface-panel;
     border-radius: 4px;
     box-shadow: 0 1px 4px $seat-map-ui-shadow-soft;
     pointer-events: none;
+    @include apply-font(map-text-sm);
   }
 
   .seatMapZoomBadge-enter-active,
@@ -2465,6 +2645,10 @@ function handleSeatClick(seat: Seat) {
   .seatMap__legend {
     .hints__title {
       margin-bottom: 1rem;
+    }
+
+    &.seatMap__legend--inPopover .hints__title {
+      margin-bottom: 0;
     }
 
     .legend__foot {
@@ -2518,29 +2702,19 @@ function handleSeatClick(seat: Seat) {
   }
 
   .legend__label {
-    font-size: 0.62rem;
-    font-weight: 500;
-    line-height: 1.35;
     color: $seat-map-hint-text;
+    @include apply-font(map-text-sm);
   }
 
   .legend__foot {
     margin: 0.55em 0 0;
-    font-size: 0.58rem;
-    font-weight: 500;
-    line-height: 1.4;
     color: $seat-map-ui-text-muted;
+    @include apply-font(map-text-sm);
 
     &--strong {
       margin-top: 0.35em;
-      font-weight: 600;
-      color: $seat-map-ui-text-soft;
-    }
-  }
-
-  @include media-down(lg) {
-    .seatMap__legend--inPopover .legend__label {
-      font-size: 0.6rem;
+      font-weight: inherit;
+      color: $seat-map-pmr-icon;
     }
   }
 
@@ -2584,10 +2758,9 @@ function handleSeatClick(seat: Seat) {
 
     .svg__label {
       text-anchor: middle;
-      font-size: 4.5px;
-      font-weight: 600;
       fill: $seat-map-label-fill;
       pointer-events: none;
+      @include apply-font(map-svg-seat-label);
     }
 
     .svg__stageRect {
@@ -2599,11 +2772,9 @@ function handleSeatClick(seat: Seat) {
 
     .svg__stageLabel {
       text-anchor: middle;
-      font-size: 9px;
-      font-weight: 700;
       fill: $seat-map-stage-label;
-      letter-spacing: 0.04em;
       pointer-events: none;
+      @include apply-font(map-svg-stage-label);
     }
 
     .svg__zoneRect {
@@ -2640,20 +2811,27 @@ function handleSeatClick(seat: Seat) {
     .svg__zoneTitle {
       text-anchor: start;
       dominant-baseline: hanging;
-      font-size: 6.5px;
-      font-weight: 700;
       fill: $seat-map-zone-title;
-      letter-spacing: 0.02em;
       pointer-events: none;
+      @include apply-font(map-svg-zone-title);
+    }
+
+    .svg__zone--balcony .svg__zoneTitle,
+    .svg__zone--parterre .svg__zoneTitle {
+      @include apply-font(map-svg-balcon-parterre-title);
     }
 
     .svg__zoneSubtitle {
       text-anchor: start;
       dominant-baseline: hanging;
-      font-size: 4.25px;
-      font-weight: 600;
       fill: $seat-map-zone-subtitle;
       pointer-events: none;
+      @include apply-font(map-svg-zone-subtitle);
+    }
+
+    .svg__zone--balcony .svg__zoneSubtitle,
+    .svg__zone--parterre .svg__zoneSubtitle {
+      @include apply-font(map-svg-balcon-parterre-subtitle);
     }
 
     .svg__pannableBg {

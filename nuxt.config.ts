@@ -3,8 +3,9 @@ import { defineNuxtConfig } from 'nuxt/config'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   css: [
+    '~/assets/styles/global/_loadFonts.scss',
     '~/assets/styles/reset.scss',
     '~/assets/styles/page-transitions.scss',
     '~/assets/styles/error-fade.scss',

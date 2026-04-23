@@ -2,11 +2,14 @@
   <section class="mapPricingSection" :aria-labelledby="titleId">
     <div class="mapPricingSection__inner">
       <header class="mapPricingSection__header">
-        <AnimatedTextElt tag="p" class="mapPricingSection__eyebrow" :delay="0">{{
+        <AnimatedTextElt tag="p" class="mapPricingSection__kicker" :delay="0">{{
           content.home.mapAndPricing.eyebrow
         }}</AnimatedTextElt>
         <AnimatedTextElt tag="h2" :id="titleId" class="mapPricingSection__title" :delay="0.06">
-          {{ content.home.mapAndPricing.title }}
+          <template v-for="(part, i) in content.home.mapAndPricing.title.split('\n')" :key="i">
+            <br v-if="i > 0" />
+            {{ part }}
+          </template>
         </AnimatedTextElt>
         <AnimatedTextElt tag="p" class="mapPricingSection__intro" :delay="0.12">
           <template v-for="(seg, i) in introSegments" :key="i">
@@ -63,16 +66,27 @@
             {{ content.home.mapAndPricing.saleInfo.title }}
           </h3>
           <ul class="mapPricingSection__saleInfoList" role="list">
-            <li
-              v-for="(line, i) in content.home.mapAndPricing.saleInfo.items"
-              :key="i"
-              class="mapPricingSection__saleInfoItem"
-            >
-              <span v-for="(seg, j) in parseBoldSegments(line)" :key="j">
-                <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
-                <template v-else>{{ seg.text }}</template>
-              </span>
-            </li>
+            <template v-for="(line, i) in content.home.mapAndPricing.saleInfo.items" :key="i">
+              <li class="mapPricingSection__saleInfoItem">
+                <template v-for="(seg, j) in parseBoldSegments(line)" :key="j">
+                  <template v-for="(part, k) in seg.text.split('\n')" :key="`${j}-${k}`">
+                    <br v-if="k > 0" />
+                    <span v-if="seg.bold" class="mapPricingSection__hl">{{ part }}</span>
+                    <template v-else>{{ part }}</template>
+                  </template>
+                </template>
+              </li>
+              <li v-if="line.includes('17h')" class="mapPricingSection__saleInfoItem">
+                {{ content.home.practicalNotice.prefix }}
+                <button
+                  type="button"
+                  class="mapPricingSection__practicalLinkButton"
+                  @click="scrollToPracticalInfo"
+                >
+                  {{ content.home.practicalNotice.link }}
+                </button>
+              </li>
+            </template>
           </ul>
         </article>
 
@@ -110,12 +124,6 @@
           <h3 class="mapPricingSection__cardTitle">
             {{ content.home.mapAndPricing.controls.title }}
           </h3>
-          <p class="mapPricingSection__controlsLead">
-            <span v-for="(seg, i) in controlsLeadSegments" :key="i">
-              <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
-              <template v-else>{{ seg.text }}</template>
-            </span>
-          </p>
           <ul class="mapPricingSection__controlList">
             <li
               v-for="(item, i) in content.home.mapAndPricing.controls.items"
@@ -172,8 +180,11 @@
             }}</UnderlineLink>
           </p>
           <p class="mapPricingSection__pmrLine">
-            <span class="mapPricingSection__pmrLabel"
-              >{{ content.home.mapAndPricing.pmr.mailLabel }} :
+            <span class="mapPricingSection__pmrLabel">
+              <span class="mapPricingSection__pmrMailLabelDesktop">
+                {{ content.home.mapAndPricing.pmr.mailLabel }}
+              </span>
+              <span class="mapPricingSection__pmrMailLabelMobile">Mail</span> :
             </span>
             <UnderlineLink
               class="mapPricingSection__pmrLink"
@@ -193,10 +204,12 @@ import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import { computed } from 'vue'
 import content from '../../locales/fr.json'
 import { MAX_SEATS_PER_ORDER, PRICE_ADULT_CENTS, PRICE_CHILD_CENTS } from '../../constants'
+import { useLenis } from '../../composables/useLenis'
 import { parseBoldSegments } from '../../utils/richText'
 
 const titleId = 'map-pricing-section-title'
 const pmrTitleId = 'map-pricing-pmr-title'
+const lenis = useLenis()
 
 const eur = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
@@ -217,9 +230,6 @@ const pricingFootnoteSegments = computed(() =>
   parseBoldSegments(content.home.mapAndPricing.pricing.footnote)
 )
 const mapLeadSegments = computed(() => parseBoldSegments(content.home.mapAndPricing.map.lead))
-const controlsLeadSegments = computed(() =>
-  parseBoldSegments(content.home.mapAndPricing.controls.lead)
-)
 
 const limitsHighlightSegments = computed(() =>
   parseBoldSegments(
@@ -238,23 +248,33 @@ const pmrTelHref = computed(() => {
   const digits = contactPhoneDisplay.value.replace(/\D/g, '')
   return digits ? `tel:${digits}` : '#'
 })
+
+function scrollToPracticalInfo() {
+  const practicalEl = document.getElementById('practical-info')
+  if (!practicalEl) return
+  const l = lenis.value
+  if (l) {
+    l.scrollTo(practicalEl, { offset: 0, immediate: false })
+  } else {
+    practicalEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
 </script>
 
 <style lang="scss" scoped>
 @use 'sass:color';
 
 .mapPricingSection {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: $font-family-text;
   background: linear-gradient(
     180deg,
     $color-gray-50 0%,
     $color-surface-page 35%,
     $color-surface-page 100%
   );
-  border-bottom: 1px solid $color-border-subtle;
   box-sizing: border-box;
   padding: clamp(48px, 8vw, 88px) clamp(20px, 4vw, 40px);
+  user-select: none;
 }
 
 .mapPricingSection__inner {
@@ -278,29 +298,27 @@ const pmrTelHref = computed(() => {
   }
 }
 
-.mapPricingSection__eyebrow {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+.mapPricingSection__kicker {
+  margin: 0 0 24px 0;
   color: $color-text-muted;
+  @include apply-font(label-s);
 }
 
 .mapPricingSection__title {
-  margin: 0 0 1rem 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  margin: 0 0 16px 0;
   color: $color-text-primary;
+  @include apply-font(title-l);
 }
 
 .mapPricingSection__intro {
   margin: 0;
-  font-size: 1.0625rem;
-  line-height: 1.75;
   color: $color-text-secondary;
+  @include apply-font(text-l);
+
+  @include media-down(md) {
+    grid-template-columns: 1fr;
+    max-width: 310px;
+  }
 }
 
 /** Accent discret (remplace le gras) : teinte bleu-gris liée à la charte. */
@@ -325,38 +343,32 @@ const pmrTelHref = computed(() => {
   border-radius: 4px;
   padding: clamp(20px, 3vw, 28px);
   min-width: 0;
+  max-width: 400px;
 }
 
 .mapPricingSection__cardTitle {
-  margin: 0 0 0.65rem 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin: 0 0 16px 0;
   color: $color-text-primary;
+  @include apply-font(card-title);
 }
 
 .mapPricingSection__lead {
   margin: 0 0 1.25rem 0;
-  font-size: 0.9375rem;
-  line-height: 1.65;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 }
 
 .mapPricingSection__detail {
   margin: 0 0 1rem 0;
-  font-size: 0.9375rem;
-  line-height: 1.65;
   display: none;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 }
 
 .mapPricingSection__subTitle {
   margin: 0 0 0.75rem 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: $color-text-muted;
+  @include apply-font(label-subsection);
 }
 
 .mapPricingSection__saleInfoList {
@@ -367,12 +379,64 @@ const pmrTelHref = computed(() => {
 
 .mapPricingSection__saleInfoItem {
   margin: 0 0 0.65rem 0;
-  font-size: 0.9375rem;
-  line-height: 1.65;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 
   &:last-child {
     margin-bottom: 0;
+  }
+}
+
+.mapPricingSection__practicalLink {
+  color: color.mix($color-primary, $color-text-secondary, 40%);
+  font-weight: 500;
+  transition: color 0.28s ease;
+  white-space: nowrap;
+
+  @media (hover: hover) {
+    &:hover {
+      color: $color-primary;
+    }
+  }
+}
+
+.mapPricingSection__practicalLinkButton {
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  color: color.mix($color-primary, $color-text-secondary, 40%);
+  font-weight: 500;
+  transition: color 0.28s ease;
+  white-space: nowrap;
+
+  @media (hover: hover) {
+    &:hover {
+      color: $color-primary;
+    }
+  }
+}
+
+.mapPricingSection__practicalLinkButton::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.28s ease;
+}
+
+@media (hover: hover) {
+  .mapPricingSection__practicalLinkButton:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
   }
 }
 
@@ -396,23 +460,20 @@ const pmrTelHref = computed(() => {
 }
 
 .mapPricingSection__priceLabel {
-  font-size: 0.9375rem;
-  font-weight: 400;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 }
 
 .mapPricingSection__priceValue {
-  font-size: 1.25rem;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: $color-text-primary;
+  @include apply-font(title-price);
 }
 
 .mapPricingSection__footnote {
   margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.55;
   color: $color-text-muted;
+  @include apply-font(caption-sm);
 }
 
 .mapPricingSection__legend {
@@ -426,9 +487,9 @@ const pmrTelHref = computed(() => {
   align-items: flex-start;
   gap: 10px;
   margin: 0 0 0.65rem 0;
-  font-size: 0.9375rem;
   line-height: 1.5;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 
   &:last-child {
     margin-bottom: 0;
@@ -452,7 +513,7 @@ const pmrTelHref = computed(() => {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
-  margin-top: 3px;
+  margin-top: calc((1.5em - 14px) / 2 + 0.09375rem);
   border-radius: 4px;
 
   &--free {
@@ -468,13 +529,6 @@ const pmrTelHref = computed(() => {
   &--paid {
     background: $seat-map-seat-fill-paid;
   }
-}
-
-.mapPricingSection__controlsLead {
-  margin: 0 0 1rem 0;
-  font-size: 0.9375rem;
-  line-height: 1.65;
-  color: $color-text-secondary;
 }
 
 .mapPricingSection__controlList {
@@ -494,61 +548,52 @@ const pmrTelHref = computed(() => {
 .mapPricingSection__controlLabel {
   display: block;
   margin-bottom: 0.35rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
   color: color.mix($color-text-primary, $color-text-secondary, 58%);
-  letter-spacing: -0.01em;
+  @include apply-font(control-label);
 }
 
 .mapPricingSection__controlText {
   display: block;
-  font-size: 0.9375rem;
-  line-height: 1.6;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body-tight);
 }
 
 .mapPricingSection__limitHighlight {
   margin: 0 0 0.85rem 0;
-  font-size: 1rem;
-  line-height: 1.55;
-  font-weight: 400;
   color: $color-text-secondary;
+  @include apply-font(limit-highlight);
 }
 
 .mapPricingSection__limitDetail {
   margin: 0;
-  font-size: 0.9375rem;
-  line-height: 1.65;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 }
 
 .mapPricingSection__pmr {
   margin-top: clamp(4rem, 6.5vw, 6rem);
   padding-top: clamp(1.25rem, 2.5vw, 1.75rem);
   border-top: 1px solid $color-border-subtle;
-  max-width: 25rem;
+  max-width: 27rem;
 }
 
 .mapPricingSection__pmrTitle {
-  margin: 0 0 0.65rem 0;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  margin: 0 0 16px 0;
   color: $color-text-primary;
+  @include apply-font(card-title);
 }
 
 .mapPricingSection__pmrText {
-  margin: 0 0 0.85rem 0;
-  font-size: 0.9375rem;
-  line-height: 1.65;
+  margin: 0 0 16px 0;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 }
 
 .mapPricingSection__pmrContact {
   margin: 0;
-  font-size: 0.9375rem;
   line-height: 1.55;
   color: $color-text-secondary;
+  @include apply-font(text-sm-body);
 }
 
 .mapPricingSection__pmrLine {
@@ -569,19 +614,38 @@ const pmrTelHref = computed(() => {
   color: $color-text-primary;
 }
 
+.mapPricingSection__pmrMailLabelMobile {
+  display: none;
+}
+
 @include media-down(md) {
+  .mapPricingSection__title {
+    max-width: 12ch;
+  }
+
+  .mapPricingSection__pmrTitle {
+    max-width: 15ch;
+  }
+
+  .mapPricingSection__pmrMailLabelDesktop {
+    display: none;
+  }
+
+  .mapPricingSection__pmrMailLabelMobile {
+    display: inline;
+  }
+
   .mapPricingSection__lead,
   .mapPricingSection__detail,
   .mapPricingSection__saleInfoItem,
   .mapPricingSection__priceLabel,
   .mapPricingSection__legendItem,
-  .mapPricingSection__controlsLead,
   .mapPricingSection__controlLabel,
   .mapPricingSection__controlText,
   .mapPricingSection__limitDetail,
   .mapPricingSection__pmrText,
   .mapPricingSection__pmrContact {
-    font-size: 0.90625rem;
+    @include apply-font(text-sm-body-mobile);
   }
 }
 

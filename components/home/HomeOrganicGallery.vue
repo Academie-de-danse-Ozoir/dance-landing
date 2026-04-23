@@ -86,8 +86,7 @@ onMounted(() => {
 $organic-design-width: 1280px;
 
 .organicGallery {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: $font-family-text;
   background: $color-surface-page;
   box-sizing: border-box;
   overflow-x: clip;

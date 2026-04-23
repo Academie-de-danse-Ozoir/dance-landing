@@ -4,11 +4,7 @@
       <div class="introBlock__copy">
         <h2 id="introBlockTitle" class="introBlock__title">{{ title }}</h2>
         <p class="introBlock__lead">{{ lead }}</p>
-        <div
-          v-for="(block, i) in blocks"
-          :key="i"
-          class="introBlock__block"
-        >
+        <div v-for="(block, i) in blocks" :key="i" class="introBlock__block">
           <h3 class="block__heading">{{ block.title }}</h3>
           <p class="block__text">{{ block.text }}</p>
         </div>
@@ -57,8 +53,7 @@ defineProps<{
 <style lang="scss" scoped>
 .introBlock {
   background: #f4f5f8;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+  font-family: $font-family-text;
 }
 
 .introBlock__inner {
@@ -73,15 +68,13 @@ defineProps<{
 
 .introBlock__title {
   margin: 0 0 12px 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+  @include apply-font(intro-title);
   color: #212529;
 }
 
 .introBlock__lead {
   margin: 0 0 24px 0;
-  font-size: 15px;
-  line-height: 1.6;
+  @include apply-font(body-md);
   color: #495057;
 }
 
@@ -91,14 +84,14 @@ defineProps<{
 
 .block__heading {
   margin: 0 0 6px 0;
-  font-size: 15px;
+  @include apply-font(text-l);
   font-weight: 600;
   color: #343a40;
 }
 
 .block__text {
   margin: 0;
-  font-size: 14px;
+  @include apply-font(text-s);
   line-height: 1.55;
   color: #495057;
 }
@@ -135,23 +128,25 @@ defineProps<{
   }
 
   &--b::after {
-    background-image: linear-gradient(135deg, rgba(118, 75, 162, 0.85) 0%, rgba(102, 126, 234, 0.75) 100%);
+    background-image: linear-gradient(
+      135deg,
+      rgba(118, 75, 162, 0.85) 0%,
+      rgba(102, 126, 234, 0.75) 100%
+    );
     background-blend-mode: multiply;
   }
 }
 
 .figure__caption {
   margin-top: 8px;
-  font-size: 12px;
+  @include apply-font(caption-12);
   color: #6c757d;
-  line-height: 1.4;
 }
 
 .introBlock__note {
   margin: 4px 0 0 0;
-  font-size: 11px;
+  @include apply-font(caption-11);
   color: #868e96;
-  line-height: 1.45;
 }
 
 @media (max-width: 840px) {

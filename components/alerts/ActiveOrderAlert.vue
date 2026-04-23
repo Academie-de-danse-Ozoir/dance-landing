@@ -1,7 +1,11 @@
 <template>
   <div v-if="activeOrder" class="activeOrderAlert activeOrderAlert--warning">
-    <strong class="activeOrderAlert__title">{{ content.home.activeOrder.title }}</strong><br />
-    <span class="activeOrderAlert__time">{{ content.home.activeOrder.timeRemaining }} {{ formattedTime }}</span>
+    <span class="activeOrderAlert__title">{{ content.home.activeOrder.title }}</span
+    ><br />
+    <span class="activeOrderAlert__time">
+      {{ content.home.activeOrder.timeRemaining }}
+      <span class="activeOrderAlert__timer">{{ formattedTime }}</span>
+    </span>
 
     <div class="activeOrderAlert__actions bookingOrderActions">
       <DefaultButton
@@ -32,7 +36,7 @@ defineProps<{
 
 defineEmits<{
   'resume-payment': []
-  'cancel': []
+  cancel: []
 }>()
 </script>
 
@@ -42,7 +46,7 @@ defineEmits<{
   margin-bottom: 16px;
   border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 14px;
+  @include apply-font(text-s);
 
   &--warning {
     color: #084298;
@@ -52,10 +56,16 @@ defineEmits<{
 
   .activeOrderAlert__title {
     display: block;
+    font-weight: 600;
+    letter-spacing: 0.04em;
   }
 
   .activeOrderAlert__time {
     display: block;
+  }
+
+  .activeOrderAlert__timer {
+    letter-spacing: 0.04em;
   }
 
   .activeOrderAlert__actions {
@@ -68,7 +78,7 @@ defineEmits<{
 
   @include media-down(lg) {
     padding: 10px 12px;
-    font-size: 13px;
+    @include apply-font(meta-13);
     line-height: 1.35;
 
     .activeOrderAlert__title {
@@ -77,7 +87,7 @@ defineEmits<{
     }
 
     .activeOrderAlert__time {
-      font-size: 12px;
+      @include apply-font(footer-fine);
       line-height: 1.3;
     }
   }

@@ -20,10 +20,12 @@
           >
             <p class="timer__title">{{ content.home.modal.reservationBannerTitle }}</p>
             <p class="timer__line">
-              <span class="timer__label">{{ content.home.modal.reservationTimeLabel }}</span>
+              <span class="timer__label">{{ content.home.modal.reservationTimeLabel }} :</span>
               <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
             </p>
-            <div class="formReservation__timerActions bookingOrderActions bookingOrderActions--single">
+            <div
+              class="formReservation__timerActions bookingOrderActions bookingOrderActions--single"
+            >
               <DefaultButton
                 type="button"
                 variant="cancelReservation"
@@ -64,7 +66,7 @@
                 <path
                   d="M6 6l12 12M18 6L6 18"
                   stroke="currentColor"
-                  stroke-width="2"
+                  stroke-width="1.5"
                   stroke-linecap="round"
                 />
               </svg>
@@ -147,8 +149,14 @@
               >
                 <div class="form__step2Main">
                   <p class="form__intro">{{ content.home.modal.step2Intro }}</p>
-                  <div v-for="(ticket, idx) in ticketDetails" :key="ticket.seatId" class="ticketBlock">
-                    <h3 class="ticketBlock__title">{{ content.home.modal.place }} {{ ticket.seatLabel }}</h3>
+                  <div
+                    v-for="(ticket, idx) in ticketDetails"
+                    :key="ticket.seatId"
+                    class="ticketBlock"
+                  >
+                    <h3 class="ticketBlock__title">
+                      {{ content.home.modal.place }} {{ ticket.seatLabel }}
+                    </h3>
                     <div class="ticketBlock__namePair">
                       <FormField
                         :field-key="`ticket-${idx}-firstName`"
@@ -181,7 +189,12 @@
                         :value="ticket.ticketType"
                         class="type__select"
                         @change="
-                          updateTicketDetail(idx, 'ticketType', ($event.target as HTMLSelectElement).value as 'adult' | 'child')
+                          (() => {
+                            const select = $event.target as HTMLSelectElement
+                            updateTicketDetail(idx, 'ticketType', select.value as 'adult' | 'child')
+                            // Retire le focus visuel après validation du choix.
+                            select.blur()
+                          })()
                         "
                       >
                         <option value="adult">{{ content.home.modal.adult }}</option>
@@ -197,7 +210,9 @@
                     <template v-if="priceSummary.childCount > 0">
                       <p class="priceSummary__line">{{ priceSummary.childrenLine }}</p>
                     </template>
-                    <p class="priceSummary__total">{{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}</p>
+                    <p class="priceSummary__total">
+                      {{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}
+                    </p>
                   </div>
                 </div>
                 <ClientOnly>
@@ -223,11 +238,18 @@
                   </Transition>
                 </ClientOnly>
                 <div class="form__footer">
-                  <DefaultButton variant="secondary" :label="content.home.modal.back" type="button" @click="emit('back')" />
+                  <DefaultButton
+                    variant="secondary"
+                    :label="content.home.modal.back"
+                    type="button"
+                    @click="emit('back')"
+                  />
                   <DefaultButton
                     variant="primary"
                     type="submit"
-                    :label="isSubmitting ? content.home.modal.submitting : content.home.modal.submit"
+                    :label="
+                      isSubmitting ? content.home.modal.submitting : content.home.modal.submit
+                    "
                     :disabled="isSubmitting || !isStep2Valid"
                   />
                 </div>
@@ -385,10 +407,10 @@ function onTurnstileToken(t: string | null) {
 }
 
 const emit = defineEmits<{
-  'close': []
-  'next': []
-  'back': []
-  'submit': [payload: { form: FormData; ticketDetails: TicketDetail[]; turnstileToken?: string }]
+  close: []
+  next: []
+  back: []
+  submit: [payload: { form: FormData; ticketDetails: TicketDetail[]; turnstileToken?: string }]
   'update:form': [form: FormData]
   'field-blur': [key: string]
   'cancel-reservation': []
@@ -473,7 +495,6 @@ const isStep2Valid = computed(() => {
   return ticketsValid && captchaValid
 })
 
-
 /** 10 chiffres + 4 espaces (groupes de 2). */
 const PHONE_INPUT_MAX_LEN = 14
 
@@ -522,12 +543,15 @@ const formFieldsNameRow = formFields.filter((f) => f.key === 'firstName' || f.ke
 const formFieldsAfterNames = formFields.filter((f) => f.key !== 'firstName' && f.key !== 'lastName')
 
 function updateField(key: keyof FormData, value: string) {
-  const next =
-    key === 'phone' ? formatFrenchPhoneInput(value) : value
+  const next = key === 'phone' ? formatFrenchPhoneInput(value) : value
   emit('update:form', { ...props.form, [key]: next })
 }
 
-function updateTicketDetail(index: number, field: keyof TicketDetail, value: string | 'adult' | 'child') {
+function updateTicketDetail(
+  index: number,
+  field: keyof TicketDetail,
+  value: string | 'adult' | 'child'
+) {
   const next = [...ticketDetails.value]
   next[index] = { ...next[index], [field]: value }
   ticketDetails.value = next
@@ -675,6 +699,7 @@ function onSubmitStep2() {
   align-items: center;
   justify-content: center;
   z-index: 1050;
+  user-select: none;
   cursor: pointer;
 
   @include media-down(lg) {
@@ -775,11 +800,8 @@ function onSubmitStep2() {
 
 .timer__title {
   margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #1e40af;
+  color: #1e3a8a;
+  @include apply-font(timer-eyebrow);
 }
 
 .timer__line {
@@ -792,20 +814,20 @@ function onSubmitStep2() {
 }
 
 .timer__label {
-  font-size: 0.875rem;
   font-weight: 600;
   color: #1e3a8a;
+  @include apply-font(text-s);
 }
 
 .timer__clock {
-  font-variant-numeric: tabular-nums;
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #1d4ed8;
-  line-height: 1;
+  display: inline-block;
+  width: 4ch;
+  text-align: left;
+  color: #1e3a8a;
+  @include apply-font(timer-clock);
 
   @include media-down(lg) {
-    font-size: 1.45rem;
+    @include apply-font(timer-clock-mobile);
   }
 }
 
@@ -846,9 +868,7 @@ function onSubmitStep2() {
       flex: 1;
       min-width: 0;
       margin: 0;
-      font-size: 20px;
-      font-weight: 600;
-      /* Même hauteur que le bouton fermer : le flex centre les deux sur le même axe. */
+      @include apply-font(modal-title);
       color: #212529;
     }
 
@@ -1001,8 +1021,9 @@ function onSubmitStep2() {
 
         .form__intro {
           margin: 0 0 20px 0;
-          font-size: 14px;
+          @include apply-font(text-s);
           color: #6c757d;
+          white-space: pre-line;
         }
       }
 
@@ -1020,8 +1041,7 @@ function onSubmitStep2() {
 
         .ticketBlock__title {
           margin: 0 0 12px 0;
-          font-size: 16px;
-          font-weight: 600;
+          @include apply-font(form-subtitle);
           color: #212529;
         }
 
@@ -1041,8 +1061,7 @@ function onSubmitStep2() {
 
           .type__label {
             display: block;
-            font-size: 14px;
-            font-weight: 500;
+            @include apply-font(form-label);
             color: #212529;
             margin-bottom: 6px;
           }
@@ -1050,12 +1069,14 @@ function onSubmitStep2() {
           .type__select {
             width: 100%;
             padding: 10px 12px;
-            font-size: 14px;
+            @include apply-font(text-s);
             border: 1px solid #dee2e6;
             border-radius: 4px;
             background: white;
             cursor: pointer;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            transition:
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
 
             &:hover {
               border-color: #adb5bd;
@@ -1091,7 +1112,6 @@ function onSubmitStep2() {
         justify-content: flex-end;
         flex-shrink: 0;
         box-sizing: border-box;
-        
 
         :deep(.turnstileField) {
           margin-top: 0;
@@ -1111,16 +1131,16 @@ function onSubmitStep2() {
           margin: 6px 0 10px;
           max-width: 13rem;
           text-align: center;
-          font-size: 13px;
-          color: #6c757d;
+          @include apply-font(meta-13);
           line-height: 1.45;
+          color: #6c757d;
         }
       }
 
       .form__turnstileError {
         margin: 0 0 10px;
         min-height: 1.45em;
-        font-size: 14px;
+        @include apply-font(text-s);
         line-height: 1.45;
         color: #dc3545;
         text-align: center;
@@ -1146,16 +1166,13 @@ function onSubmitStep2() {
 
         .priceSummary__title {
           margin: 0 0 10px 0;
-          font-size: 13px;
-          font-weight: 600;
+          @include apply-font(price-summary-title);
           color: #495057;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
         }
 
         .priceSummary__line {
           margin: 4px 0;
-          font-size: 14px;
+          @include apply-font(text-s);
           color: #212529;
         }
 
@@ -1163,8 +1180,7 @@ function onSubmitStep2() {
           margin: 12px 0 0 0;
           padding-top: 12px;
           border-top: 1px solid #dee2e6;
-          font-size: 16px;
-          font-weight: 700;
+          @include apply-font(price-summary-total);
           color: #212529;
         }
       }

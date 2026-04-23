@@ -2,7 +2,6 @@
   <div class="paymentResultLayout">
     <div class="paymentResultPage">
       <div class="paymentResultPage__card" v-if="isLoaded">
-
         <!-- SUCCESS -->
         <template v-if="isValid">
           <div class="card__statusIcon">
@@ -13,12 +12,12 @@
               class="statusIcon__svg"
               aria-hidden="true"
             >
-              <circle cx="12" cy="12" r="10" fill="#198754" />
+              <rect x="2" y="2" width="20" height="20" rx="2" fill="#198754" />
               <path
                 d="M7 12l3 3 6-6"
                 fill="none"
                 stroke="#fff"
-                stroke-width="2.5"
+                stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
@@ -45,12 +44,12 @@
                 class="statusIcon__svg"
                 aria-hidden="true"
               >
-                <circle cx="12" cy="12" r="10" fill="#dc3545" />
+                <rect x="2" y="2" width="20" height="20" rx="2" fill="#dc3545" />
                 <path
                   d="M9 9l6 6M15 9l-6 6"
                   fill="none"
                   stroke="#fff"
-                  stroke-width="2.5"
+                  stroke-width="1.5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 />
@@ -59,13 +58,10 @@
 
             <h1 class="card__title">Paiement invalide</h1>
 
-            <p class="card__errorMessage">
-              Le paiement a été refusé ou la commande a expiré.
-            </p>
+            <p class="card__errorMessage">Le paiement a été refusé ou la commande a expiré.</p>
 
             <p class="card__text">
-              Si le paiement a été effectué après expiration,
-              il a été automatiquement remboursé.
+              Si le paiement a été effectué après expiration, il a été automatiquement remboursé.
             </p>
           </div>
         </template>
@@ -73,6 +69,7 @@
         <LinkButton
           to="/"
           variant="primary"
+          class="card__backButton"
           :label="content.success.backToSeats"
         />
       </div>
@@ -143,7 +140,9 @@ onMounted(async () => {
     if (data?.status === ORDER_STATUS.PAID) {
       isValid.value = true
       localStorage.removeItem(STORAGE_ORDER_KEY)
-      console.info(`${LOG} OK → PAID, localStorage nettoyé`, { totalMs: Math.round(performance.now() - t0) })
+      console.info(`${LOG} OK → PAID, localStorage nettoyé`, {
+        totalMs: Math.round(performance.now() - t0)
+      })
       console.info(
         `${LOG} Les logs [billetterie:mail] sont dans le terminal du serveur (npm run dev), pas dans la console du navigateur.`
       )
@@ -158,7 +157,10 @@ onMounted(async () => {
     console.error(`${LOG} Erreur`, err)
   }
 
-  console.info(`${LOG} Fin vérification`, { isValid: isValid.value, totalMs: Math.round(performance.now() - t0) })
+  console.info(`${LOG} Fin vérification`, {
+    isValid: isValid.value,
+    totalMs: Math.round(performance.now() - t0)
+  })
   isLoaded.value = true
 })
 </script>
@@ -172,6 +174,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  user-select: none;
 }
 
 .paymentResultPage {
@@ -180,29 +183,28 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+  font-family: $font-family-text;
   padding: 20px;
 
   .paymentResultPage__card {
     background: white;
     padding: 48px 32px;
-    border-radius: 16px;
+    border-radius: 4px;
     max-width: 500px;
     width: 100%;
     text-align: center;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
 
     .card__statusIcon {
-      margin-bottom: 24px;
+      margin-bottom: 14px;
       display: flex;
       justify-content: center;
       align-items: center;
       width: 100%;
 
       .statusIcon__svg {
-        width: 64px;
-        height: 64px;
+        width: 50px;
+        height: 50px;
         display: block;
         flex-shrink: 0;
       }
@@ -210,58 +212,84 @@ onMounted(async () => {
 
     .card__title {
       margin: 0 0 16px 0;
-      font-size: 28px;
-      font-weight: 600;
+      @include apply-font(title-s-2);
       color: #212529;
     }
 
     .card__message {
-      margin: 0 0 16px 0;
-      font-size: 18px;
-      font-weight: 500;
+      margin: 0 auto 16px auto;
+      text-align: left;
+      @include apply-font(success-message);
+      max-width: 350px;
       color: #198754;
-      line-height: 1.5;
     }
 
     .card__text {
-      margin: 0 0 32px 0;
-      font-size: 14px;
-      color: #6c757d;
+      margin: 0 auto 32px auto;
+      @include apply-font(text-s);
       line-height: 1.6;
+      white-space: pre-line;
+      text-align: left;
+      max-width: 350px;
+      color: #6c757d;
     }
 
     .card__errorMessage {
       margin: 0 0 16px 0;
-      font-size: 16px;
+      @include apply-font(text-l);
       color: #212529;
-      line-height: 1.5;
     }
+
+    :deep(.card__backButton) {
+      @include apply-font(button-m);
+      padding: 16px 40px;
+      border-radius: 4px;
+    }
+
+    :deep(.card__backButton.linkButton--primary) {
+      @media (hover: hover) {
+        &:hover:not(.linkButton--disabled) {
+          color: #0d6efd;
+          background-color: #fff;
+          border-color: #0d6efd;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}
+
+@include media-down(lg) {
+  .paymentResultPage {
+    /* Laisse plus d'air sous le header/logo sur mobile + tablette. */
+    padding-top: 104px;
   }
 }
 
 @media (max-width: 575.98px) {
   .paymentResultPage {
-    padding: 15px;
+    padding: 104px 15px 15px;
 
     .paymentResultPage__card {
       padding: 32px 20px;
       max-width: 100%;
 
-      .card__title {
-        font-size: 24px;
-      }
-
       .card__message {
-        font-size: 16px;
+        @include apply-font(text-l);
+        font-weight: 500;
+        max-width: 310px;
       }
 
       .card__text {
-        font-size: 13px;
+        @include apply-font(meta-13);
+        line-height: 1.6;
+        max-width: 310px;
       }
 
       .card__statusIcon .statusIcon__svg {
-        width: 56px;
-        height: 56px;
+        width: 50px;
+        height: 50px;
       }
     }
   }

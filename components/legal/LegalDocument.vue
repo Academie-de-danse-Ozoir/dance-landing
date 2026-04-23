@@ -37,11 +37,9 @@ defineProps<{
 
 <style lang="scss" scoped>
 .legalDocument {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: #212529;
-  font-size: 15px;
-  line-height: 1.65;
+  user-select: none;
+  @include apply-font(body-md);
 }
 
 .legalDocument__header {
@@ -51,34 +49,33 @@ defineProps<{
 }
 
 .legalDocument__title {
-  margin: 0 0 8px 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.2;
+  margin: 0 0 12px 0;
   color: #1a1a2e;
+  @include apply-font(title-l);
+  white-space: pre-line;
 }
 
 .legalDocument__updated {
-  margin: 0 0 12px 0;
-  font-size: 13px;
+  margin: 0 0 24px 0;
   color: #6c757d;
+  @include apply-font(meta-13);
 }
 
 .legalDocument__intro {
   margin: 0;
-  font-size: 15px;
   color: #495057;
+  @include apply-font(text-s);
 }
 
 .legalDocument__section {
   margin-bottom: 28px;
+  @include apply-font(text-s);
 }
 
 .section__title {
   margin: 0 0 12px 0;
-  font-size: 1.1rem;
-  font-weight: 600;
   color: #343a40;
+  @include apply-font(title-s);
 }
 
 .section__p {

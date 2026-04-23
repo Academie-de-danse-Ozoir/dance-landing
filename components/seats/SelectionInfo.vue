@@ -2,8 +2,8 @@
   <div class="selectionInfo">
     <p :class="['selectionInfo__text', { 'selectionInfo__text--empty': seatCount === 0 }]">
       <template v-if="seatCount > 0">
-        <strong class="text__count">{{ seatCount }}</strong>
-        {{ seatCount > 1 ? content.home.selection.multiple : content.home.selection.one }}
+        <strong class="text__count">{{ seatCount }}</strong
+        >&nbsp;{{ seatCount > 1 ? content.home.selection.multiple : content.home.selection.one }}
       </template>
       <template v-else>{{ content.home.selection.none }}</template>
     </p>
@@ -39,7 +39,7 @@ const atLimitText = computed(() =>
 
   .selectionInfo__text {
     margin: 0;
-    font-size: 16px;
+    @include apply-font(selection-text);
     color: #212529;
 
     &--empty {
@@ -48,15 +48,14 @@ const atLimitText = computed(() =>
 
     .text__count {
       color: #0d6efd;
-      font-weight: 600;
+      margin-right: 0.1rem;
     }
   }
 
   .selectionInfo__limit {
     max-width: 40rem;
     margin: 6px auto 0;
-    font-size: 14px;
-    font-weight: 600;
+    @include apply-font(selection-limit);
     color: #856404;
     text-align: center;
   }

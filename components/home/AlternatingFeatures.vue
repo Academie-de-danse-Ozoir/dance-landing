@@ -7,11 +7,47 @@
       :class="{ 'altFeatures__row--mediaLeft': row.imageSide === 'left' }"
     >
       <div class="altFeatures__copy">
-        <AnimatedTextElt tag="h2" class="altFeatures__title" :delay="0">{{
-          row.title
-        }}</AnimatedTextElt>
+        <AnimatedTextElt tag="h2" class="altFeatures__title" :delay="0">
+          <template v-for="(part, j) in row.title.split('\n')" :key="`title-${i}-${j}`">
+            <br v-if="j > 0" />
+            {{ part }}
+          </template>
+        </AnimatedTextElt>
         <AnimatedTextElt tag="p" class="altFeatures__text" :delay="0.06">
-          {{ row.text }}
+          <template v-if="row.billingEmailLink && splitAtSurPlace(row.text).hasSplit">
+            {{ splitAtSurPlace(row.text).before }}
+            <br />
+            <span class="altFeatures__practicalNotice">
+              {{ practicalNoticePrefix }}
+              <UnderlineLink
+                class="altFeatures__emailLink"
+                href="#practical-info"
+                @click.prevent="scrollToPracticalInfo"
+              >
+                {{ practicalNoticeLink }}
+              </UnderlineLink>
+            </span>
+            <template v-if="splitAtSurPlace(row.text).after">
+              <br />
+              <br />
+              {{ splitAtSurPlace(row.text).after }}
+            </template>
+          </template>
+          <template v-else>{{ row.text }}</template>
+          <span
+            v-if="!row.billingEmailLink && row.text.includes('17h')"
+            class="altFeatures__practicalNotice"
+          >
+            <br />
+            {{ practicalNoticePrefix }}
+            <UnderlineLink
+              class="altFeatures__emailLink"
+              href="#practical-info"
+              @click.prevent="scrollToPracticalInfo"
+            >
+              {{ practicalNoticeLink }}
+            </UnderlineLink>
+          </span>
           <template v-if="row.billingEmailLink">
             <UnderlineLink class="altFeatures__emailLink" :href="`mailto:${billingEmail}`">{{
               billingEmail
@@ -27,25 +63,26 @@
           class="altFeatures__visual"
           :class="`altFeatures__visual--v${(i % 3) + 1}`"
           :src="ROW_IMAGES[i % 3]"
-          :alt="row.caption"
           :has-parallax-position="isDesktop"
           :parallax-position-amount="i % 2 === 0 ? -20 : 20"
         />
-        <figcaption class="altFeatures__caption">{{ row.caption }}</figcaption>
       </figure>
     </article>
   </section>
 </template>
 
 <script setup lang="ts">
-import UnderlineLink from '~/components/buttons/UnderlineLink.vue'
+import UnderlineLink from '../buttons/UnderlineLink.vue'
 import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
 import content from '../../locales/fr.json'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useLenis } from '../../composables/useLenis'
 
 const ROW_IMAGES = ['/images/3.jpg', '/images/10.jpg', '/images/6.jpg']
 
 const isDesktop = ref(true)
+const lenis = useLenis()
 
 onMounted(() => {
   const mq = window.matchMedia('(min-width: 1100px)')
@@ -60,9 +97,7 @@ onMounted(() => {
 export type AlternatingFeatureRow = {
   title: string
   text: string
-  /** `"left"` | `"right"` dans `fr.json` — typé en string pour l’inférence JSON. */
   imageSide: string
-  /** Si vrai, insère un lien `mailto` vers l’email billetterie entre `text` et `textAfterEmail`. */
   billingEmailLink?: boolean
   textAfterEmail?: string
 }
@@ -73,6 +108,31 @@ defineProps<{
 }>()
 
 const billingEmail = content.brand.senderEmail
+const practicalNoticePrefix = content.home.practicalNotice.prefix
+const practicalNoticeLink = content.home.practicalNotice.link
+
+function splitAtSurPlace(text: string) {
+  const marker = 'sur place.'
+  const idx = text.indexOf(marker)
+  if (idx < 0) return { hasSplit: false, before: text, after: '' }
+  const cut = idx + marker.length
+  return {
+    hasSplit: true,
+    before: text.slice(0, cut),
+    after: text.slice(cut).trimStart()
+  }
+}
+
+function scrollToPracticalInfo() {
+  const practicalEl = document.getElementById('practical-info')
+  if (!practicalEl) return
+  const l = lenis.value
+  if (l) {
+    l.scrollTo(practicalEl, { offset: 0, immediate: false })
+  } else {
+    practicalEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -83,19 +143,18 @@ $alt-features-visual-col: minmax(0, clamp(280px, 38vw, 440px));
 $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
 
 .altFeatures {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: $color-surface-page;
 }
 
 .altFeatures__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(28px, 5vw, 64px);
+  gap: 48px;
   align-items: center;
   max-width: 1120px;
   margin: 0 auto;
   padding: clamp(56px, 9vw, 96px) clamp(20px, 4vw, 40px);
+  user-select: none;
 
   @include media-up(lg) {
     min-height: 100dvh;
@@ -122,31 +181,19 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
 }
 
 .altFeatures__title {
-  margin: 0 0 1rem 0;
-  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin: 0 0 16px 0;
   color: $color-text-primary;
-  line-height: 1.2;
-
-  @include media-up(lg) {
-    font-size: clamp(1.45rem, 2.4vw, 1.85rem);
-    margin-bottom: 1.15rem;
-  }
+  @include apply-font(title-l);
 }
 
 .altFeatures__text {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.7;
   max-width: min(32rem, 100%);
   color: $color-text-secondary;
   width: unset;
+  @include apply-font(text-l);
 
   @include media-up(lg) {
-    /* Taille fixe + largeur max : plus de variation au gré du viewport. */
-    font-size: 1.0625rem;
-    line-height: 1.72;
     width: min(30rem, 100%);
   }
 }
@@ -155,7 +202,7 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   color: color.mix($color-primary, $color-text-secondary, 40%);
   font-weight: 500;
   transition: color 0.28s ease;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 
   @media (hover: hover) {
     &:hover {
@@ -170,6 +217,12 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   white-space: nowrap;
 }
 
+.altFeatures__practicalNotice {
+  display: inline;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
 .altFeatures__figure {
   margin: 0;
   min-width: 0;
@@ -181,24 +234,13 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   aspect-ratio: 4 / 5;
 }
 
-.altFeatures__caption {
-  margin-top: 0.65rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: $color-text-muted;
-  display: none;
-
-  @include media-up(lg) {
-    font-size: 0.875rem;
-    margin-top: 0.75rem;
-  }
-}
-
 @media (max-width: 880px) {
   .altFeatures__row {
     grid-template-columns: 1fr;
     padding-top: clamp(40px, 8vw, 64px);
     padding-bottom: clamp(40px, 8vw, 64px);
+    padding-top: 48px;
+    padding-bottom: 48px;
   }
 
   .altFeatures__row--mediaLeft .altFeatures__copy,

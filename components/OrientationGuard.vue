@@ -1,11 +1,39 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
 import content from '../locales/fr.json'
 
 const { title, hint } = content.home.orientation
+const isMobileLikeDevice = ref(false)
+
+function computeIsMobileLikeDevice() {
+  if (import.meta.server) return false
+
+  const hasTouch = navigator.maxTouchPoints > 0
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const noHover = window.matchMedia('(hover: none)').matches
+  const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+
+  return mobileUa || (hasTouch && coarsePointer) || (hasTouch && noHover)
+}
+
+function refreshMobileLikeDevice() {
+  isMobileLikeDevice.value = computeIsMobileLikeDevice()
+}
+
+onMounted(() => {
+  refreshMobileLikeDevice()
+  window.addEventListener('resize', refreshMobileLikeDevice, { passive: true })
+  window.addEventListener('orientationchange', refreshMobileLikeDevice, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', refreshMobileLikeDevice)
+  window.removeEventListener('orientationchange', refreshMobileLikeDevice)
+})
 </script>
 
 <template>
-  <div class="orientationGuard" role="alert" aria-live="assertive">
+  <div v-if="isMobileLikeDevice" class="orientationGuard" role="alert" aria-live="assertive">
     <div class="orientationGuard__content">
       <div class="orientationGuard__icon">
         <svg
@@ -65,13 +93,13 @@ const { title, hint } = content.home.orientation
 }
 
 .orientationGuard__content {
-  max-width: 320px;
+  max-width: 350px;
 }
 
 .orientationGuard__icon {
   width: 64px;
   height: 64px;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 16px;
   color: #dbb366; // Doré assorti à la brand
   animation: phoneRotate 2.5s ease-in-out infinite;
 
@@ -97,16 +125,12 @@ const { title, hint } = content.home.orientation
 }
 
 .orientationGuard__title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  letter-spacing: 0.01em;
+  @include apply-font(orientation-title);
+  margin-bottom: 8px;
 }
 
 .orientationGuard__hint {
-  font-size: 0.93rem;
-  line-height: 1.5;
+  @include apply-font(orientation-hint);
   color: rgba(255, 255, 255, 0.82);
   white-space: pre-line;
 }

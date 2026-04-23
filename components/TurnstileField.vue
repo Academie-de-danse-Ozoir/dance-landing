@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
 
 .turnstileField__hint {
   margin: 10px 0 20px;
-  font-size: 13px;
+  @include apply-font(meta-13);
   color: #6c757d;
 }
 </style>

@@ -57,7 +57,7 @@ function handleTap(e: PointerEvent) {
 <style lang="scss" scoped>
 .defaultButton {
   display: inline-block;
-  font-weight: 400;
+  @include apply-font(text-s);
   line-height: 1.5;
   text-align: center;
   text-decoration: none;
@@ -66,7 +66,6 @@ function handleTap(e: PointerEvent) {
   user-select: none;
   border: 1px solid transparent;
   padding: 10px 16px;
-  font-size: 14px;
   border-radius: 4px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
