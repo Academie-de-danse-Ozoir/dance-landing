@@ -168,11 +168,11 @@ function onInput(e: Event) {
     }
 
     &--valid {
-      border-color: #198754;
+      border-color: #86b7fe;
 
       &:focus {
-        border-color: #198754;
-        box-shadow: 0 0 0 1px rgba(25, 135, 84, 0.22);
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.22);
       }
     }
   }

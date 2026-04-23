@@ -101,7 +101,7 @@
                     :inputmode="field.inputmode"
                     :autocomplete="field.autocomplete"
                     :model-value="form[field.key]"
-                    :error="errors[field.key]"
+                    :error="getStep1FieldError(field.key)"
                     :touched="touched[field.key]"
                     @update:model-value="updateField(field.key as keyof FormData, $event)"
                     @blur="handleFieldBlur(field.key)"
@@ -400,6 +400,9 @@ onBeforeUnmount(() => {
 const turnstileSiteKey = computed(() => (config.public.turnstileSiteKey as string) || '')
 const turnstileToken = ref<string | null>(null)
 const turnstileError = ref<string | null>(null)
+const invalidNameMessage =
+  (content.home.modal.validation as Record<string, string>).invalidName ??
+  content.home.modal.validation.required
 
 function onTurnstileToken(t: string | null) {
   turnstileToken.value = t
@@ -480,8 +483,8 @@ const isStep1Valid = computed(() => {
   const email = f.email?.trim() || ''
 
   return (
-    (f.firstName?.trim() || '').length > 0 &&
-    (f.lastName?.trim() || '').length > 0 &&
+    isValidPersonName(f.firstName) &&
+    isValidPersonName(f.lastName) &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
     /^(\+33|0)[1-9]\d{8}$/.test(p)
   )
@@ -489,7 +492,7 @@ const isStep1Valid = computed(() => {
 
 const isStep2Valid = computed(() => {
   const ticketsValid = ticketDetails.value.every(
-    (t) => (t.firstName?.trim() || '').length > 0 && (t.lastName?.trim() || '').length > 0
+    (t) => isValidPersonName(t.firstName) && isValidPersonName(t.lastName)
   )
   const captchaValid = turnstileSiteKey.value ? !!turnstileToken.value : true
   return ticketsValid && captchaValid
@@ -564,6 +567,27 @@ function handleFieldBlur(key: string) {
   emit('field-blur', key)
 }
 
+function getStep1FieldError(key: string): string | undefined {
+  const baseError = props.errors[key]
+  if (key !== 'firstName' && key !== 'lastName') return baseError
+  const value = props.form[key as keyof FormData]
+  if (typeof value !== 'string') return baseError
+  const trimmed = value.trim()
+  if (!trimmed) return baseError
+  if (!props.touched[key]) return baseError
+  return isValidPersonName(trimmed) ? baseError : invalidNameMessage
+}
+
+function isValidPersonName(raw: string | null | undefined): boolean {
+  const value = (raw ?? '').trim().replace(/\s+/g, ' ')
+  if (!value) return false
+  // Lettres Unicode + séparateurs usuels entre segments de nom.
+  const allowedPattern = /^\p{L}[\p{L}\p{M}]*(?:[ '\-’][\p{L}\p{M}]+)*$/u
+  if (!allowedPattern.test(value)) return false
+  const lettersCount = Array.from(value).filter((ch) => /\p{L}/u.test(ch)).length
+  return lettersCount >= 2
+}
+
 function handleTicketFieldBlur(idx: number, field: 'firstName' | 'lastName') {
   if (!ticketTouched.value[idx]) ticketTouched.value[idx] = {}
   ticketTouched.value[idx][field] = true
@@ -575,6 +599,8 @@ function handleTicketFieldBlur(idx: number, field: 'firstName' | 'lastName') {
 
   if (!val) {
     ticketErrors.value[idx][field] = content.home.modal.validation.required
+  } else if (!isValidPersonName(val)) {
+    ticketErrors.value[idx][field] = invalidNameMessage
   } else {
     delete ticketErrors.value[idx][field]
     if (Object.keys(ticketErrors.value[idx]).length === 0) {
@@ -600,10 +626,12 @@ function validateStep2(): boolean {
 
     const f = t.firstName?.trim()
     const l = t.lastName?.trim()
-    if (!f || !l) {
+    if (!f || !l || !isValidPersonName(f) || !isValidPersonName(l)) {
       errs[i] = {}
       if (!f) errs[i].firstName = content.home.modal.validation.required
+      else if (!isValidPersonName(f)) errs[i].firstName = invalidNameMessage
       if (!l) errs[i].lastName = content.home.modal.validation.required
+      else if (!isValidPersonName(l)) errs[i].lastName = invalidNameMessage
       valid = false
     }
   })
@@ -612,6 +640,11 @@ function validateStep2(): boolean {
 }
 
 function onNext() {
+  if (!isStep1Valid.value) {
+    emit('field-blur', 'firstName')
+    emit('field-blur', 'lastName')
+    return
+  }
   emit('next')
 }
 

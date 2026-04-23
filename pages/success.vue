@@ -56,12 +56,12 @@
               </svg>
             </div>
 
-            <h1 class="card__title">Paiement invalide</h1>
+            <h1 class="card__title">{{ content.success.errorTitle }}</h1>
 
-            <p class="card__errorMessage">Le paiement a été refusé ou la commande a expiré.</p>
+            <p class="card__errorMessage" v-html="formattedErrorMessage"></p>
 
             <p class="card__text">
-              Si le paiement a été effectué après expiration, il a été automatiquement remboursé.
+              {{ content.success.errorInfo }}
             </p>
           </div>
         </template>
@@ -76,7 +76,7 @@
 
       <!-- LOADING -->
       <div v-else-if="showInitialLoader" class="paymentResultPage__card">
-        Vérification du paiement...
+        {{ content.success.loading }}
       </div>
     </div>
     <SiteFooter />
@@ -101,6 +101,9 @@ const hasSeenPaymentResultPage = useState<boolean>('hasSeenPaymentResultPage', (
 
 const formattedMessage = computed(() => {
   return content.success.message.replace(/\n/g, '<br />')
+})
+const formattedErrorMessage = computed(() => {
+  return content.success.errorMessage.replace(/\n/g, '<br />')
 })
 
 const LOG = '[billetterie:success]'
@@ -235,9 +238,15 @@ onMounted(async () => {
     }
 
     .card__errorMessage {
-      margin: 0 0 16px 0;
+      margin: 0 auto 16px auto;
       @include apply-font(text-l);
+      text-align: center;
+      max-width: 350px;
       color: #212529;
+    }
+
+    .card__errorState .card__text {
+      text-align: center;
     }
 
     :deep(.card__backButton) {

@@ -48,26 +48,33 @@
       >
         {{ subtitle }}
       </AnimatedTextElt>
-      <div class="heroBlock__ctaWrapper" :class="{ 'heroBlock__ctaWrapper--reveal': isCtaVisible }">
-        <button
-          v-if="ctaBookingNow"
-          type="button"
-          class="heroBlock__cta"
-          @pointerdown="handleTap"
-          @click="scrollToBookingSlow"
+      <div class="heroBlock__ctaWrapper">
+        <div class="heroBlock__ctaReveal" :class="{ 'heroBlock__ctaReveal--reveal': isCtaVisible }">
+          <button
+            v-if="ctaBookingNow"
+            type="button"
+            class="heroBlock__cta"
+            @pointerdown="handleTap"
+            @click="scrollToBookingSlow"
+          >
+            {{ ctaBookingNow }}
+          </button>
+        </div>
+        <div
+          class="heroBlock__ctaReveal heroBlock__ctaReveal--late"
+          :class="{ 'heroBlock__ctaReveal--reveal': isCtaVisible }"
         >
-          {{ ctaBookingNow }}
-        </button>
-        <button
-          v-if="ctaScroll"
-          type="button"
-          class="heroBlock__cta heroBlock__cta--withArrow"
-          @pointerdown="handleTap"
-          @click="scrollToNext"
-        >
-          <span>{{ ctaScroll }}</span>
-          <span class="heroBlock__ctaArrow" aria-hidden="true">↓</span>
-        </button>
+          <button
+            v-if="ctaScroll"
+            type="button"
+            class="heroBlock__cta heroBlock__cta--withArrow"
+            @pointerdown="handleTap"
+            @click="scrollToNext"
+          >
+            <span>{{ ctaScroll }}</span>
+            <span class="heroBlock__ctaArrow" aria-hidden="true">↓</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -283,20 +290,27 @@ function handleTap(e: PointerEvent) {
 }
 
 .heroBlock__ctaWrapper {
-  opacity: 0;
-  transform: translateY(50px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+}
+
+.heroBlock__ctaReveal {
+  opacity: 0;
+  transform: translateY(50px);
   transition:
     opacity 1.2s ease 0.675s,
     transform 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.675s;
+}
 
-  &--reveal {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.heroBlock__ctaReveal--late {
+  transition-delay: 0.8s;
+}
+
+.heroBlock__ctaReveal--reveal {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .heroBlock__cta {
@@ -316,13 +330,14 @@ function handleTap(e: PointerEvent) {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  @include apply-font(button-m);
   transition:
     transform 0.12s ease,
+    opacity 0.48s ease,
     color 0.25s ease,
     background 0.25s ease,
     border-color 0.25s ease,
     box-shadow 0.25s ease;
-  @include apply-font(button-m);
 
   &:active {
     transform: scale(0.94);

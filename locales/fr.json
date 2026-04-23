@@ -195,6 +195,7 @@
       "turnstileHint": "Vérifiez que vous n’êtes pas un robot avant de payer.",
       "validation": {
         "required": "Champ requis",
+        "invalidName": "champ invalide",
         "emailInvalid": "Email invalide",
         "phoneInvalid": "Téléphone invalide",
         "turnstileRequired": "Veuillez compléter la vérification anti-robot."
@@ -337,6 +338,10 @@
     "title": "Paiement confirmé",
     "message": "Nous vous remercions pour votre commande.\nVos billets sont enregistrés.",
     "info": "Un email de confirmation vient de vous être envoyé : il récapitule votre réservation et contient les informations utiles pour le jour du spectacle.\nPensez à vérifier vos spams si vous ne le trouvez pas dans votre boîte de réception.",
+    "errorTitle": "Paiement invalide",
+    "errorMessage": "Le paiement a été refusé\nou la commande a expiré.",
+    "errorInfo": "Si le paiement a été effectué après expiration,\nil a été automatiquement remboursé.",
+    "loading": "Vérification du paiement...",
     "backToSeats": "Retour à la réservation"
   },
   "footer": {
