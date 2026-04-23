@@ -1,4 +1,6 @@
 import PDFDocument from 'pdfkit'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { brand, pdfOrderRecapFooter } from '../../locales/frDisplay'
 
 export interface TicketPdfLineItem {
@@ -54,9 +56,53 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
     doc.on('error', reject)
 
     const pageWidth = doc.page.width - 80
-    const ticketList = (data.tickets && data.tickets.length > 0)
-      ? data.tickets
-      : data.seatLabels.map((seatLabel) => ({ seatLabel } as TicketPdfTicket))
+    const pageHeight = doc.page.height
+    const heroImagePath = join(process.cwd(), 'public', 'images', '4.jpg')
+    const hasHeroImage = existsSync(heroImagePath)
+    const brandLogoPath = join(process.cwd(), 'public', 'brand-logo-light.png')
+    const hasBrandLogo = existsSync(brandLogoPath)
+    const displayFontCandidates = [
+      join(process.cwd(), 'public', 'fonts', 'title.ttf'),
+      join(process.cwd(), 'public', 'fonts', 'title.otf')
+    ]
+    let displayFontName = 'Times-Bold'
+    for (const fontPath of displayFontCandidates) {
+      if (!existsSync(fontPath)) continue
+      try {
+        doc.registerFont('display-font', fontPath)
+        displayFontName = 'display-font'
+        break
+      } catch {
+        // fallback to built-in font
+      }
+    }
+    const palette = {
+      footerBg: '#1a1a2e',
+      cardBg: '#ffffff',
+      cardBorder: '#dee2e6',
+      textPrimary: '#212529',
+      textSecondary: '#495057',
+      textMuted: '#6c757d',
+      accent: '#0d6efd',
+      accentSoft: '#86b7fe'
+    }
+    const ticketList =
+      data.tickets && data.tickets.length > 0
+        ? data.tickets
+        : data.seatLabels.map((seatLabel) => ({ seatLabel }) as TicketPdfTicket)
+    const headerHeight = 102
+
+    function drawHeroBackgroundCover() {
+      if (!hasHeroImage) return
+      const image = (doc as unknown as { openImage: (path: string) => { width?: number; height?: number } }).openImage(heroImagePath)
+      if (!image?.width || !image?.height) return
+      const scale = Math.max(doc.page.width / image.width, pageHeight / image.height)
+      const drawWidth = image.width * scale
+      const drawHeight = image.height * scale
+      const x = (doc.page.width - drawWidth) / 2
+      const y = (pageHeight - drawHeight) / 2
+      doc.image(heroImagePath, x, y, { width: drawWidth, height: drawHeight })
+    }
 
     // —— Pages billets : 1 A4 par place (place, titulaire, type adulte/enfant) ——
     ticketList.forEach((ticket, index) => {
@@ -64,138 +110,191 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
 
       const label = ticket.seatLabel
       const attendeeName = [ticket.firstName, ticket.lastName].filter(Boolean).join(' ') || null
-      const typeLabel = ticket.ticketType === 'child' ? 'Enfant' : ticket.ticketType === 'adult' ? 'Adulte' : null
+      const typeLabel =
+        ticket.ticketType === 'child' ? 'Enfant' : ticket.ticketType === 'adult' ? 'Adulte' : null
+
+      drawHeroBackgroundCover()
+      doc.save().fillOpacity(0.78).rect(0, 0, doc.page.width, pageHeight).fill('#0f1726').restore()
 
       // Bandeau haut
-      doc
-        .rect(0, 0, doc.page.width, 72)
-        .fill('#2d2a26')
+      doc.rect(0, 0, doc.page.width, headerHeight).fill(palette.footerBg)
       doc
         .fillColor('#c9b896')
-        .fontSize(10)
-        .text(brand.billetterieLabel.toUpperCase(), 40, 26, { align: 'center', width: pageWidth })
+        .font('Helvetica')
+        .fontSize(8)
+        .text(brand.billetterieLabel.toUpperCase(), 40, 26, {
+          align: 'center',
+          width: pageWidth,
+          characterSpacing: 1.3
+        })
       doc
         .fillColor('#ffffff')
-        .fontSize(20)
-        .font('Helvetica-Bold')
-        .text(brand.spectacleName, 40, 44, { align: 'center', width: pageWidth })
+        .fontSize(26)
+        .font(displayFontName)
+        .text(brand.spectacleName, 40, 46, { align: 'center', width: pageWidth })
 
-      doc.y = 100
+      doc.y = 142
 
+      const cardX = 40
       const cardY = doc.y
-      const cardHeight = 240
-      doc
-        .strokeColor('#e7e5e4')
-        .lineWidth(1)
-        .roundedRect(40, cardY, pageWidth, cardHeight, 8)
-        .stroke()
+      const cardW = pageWidth
+      /** Côte verticale de la carte (le numéro de place est mis en avant ; tout remonte légèrement en proportion) */
+      const placeSeatFontSize = 40
+      const cardBaseHeight = 292
+      const placeFontScale = placeSeatFontSize / 30
+      const cardHeight = Math.round(cardBaseHeight * placeFontScale)
 
-      let rowY = cardY + 24
+      const cardRadius = 10
+      // Ombre portée discrète (PDFKit n’a pas de box-shadow)
+      const cardShadow: { dx: number; dy: number; o: number }[] = [
+        { dx: 0.4, dy: 0.7, o: 0.022 },
+        { dx: 0.8, dy: 1.4, o: 0.028 },
+        { dx: 1.2, dy: 2, o: 0.025 }
+      ]
+      for (const s of cardShadow) {
+        doc.save()
+        doc.fillColor('#000000')
+        doc.fillOpacity(s.o)
+        doc.roundedRect(cardX + s.dx, cardY + s.dy, cardW, cardHeight, cardRadius)
+        doc.fill()
+        doc.restore()
+      }
+
+      const cardGradient = doc.linearGradient(cardX, cardY, cardX + cardW, cardY + cardHeight)
+      cardGradient.stop(0, '#1a1a2e')
+      cardGradient.stop(0.58, '#23233f')
+      cardGradient.stop(1, '#2d2d52')
+
+      doc.save()
+      doc.roundedRect(cardX, cardY, cardW, cardHeight, cardRadius).clip()
+      doc.rect(cardX, cardY, cardW, cardHeight).fill(cardGradient)
+      doc.restore()
+
+      if (hasBrandLogo) {
+        const limg = (
+          doc as unknown as { openImage: (path: string) => { width?: number; height?: number } }
+        ).openImage(brandLogoPath)
+        if (limg?.width && limg?.height) {
+          const logoH = 40
+          const logoW = (limg.width / limg.height) * logoH
+          const lPadR = 20
+          const lPadT = 16
+          doc.image(brandLogoPath, cardX + cardW - lPadR - logoW, cardY + lPadT, { height: logoH })
+        }
+      }
+
+      const cardLabelColor = '#d7dbe7'
+      const cardPrimaryColor = '#f5f7ff'
+      const cardSecondaryColor = '#e6e9f5'
+      const cardAccentColor = '#c9b896'
+
+      const padTop = Math.round(24 * placeFontScale)
+      const gapAfterOrder = Math.round(48 * placeFontScale)
+      const gapAfterPlace = Math.round(52 * placeFontScale)
+      const gapAfterNameOrType = Math.round(40 * placeFontScale)
+      const footOffset = Math.round(22 * placeFontScale)
+
+      let rowY = cardY + padTop
 
       doc
-        .fillColor('#78716c')
+        .fillColor(cardLabelColor)
         .fontSize(10)
         .font('Helvetica')
         .text('Numéro de commande', 56, rowY)
       doc
-        .fillColor('#1c1917')
+        .fillColor(cardPrimaryColor)
         .fontSize(18)
         .font('Helvetica-Bold')
         .text(data.orderId, 56, rowY + 16)
-      rowY += 48
+      rowY += gapAfterOrder
 
+      doc.fillColor(cardLabelColor).fontSize(10).font('Helvetica').text('Place', 56, rowY)
       doc
-        .fillColor('#78716c')
-        .fontSize(10)
-        .font('Helvetica')
-        .text('Place', 56, rowY)
-      doc
-        .fillColor('#1c1917')
-        .fontSize(28)
-        .font('Helvetica-Bold')
+        .fillColor(cardAccentColor)
+        .fontSize(placeSeatFontSize)
+        .font(displayFontName)
         .text(label, 56, rowY + 16)
-      rowY += 52
+      rowY += gapAfterPlace
 
       if (attendeeName) {
         doc
-          .fillColor('#78716c')
+          .fillColor(cardLabelColor)
           .fontSize(10)
           .font('Helvetica')
           .text('Titulaire du billet', 56, rowY)
         doc
-          .fillColor('#1c1917')
+          .fillColor(cardPrimaryColor)
           .fontSize(14)
           .font('Helvetica')
           .text(attendeeName, 56, rowY + 16)
-        rowY += 40
+        rowY += gapAfterNameOrType
       }
       if (typeLabel) {
+        doc.fillColor(cardLabelColor).fontSize(10).font('Helvetica').text('Type', 56, rowY)
         doc
-          .fillColor('#78716c')
-          .fontSize(10)
-          .font('Helvetica')
-          .text('Type', 56, rowY)
-        doc
-          .fillColor('#1c1917')
+          .fillColor(cardPrimaryColor)
           .fontSize(14)
           .font('Helvetica')
           .text(typeLabel, 56, rowY + 16)
-        rowY += 40
+        rowY += gapAfterNameOrType
       }
 
       if (data.eventDate || data.eventVenue) {
         doc
-          .fillColor('#78716c')
+          .fillColor(cardLabelColor)
           .fontSize(10)
           .font('Helvetica')
           .text(brand.pdfLabelEvent, 56, rowY)
         const eventLine = [data.eventDate, data.eventVenue].filter(Boolean).join(' – ')
         doc
-          .fillColor('#1c1917')
+          .fillColor(cardSecondaryColor)
           .fontSize(11)
           .font('Helvetica')
           .text(eventLine, 56, rowY + 16)
       }
 
       doc
-        .fillColor('#a8a29e')
-        .fontSize(9)
-        .font('Helvetica')
-        .text(brand.pdfPresentTicketAtEntry, 40, cardY + cardHeight + 28, {
+        .fillColor(cardLabelColor)
+        .fontSize(10)
+        .font('Helvetica-Oblique')
+        .text(brand.pdfPresentTicketAtEntry, 56, cardY + cardHeight - footOffset, {
           align: 'center',
-          width: pageWidth
+          width: pageWidth - 32
         })
     })
 
     // —— Dernière page A4 : récapitulatif de la commande ——
     doc.addPage({ size: 'A4', margin: 40 })
 
-    doc
-      .rect(0, 0, doc.page.width, 72)
-      .fill('#2d2a26')
+    doc.rect(0, 0, doc.page.width, headerHeight).fill(palette.footerBg)
     doc
       .fillColor('#c9b896')
-      .fontSize(10)
-      .text(brand.billetterieLabel.toUpperCase(), 40, 26, { align: 'center', width: pageWidth })
+      .font('Helvetica')
+      .fontSize(8)
+      .text(brand.billetterieLabel.toUpperCase(), 40, 26, {
+        align: 'center',
+        width: pageWidth,
+        characterSpacing: 1.3
+      })
     doc
       .fillColor('#ffffff')
-      .fontSize(18)
-      .font('Helvetica-Bold')
-      .text('Récapitulatif de la commande', 40, 44, { align: 'center', width: pageWidth })
+      .fontSize(26)
+      .font(displayFontName)
+      .text('Récapitulatif de la commande', 40, 46, { align: 'center', width: pageWidth })
 
-    doc.y = 100
+    doc.y = 142
 
     const recapX = 56
     let recapY = doc.y
 
     const labelStyle = () => {
-      doc.fillColor('#78716c').fontSize(10).font('Helvetica')
+      doc.fillColor(palette.textMuted).fontSize(10).font('Helvetica')
     }
     const valueStyle = () => {
-      doc.fillColor('#1c1917').fontSize(12).font('Helvetica')
+      doc.fillColor(palette.textSecondary).fontSize(12).font('Helvetica')
     }
     const valueBold = () => {
-      doc.fillColor('#1c1917').fontSize(12).font('Helvetica-Bold')
+      doc.fillColor(palette.textPrimary).fontSize(12).font('Helvetica-Bold')
     }
 
     labelStyle()
@@ -229,11 +328,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
     labelStyle()
     doc.text('Places réservées', recapX, recapY)
     valueStyle()
-    doc.text(
-      ticketList.map((t) => t.seatLabel).join(', '),
-      recapX,
-      recapY + 18
-    )
+    doc.text(ticketList.map((t) => t.seatLabel).join(', '), recapX, recapY + 18)
     recapY += 44
 
     const hasAttendeeInfo = ticketList.some((t) => t.firstName || t.lastName || t.ticketType)

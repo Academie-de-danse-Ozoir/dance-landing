@@ -153,13 +153,41 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  let stripeCustomerId: string | undefined
+  const customerEmail = typeof order.email === 'string' ? order.email.trim() : ''
+  if (customerEmail) {
+    const existing = await stripe.customers.list({ email: customerEmail, limit: 1 })
+    const customer = existing.data[0]
+    if (customer) {
+      const locales = (customer.preferred_locales ?? []).map((v) => v.toLowerCase())
+      if (!locales.includes('fr-fr') && !locales.includes('fr')) {
+        const updated = await stripe.customers.update(customer.id, {
+          preferred_locales: ['fr-FR']
+        })
+        stripeCustomerId = updated.id
+      } else {
+        stripeCustomerId = customer.id
+      }
+    } else {
+      const created = await stripe.customers.create({
+        email: customerEmail,
+        preferred_locales: ['fr-FR']
+      })
+      stripeCustomerId = created.id
+    }
+  }
+
   /* =====================
      4) Créer la session Stripe
   ===================== */
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
-    customer_email: order.email,
+    ...(stripeCustomerId
+      ? { customer: stripeCustomerId }
+      : customerEmail
+        ? { customer_email: customerEmail }
+        : {}),
     locale: 'fr',
 
     line_items: lineItems,

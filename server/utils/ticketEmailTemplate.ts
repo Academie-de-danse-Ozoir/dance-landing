@@ -29,7 +29,7 @@ export interface TicketEmailData {
   ticketsUrl?: string | null
   /** Si true, les billets sont envoyés en pièce jointe (pas de lien de téléchargement) */
   ticketsInAttachment?: boolean
-  /** Lien vers le reçu Stripe (PDF) */
+  /** Lien vers le reçu Stripe */
   receiptUrl?: string | null
   /** ID de la session Stripe (pour référence) */
   stripeSessionId?: string | null
@@ -37,6 +37,11 @@ export interface TicketEmailData {
   paymentStatus: string
   /** Date de paiement formatée */
   paidAtFormatted: string
+  /**
+   * URL de base (origine) pour le petit logo du pied d’e-mail, ex. `https://billeterie.exemple.com`.
+   * Sinon `NUXT_PUBLIC_SITE_URL` ou l’hôte Vercel si défini. Sans origine, le pied reste texte seul.
+   */
+  publicSiteUrl?: string | null
 }
 
 function escapeHtml(s: string): string {
@@ -45,6 +50,16 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function resolveEmailPublicBaseUrl(data: TicketEmailData): string {
+  const fromData = data.publicSiteUrl?.trim()
+  if (fromData) return fromData.replace(/\/$/, '')
+  const nuxt = process.env.NUXT_PUBLIC_SITE_URL?.trim()
+  if (nuxt) return nuxt.replace(/\/$/, '')
+  const v = process.env.VERCEL_URL?.trim()
+  if (v) return (v.startsWith('http') ? v : `https://${v}`).replace(/\/$/, '')
+  return ''
 }
 
 /** Affiche le statut de paiement en français */
@@ -68,6 +83,10 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       ? [data.firstName, data.lastName].filter(Boolean).join(' ')
       : null
 
+  const publicBase = resolveEmailPublicBaseUrl(data)
+  const footerLogoUrl = publicBase ? `${publicBase}/brand-logo-light.png` : ''
+  const hasFooterLogo = Boolean(footerLogoUrl)
+
   const lineItemsRows = data.lineItems
     .map(
       (item) => `
@@ -83,20 +102,23 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
   const ticketsBlock = data.ticketsInAttachment
     ? `
     <p style="margin: 24px 0 8px 0; font-size: 13px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Vos billets</p>
-    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Vos billets sont en <strong>pièce jointe</strong> de cet email (fichier PDF, un billet par place). Ouvrez ou téléchargez la pièce jointe pour les consulter et présentez-les à l'entrée du spectacle.</p>
+    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Vos billets sont en <strong>pièce jointe</strong> de cet email. Ouvrez ou téléchargez la pièce jointe pour les consulter et présentez-les à l'entrée du spectacle.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px;">
       <tr>
-        <td style="padding: 14px 24px; background-color: #198754; color: #ffffff; font-size: 14px; font-weight: 600; border-radius: 8px; text-align: center;">📎 Billets en pièce jointe</td>
+        <td style="padding: 12px 14px; background-color: #f4f5f8; border: 1px solid #dee2e6; color: #495057; font-size: 13px; line-height: 1.45; border-radius: 8px;">
+          <strong>Ou trouver vos billets ?</strong><br>
+          Ils se trouvent dans la piece jointe de cet email.
+        </td>
       </tr>
     </table>`
     : data.ticketsUrl
       ? `
     <p style="margin: 24px 0 8px 0; font-size: 13px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Vos billets</p>
-    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Téléchargez vos billets au format PDF (un billet par place). Présentez-les à l'entrée du spectacle.</p>
+    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Téléchargez vos billets (un billet par place). Présentez-les à l'entrée du spectacle.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px;">
       <tr>
         <td>
-          <a href="${escapeHtml(data.ticketsUrl)}" style="display: inline-block; padding: 14px 24px; background-color: #198754; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px;">Télécharger mes billets (PDF)</a>
+          <a href="${escapeHtml(data.ticketsUrl)}" style="display: inline-block; padding: 14px 24px; background-color: #0d6efd; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px;">Télécharger mes billets</a>
         </td>
       </tr>
     </table>`
@@ -105,11 +127,11 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
   const receiptBlock = data.receiptUrl
     ? `
     <p style="margin: 24px 0 8px 0; font-size: 13px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Reçu de paiement</p>
-    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Vous pouvez télécharger votre reçu de paiement officiel au format PDF en cliquant sur le bouton ci-dessous.</p>
+    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Vous pouvez télécharger votre reçu de paiement officiel en cliquant sur le bouton ci-dessous.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px;">
       <tr>
         <td>
-          <a href="${escapeHtml(data.receiptUrl)}" style="display: inline-block; padding: 14px 24px; background-color: #2d2a26; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px;">Télécharger le reçu de paiement (PDF)</a>
+          <a href="${escapeHtml(data.receiptUrl)}" style="display: inline-block; padding: 14px 24px; background-color: #1a1a2e; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px;">Télécharger le reçu de paiement</a>
         </td>
       </tr>
     </table>`
@@ -120,28 +142,44 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @font-face {
+      font-family: 'title';
+      src: url('/fonts/title.woff') format('woff'),
+           url('/fonts/title.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'text';
+      src: url('/fonts/text.woff') format('woff'),
+           url('/fonts/text.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+  </style>
   <title>Commande ${escapeHtml(orderRef)} — Confirmation billet – ${escapeHtml(brand.spectacleName)}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f3f0; -webkit-font-smoothing: antialiased;">
-  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f3f0;">
+<body style="margin: 0; padding: 0; font-family: 'text', 'PP Neue Montreal', Arial, sans-serif; background-color: #f4f5f8; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f5f8;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 10px 34px rgba(26,26,46,0.16); overflow: hidden;">
           <!-- En-tête -->
           <tr>
-            <td style="background-color: #2d2a26; padding: 36px 40px; text-align: center;">
+            <td style="background-color: #1a1a2e; padding: 36px 40px; text-align: center;">
               <p style="margin: 0; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #c9b896; font-weight: 600;">${escapeHtml(brand.billetterieLabel)}</p>
-              <h1 style="margin: 12px 0 0 0; font-size: 24px; font-weight: 600; color: #ffffff; letter-spacing: -0.02em;">${escapeHtml(brand.spectacleName)}</h1>
+              <h1 style="margin: 12px 0 0 0; font-size: 36px; font-weight: 400; color: #ffffff; letter-spacing: -0.02em; font-family: 'title', 'Williwaw Book', Georgia, 'Times New Roman', serif;">${escapeHtml(brand.spectacleName)}</h1>
               <p style="margin: 16px 0 0 0; font-size: 14px; color: #a8a29e;">Confirmation — commande ${escapeHtml(orderRef)}</p>
             </td>
           </tr>
           <!-- Contenu principal -->
           <tr>
             <td style="padding: 40px 40px 32px;">
-              <p style="margin: 0 0 8px 0; font-size: 18px; color: #1c1917; line-height: 1.5;">Merci pour votre achat. Votre réservation est bien confirmée.</p>
+              <p style="margin: 0 0 8px 0; font-size: 18px; color: #212529; line-height: 1.5;">Merci pour votre achat. Votre réservation est bien confirmée.</p>
               ${customerName ? `<p style="margin: 0 0 24px 0; font-size: 15px; color: #57534e;">Bonjour ${escapeHtml(customerName)},</p>` : ''}
               <!-- Numéro de commande -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border-radius: 8px; border: 1px solid #e7e5e4; margin-bottom: 24px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 24px;">
                 <tr>
                   <td style="padding: 20px 24px;">
                     <p style="margin: 0 0 6px 0; font-size: 12px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Numéro de commande</p>
@@ -150,7 +188,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
                 </tr>
               </table>
               <!-- Nombre de places -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafaf9; border-radius: 8px; border: 1px solid #e7e5e4; margin-bottom: 24px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 24px;">
                 <tr>
                   <td style="padding: 20px 24px;">
                     <p style="margin: 0 0 6px 0; font-size: 12px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Nombre de places</p>
@@ -160,9 +198,9 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
               </table>
               <!-- Détail du paiement -->
               <p style="margin: 0 0 12px 0; font-size: 13px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Détail du paiement</p>
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e7e5e4; margin-bottom: 16px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 16px;">
                 <thead>
-                  <tr style="background-color: #fafaf9;">
+                  <tr style="background-color: #f4f5f8;">
                     <th style="padding: 12px 16px; font-size: 11px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; border-bottom: 1px solid #e7e5e4;">Désignation</th>
                     <th style="padding: 12px 16px; font-size: 11px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; border-bottom: 1px solid #e7e5e4;">Qté</th>
                     <th style="padding: 12px 16px; font-size: 11px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em; text-align: right; border-bottom: 1px solid #e7e5e4;">Prix unitaire</th>
@@ -184,15 +222,37 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
               </table>
               ${ticketsBlock}
               ${receiptBlock}
-              <p style="margin: 28px 0 0 0; font-size: 15px; color: #57534e; line-height: 1.6;">Conservez cet email et présentez votre numéro de commande à l'entrée du spectacle. Nous avons hâte de vous retrouver.</p>
+              <p style="margin: 28px 0 0 0; font-size: 15px; color: #495057; line-height: 1.6;">Conservez cet email et présentez vos billets à l'entrée du spectacle.</p>
               ${data.stripeSessionId ? `<p style="margin: 12px 0 0 0; font-size: 11px; color: #a8a29e;">Réf. paiement : ${escapeHtml(data.stripeSessionId)}</p>` : ''}
             </td>
           </tr>
-          <!-- Pied de page -->
+          <!-- Pied de page (bandeau haut, logo centré au-dessus de l’identité) -->
           <tr>
-            <td style="padding: 24px 40px 32px; border-top: 1px solid #e7e5e4; background-color: #fafaf9;">
-              <p style="margin: 0; font-size: 13px; color: #78716c; text-align: center; line-height: 1.5;">${escapeHtml(billetterieSenderName())}</p>
-              <p style="margin: 8px 0 0 0; font-size: 12px; color: #a8a29e; text-align: center;">Cet email confirme votre réservation et votre paiement.</p>
+            <td style="padding: 44px 48px 48px; border-top: 1px solid #2a2a44; background-color: #1a1a2e;">
+              ${
+                hasFooterLogo
+                  ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                <tr>
+                  <td style="text-align: center; padding: 0 0 20px 0; line-height: 0; vertical-align: top;">
+                    <img src="${escapeHtml(footerLogoUrl)}" width="44" style="display: block; width: 44px; max-width: 44px; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" alt="">
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center; padding: 0; font-size: 13px; color: #e8e8ef; line-height: 1.5;">
+                    ${escapeHtml(billetterieSenderName())}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center; padding: 16px 0 0 0;">
+                    <p style="margin: 0; font-size: 12px; color: rgba(255,255,255,0.72);">Cet email confirme votre réservation et votre paiement.</p>
+                  </td>
+                </tr>
+              </table>`
+                  : `<p style="margin: 0; font-size: 13px; color: #e8e8ef; text-align: center; line-height: 1.5;">${escapeHtml(
+                      billetterieSenderName()
+                    )}</p>
+              <p style="margin: 12px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.72); text-align: center;">Cet email confirme votre réservation et votre paiement.</p>`
+              }
             </td>
           </tr>
         </table>
