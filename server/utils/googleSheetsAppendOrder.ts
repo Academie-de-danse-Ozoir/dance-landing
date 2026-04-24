@@ -96,9 +96,35 @@ async function sheetsValuesUpdate(
   const url = new URL(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(rangeA1)}`
   )
-  url.searchParams.set('valueInputOption', 'USER_ENTERED')
+  url.searchParams.set('valueInputOption', 'RAW')
   const res = await fetch(url.toString(), {
     method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ values })
+  })
+  if (!res.ok) {
+    await res.text().catch(() => '')
+    return false
+  }
+  return true
+}
+
+async function sheetsValuesAppend(
+  spreadsheetId: string,
+  rangeA1: string,
+  values: string[][],
+  token: string
+): Promise<boolean> {
+  const url = new URL(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(rangeA1)}:append`
+  )
+  url.searchParams.set('valueInputOption', 'RAW')
+  url.searchParams.set('insertDataOption', 'OVERWRITE')
+  const res = await fetch(url.toString(), {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -157,6 +183,12 @@ function quoteSheetTitleForA1(title: string): string {
  */
 function resolveSheetGidFromEnv(): number | null {
   const envGid = process.env.GOOGLE_SHEETS_TAB_GID?.trim()
+  if (envGid && /^\d+$/.test(envGid)) return parseInt(envGid, 10)
+  return null
+}
+
+function resolvePaymentSheetGidFromEnv(): number | null {
+  const envGid = process.env.GOOGLE_SHEETS_PAYMENT_TAB_GID?.trim()
   if (envGid && /^\d+$/.test(envGid)) return parseInt(envGid, 10)
   return null
 }
@@ -251,6 +283,24 @@ export type SheetOrderRow = {
   seats: SheetSeatRow[]
 }
 
+/** Une ligne de compta par paiement confirmé (commande). */
+export type SheetPaymentRow = {
+  paidAtIso: string
+  orderId: string
+  amountTotalEuros: string
+  amountSubtotalEuros: string
+  amountTaxEuros: string
+  amountNetEuros: string
+  vatRatePercent: string
+  currency: string
+  seatCount: number
+  customerEmail: string
+  customerName: string
+  customerPhone: string
+  seatLabelsJoined: string
+  receiptUrl: string
+}
+
 /**
  * Met à jour une Google Sheet : **une ligne par siège**, puis **réordonne tout le bloc données** par ordre alphabétique
  * du **nom de résa** (col. A, `fr`, insensible aux accents). Les lignes d’une même commande restent groupées (tri secondaire
@@ -343,4 +393,59 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
 
   const updated = await sheetsValuesUpdate(spreadsheetId, updateRangeA1, sorted, token)
   if (!updated) return
+}
+
+/**
+ * Ajoute une ligne "paiement comptable" (une ligne par commande) dans un onglet dédié.
+ *
+ * Variables:
+ * - Obligatoire: `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`
+ * - Recommandé: `GOOGLE_SHEETS_PAYMENT_TAB_GID`
+ * - Optionnel: `GOOGLE_SHEETS_PAYMENT_APPEND_RANGE` (défaut: `Sheet1!A2:N`)
+ */
+export async function appendPaidPaymentRowToGoogleSheetIfConfigured(row: SheetPaymentRow): Promise<void> {
+  const spreadsheetId = resolveGoogleSheetsSpreadsheetId()
+  const rangeRaw = (process.env.GOOGLE_SHEETS_PAYMENT_APPEND_RANGE ?? 'Sheet1!A2:N').trim()
+  const cellPart = parseAppendCellPart(rangeRaw)
+  const sheetGid = resolvePaymentSheetGidFromEnv()
+  if (!spreadsheetId) return
+
+  let token: string | null
+  try {
+    token = await getAccessToken()
+  } catch {
+    return
+  }
+  if (!token) return
+
+  let range: string
+  if (sheetGid != null) {
+    const title = await fetchSheetTitleByGid(spreadsheetId, sheetGid, token)
+    if (!title) return
+    range = `${quoteSheetTitleForA1(title)}!${cellPart}`
+  } else {
+    range = normalizeSheetAppendRange(rangeRaw)
+  }
+
+  const values = [
+    [
+      row.paidAtIso,
+      row.orderId,
+      row.amountTotalEuros,
+      row.amountSubtotalEuros,
+      row.amountTaxEuros,
+      row.amountNetEuros,
+      row.vatRatePercent,
+      row.currency.toUpperCase(),
+      String(row.seatCount),
+      row.customerEmail,
+      row.customerName,
+      row.customerPhone,
+      row.seatLabelsJoined,
+      row.receiptUrl
+    ]
+  ]
+
+  const appended = await sheetsValuesAppend(spreadsheetId, range, values, token)
+  if (!appended) return
 }

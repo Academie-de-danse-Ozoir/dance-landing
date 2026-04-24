@@ -19,6 +19,7 @@ import { buildTicketEmailHtml } from './ticketEmailTemplate'
 import { buildTicketPdfBuffer } from './ticketPdf'
 import {
   appendPaidOrderRowToGoogleSheetIfConfigured,
+  appendPaidPaymentRowToGoogleSheetIfConfigured,
   buildGoogleSheetsRegisterUrl
 } from './googleSheetsAppendOrder'
 import { sendAdminNewOrderNotificationIfConfigured } from './sendAdminNewOrderNotification'
@@ -28,6 +29,19 @@ const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ
 function formatAmount(cents: number, currency: string = 'eur'): string {
   const value = (cents / 100).toFixed(2).replace('.', ',')
   return currency.toUpperCase() === 'EUR' ? `${value} €` : `${value} ${currency.toUpperCase()}`
+}
+
+function formatAmountDecimal(cents: number): string {
+  return (cents / 100).toFixed(2)
+}
+
+function formatSeatLabelsForSheet(labels: string[]): string {
+  if (labels.length === 0) return '—'
+  const chunks: string[] = []
+  for (let i = 0; i < labels.length; i += 5) {
+    chunks.push(labels.slice(i, i + 5).join(', '))
+  }
+  return chunks.join('\n')
 }
 
 function formatDate(date: Date): string {
@@ -163,6 +177,11 @@ export async function sendPaidOrderTicketEmailIfNeeded(
   const sessionId = session.id
   const currency = (session.currency ?? 'eur').toLowerCase()
   const amountTotal = session.amount_total ?? 0
+  const amountSubtotal = session.amount_subtotal ?? amountTotal
+  const amountTax = session.total_details?.amount_tax ?? Math.max(0, amountTotal - amountSubtotal)
+  const amountNet = Math.max(0, amountTotal - amountTax)
+  const vatRatePercent =
+    amountNet > 0 && amountTax > 0 ? ((amountTax / amountNet) * 100).toFixed(2) : '0.00'
 
   let receiptUrl: string | null = null
   const lineItems: TicketEmailData['lineItems'] = []
@@ -171,7 +190,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     const sessionWithCharge = (await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['payment_intent.latest_charge']
     })) as Stripe.Checkout.Session & {
-      payment_intent?: { latest_charge?: { receipt_url?: string } }
+      payment_intent?: { id?: string; latest_charge?: { receipt_url?: string } }
     }
     const charge = sessionWithCharge.payment_intent?.latest_charge
     if (charge && typeof charge === 'object' && 'receipt_url' in charge) {
@@ -315,9 +334,8 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     const typ = t.ticketType === 'child' ? 'Enfant' : t.ticketType === 'adult' ? 'Adulte' : '—'
     return `${t.seatLabel}: ${n} (${typ})`
   })
-  const seatLabelsJoined = seatLabels.length > 0 ? seatLabels.join(', ') : '—'
-
-  const [adminResult, sheetResult] = await Promise.allSettled([
+  const seatLabelsJoined = formatSeatLabelsForSheet(seatLabels)
+  const [adminResult, sheetResult, paymentSheetResult] = await Promise.allSettled([
     sendAdminNewOrderNotificationIfConfigured({
       orderRefShort: orderRefShort(order.id),
       registerUrl,
@@ -347,9 +365,26 @@ export async function sendPaidOrderTicketEmailIfNeeded(
               attendeeLastName: '',
               ticketTypeLabel: '—'
             }))
+    }),
+    appendPaidPaymentRowToGoogleSheetIfConfigured({
+      paidAtIso: new Date().toISOString(),
+      orderId: order.id,
+      amountTotalEuros: formatAmountDecimal(amountTotal),
+      amountSubtotalEuros: formatAmountDecimal(amountSubtotal),
+      amountTaxEuros: formatAmountDecimal(amountTax),
+      amountNetEuros: formatAmountDecimal(amountNet),
+      vatRatePercent,
+      currency,
+      seatCount,
+      customerEmail: order.email,
+      customerName: customerName ?? '',
+      customerPhone: order.phone?.trim() ?? '',
+      seatLabelsJoined,
+      receiptUrl: receiptUrl ?? ''
     })
   ])
   void adminResult
   void sheetResult
+  void paymentSheetResult
   return { sent: true }
 }
