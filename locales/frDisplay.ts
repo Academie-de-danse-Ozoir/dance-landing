@@ -3,6 +3,7 @@
  * À utiliser côté serveur (et partout hors composants Vue si besoin).
  */
 import fr from './fr.json'
+import { formatFrenchPhoneForDisplay } from '../utils/phoneInput'
 
 export type ApiErrorKey = keyof typeof fr.api.errors
 
@@ -27,6 +28,13 @@ export function emailAggregateLineDescription(): string {
 
 export function pdfOrderRecapFooter(): string {
   return `Conservez ce récapitulatif avec vos billets. ${billetterieSenderName()}.`
+}
+
+export function contactHelpMessagePlain(): string {
+  const phone = formatFrenchPhoneForDisplay(brand.contactPhone) || brand.contactPhone
+  return brand.contactHelpMessage
+    .replace(/\{email\}/g, brand.displayEmail)
+    .replace(/\{phone\}/g, phone)
 }
 
 export { brand }

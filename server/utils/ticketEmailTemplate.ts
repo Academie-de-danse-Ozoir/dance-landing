@@ -225,6 +225,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
               ${ticketsBlock}
               ${receiptBlock}
               <p style="margin: 28px 0 0 0; font-size: 15px; color: #495057; line-height: 1.6;">Conservez cet email et présentez vos billets à l'entrée du spectacle.</p>
+              <p style="margin: 24px 0 0 0; font-size: 14px; color: #495057; line-height: 1.6; text-align: left;">Pour toute information complémentaire, contactez-nous par e-mail à <a href="mailto:${escapeHtml(brand.displayEmail)}" style="color: #0d6efd; text-decoration: underline;">${escapeHtml(brand.displayEmail)}</a> ou par téléphone au <a href="tel:${escapeHtml(brand.contactPhone.replace(/\s/g, ''))}" style="color: #0d6efd; text-decoration: underline;">${escapeHtml(brand.contactPhone)}</a>.</p>
               ${data.stripeSessionId ? `<p style="margin: 12px 0 0 0; font-size: 11px; color: #a8a29e;">Réf. paiement : ${escapeHtml(data.stripeSessionId)}</p>` : ''}
             </td>
           </tr>

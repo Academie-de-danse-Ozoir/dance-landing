@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { formatFrenchPhoneForDisplay } from '../../utils/phoneInput'
 import { brand, pdfOrderRecapFooter } from '../../locales/frDisplay'
 
 export interface TicketPdfLineItem {
@@ -381,7 +382,8 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       labelStyle()
       doc.text('Téléphone', recapX, recapY)
       valueStyle()
-      doc.text(data.customerPhone, recapX, recapY + 18)
+      const phoneForPdf = formatFrenchPhoneForDisplay(data.customerPhone) || data.customerPhone
+      doc.text(phoneForPdf, recapX, recapY + 18)
       recapY += 38
     }
 
@@ -445,12 +447,38 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       recapY += 44
     }
 
-    // Indication sur la même page, juste sous le récap
+    const linkColor = '#0d6efd'
+    const w = pageWidth
+    const x = 40
+    const displayEmail = brand.displayEmail
+    const displayPhone = formatFrenchPhoneForDisplay(brand.contactPhone) || brand.contactPhone
+    let yContact = recapY + 28
+
+    doc.fontSize(10).font(textFontName)
+
+    doc.fillColor(palette.textSecondary)
+    doc.text('Pour toute information complémentaire, contactez-nous par e-mail à', x, yContact, {
+      width: w,
+      align: 'center'
+    })
+    yContact = doc.y + 5
+
+    doc.fillColor(linkColor)
+    doc.text(displayEmail, x, yContact, { width: w, align: 'center', underline: true })
+    yContact = doc.y + 5
+
+    doc.fillColor(palette.textSecondary)
+    doc.text('ou par téléphone au', x, yContact, { width: w, align: 'center' })
+    yContact = doc.y + 5
+
+    doc.fillColor(linkColor)
+    doc.text(`${displayPhone}.`, x, yContact, { width: w, align: 'center', underline: true })
+
     doc
       .fillColor('#a8a29e')
       .fontSize(9)
       .font(textFontName)
-      .text(pdfOrderRecapFooter(), 40, recapY + 32, { align: 'center', width: pageWidth })
+      .text(pdfOrderRecapFooter(), 40, doc.y + 18, { align: 'center', width: pageWidth })
 
     doc.end()
   })

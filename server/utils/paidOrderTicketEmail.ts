@@ -23,6 +23,7 @@ import {
   buildGoogleSheetsRegisterUrl
 } from './googleSheetsAppendOrder'
 import { sendAdminNewOrderNotificationIfConfigured } from './sendAdminNewOrderNotification'
+import { formatFrenchPhoneForDisplay } from '../../utils/phoneInput'
 
 const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ_APIKEY_PRIVATE!)
 
@@ -328,6 +329,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
   await sendTicketEmail(emailData, pdfBuffer)
 
   const registerUrl = buildGoogleSheetsRegisterUrl()
+  const phoneForSheets = formatFrenchPhoneForDisplay(order.phone) || order.phone?.trim() || ''
 
   const ticketsDetailLines = tickets.map((t) => {
     const n = [t.firstName, t.lastName].filter(Boolean).join(' ') || '—'
@@ -349,7 +351,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
       buyerLastName: lastName?.trim() ?? '',
       buyerFirstName: firstName?.trim() ?? '',
       buyerEmail: order.email,
-      buyerPhone: order.phone?.trim() ?? '',
+      buyerPhone: phoneForSheets,
       seats:
         tickets.length > 0
           ? tickets.map((t) => ({
@@ -378,7 +380,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
       seatCount,
       customerEmail: order.email,
       customerName: customerName ?? '',
-      customerPhone: order.phone?.trim() ?? '',
+      customerPhone: phoneForSheets,
       seatLabelsJoined,
       receiptUrl: receiptUrl ?? ''
     })

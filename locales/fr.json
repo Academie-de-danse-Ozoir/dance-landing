@@ -46,7 +46,8 @@
     "stripeLineAdult": "Billet adulte",
     "stripeLineChild": "Billet enfant (jusqu’à 12 ans inclus)",
     "pdfLabelEvent": "Spectacle",
-    "pdfPresentTicketAtEntry": "Présentez ce billet à l'entrée du spectacle."
+    "pdfPresentTicketAtEntry": "Présentez ce billet à l'entrée du spectacle.",
+    "contactHelpMessage": "Pour toute information complémentaire, contactez-nous par e-mail à {email} ou par téléphone au {phone}."
   },
   "admin": {
     "newOrderEmailSubject": "Nouvelle commande payée — {{ref}} — {{spectacle}}",

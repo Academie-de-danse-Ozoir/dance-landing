@@ -14,7 +14,7 @@
             >
               <rect x="2" y="2" width="20" height="20" rx="2" fill="#198754" />
               <path
-                d="M7 12l3 3 6-6"
+                d="M7.4 12.4l3 3 6-6"
                 fill="none"
                 stroke="#fff"
                 stroke-width="1.5"

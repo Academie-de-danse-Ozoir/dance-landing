@@ -46,6 +46,28 @@ export function formatFrenchPhoneInput(raw: string): string {
   return parts.join(' ')
 }
 
+/**
+ * Même style d’affichage que la saisie (groupes de 2), pour PDF, emails admin, Google Sheets, etc.
+ * Gère +33, espaces, tirets. Retourne `''` si aucun chiffre.
+ */
+export function formatFrenchPhoneForDisplay(raw: string | null | undefined): string {
+  if (raw == null) return ''
+  const trimmed = String(raw).trim()
+  if (!trimmed) return ''
+  let digits = trimmed.replace(/\D/g, '')
+  if (!digits) return ''
+  if (digits.startsWith('33') && digits.length >= 9) {
+    digits = '0' + digits.slice(2)
+  }
+  if (digits.length > 10) {
+    digits = digits.slice(0, 10)
+  }
+  if (digits.length === 9 && digits[0] !== '0') {
+    digits = '0' + digits
+  }
+  return formatFrenchPhoneInput(digits)
+}
+
 /** Nombre de chiffres dans `s` strictement avant l’index `index`. */
 export function countDigitsBeforeIndex(s: string, index: number): number {
   let c = 0
