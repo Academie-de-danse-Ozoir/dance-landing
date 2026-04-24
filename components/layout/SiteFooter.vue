@@ -28,7 +28,10 @@
           {{ content.brand.eventVenue }} · {{ content.brand.eventDate }}<br />
           {{ content.brand.eventTimes }}
         </p>
-        <p class="bottom__copy">{{ copyrightLine }}</p>
+        <p class="bottom__copy">
+          <span class="bottom__copyPrefix">{{ copyrightPrefix }}</span>
+          <span class="bottom__copyRights">{{ copyrightRights }}</span>
+        </p>
       </div>
     </div>
   </footer>
@@ -73,6 +76,10 @@ const mobileBrandName = computed(() =>
 const copyrightLine = computed(() =>
   content.footer.copyright.replace('{year}', String(new Date().getFullYear()))
 )
+const copyrightPrefix = computed(() =>
+  copyrightLine.value.replace(' Tous droits réservés.', '').trim()
+)
+const copyrightRights = computed(() => 'Tous droits réservés.')
 </script>
 
 <style lang="scss" scoped>
@@ -187,6 +194,13 @@ const copyrightLine = computed(() =>
   .siteFooter__mapCol {
     grid-column: 1 / -1;
     justify-self: stretch;
+  }
+
+  .siteFooter__bottom .bottom__copy {
+    .bottom__copyPrefix,
+    .bottom__copyRights {
+      display: block;
+    }
   }
 }
 </style>

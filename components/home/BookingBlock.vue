@@ -5,6 +5,27 @@
     class="bookingBlock"
     aria-label="Réservation"
   >
+    <button
+      type="button"
+      class="bookingBlock__edgeCue bookingBlock__edgeCue--top"
+      :class="{ 'bookingBlock__edgeCue--visible': edgeCueVisible }"
+      aria-label="Remonter à la section précédente"
+      @click="scrollToMapPricingSection"
+    >
+      <span class="edgeCue__arrow edgeCue__arrow--up" aria-hidden="true">↑</span>
+      <span class="edgeCue__text">{{ topEdgeCueText }}</span>
+    </button>
+    <button
+      type="button"
+      class="bookingBlock__edgeCue bookingBlock__edgeCue--bottom"
+      :class="{ 'bookingBlock__edgeCue--visible': edgeCueVisible }"
+      aria-label="Descendre à la section suivante"
+      @click="scrollToAdjacentSection('next')"
+    >
+      <span class="edgeCue__text">{{ bottomEdgeCueText }}</span>
+      <span class="edgeCue__arrow edgeCue__arrow--down" aria-hidden="true">↓</span>
+    </button>
+
     <div v-if="!seatsReady" class="bookingBlock__loader" role="status" aria-live="polite">
       <span class="bookingBlock__loaderSpinner" aria-hidden="true" />
       <span class="bookingBlock__visuallyHidden">{{ content.home.seats.map.mapLoading }}</span>
@@ -15,12 +36,18 @@
         <div ref="bookingInnerRef" class="bookingBlock__inner">
           <h1 class="bookingBlock__title">{{ content.home.title }}</h1>
 
-          <div ref="seatMapSizerRef" class="bookingBlock__seatMapSizer">
+          <div
+            ref="seatMapSizerRef"
+            class="bookingBlock__seatMapSizer"
+            @pointerdown.capture="focusEdgeCues"
+            @focusin="focusEdgeCues"
+          >
             <SeatMap
               fill-height
               :seats="seats"
               :selected-seat-ids="selectedSeatIds"
               :active-order="activeOrder"
+              :force-active-order-lock="showModal || isCreatingHold || keepModalChromeDuringLeave"
               :max-seats-per-order="MAX_SEATS_PER_ORDER"
               class="bookingBlock__seatMap"
               @seat-click="toggleSeat"
@@ -78,6 +105,7 @@
           :touched="touched"
           :is-submitting="isSubmitting"
           :is-saving-contact="isSavingContact"
+          :is-creating-hold="isCreatingHold"
           :show-reservation-timer="!!activeOrder && (showModal || keepModalChromeDuringLeave)"
           :formatted-reservation-time="formattedTime"
           @close="closeModal"
@@ -117,10 +145,12 @@ import {
   measureBookingSectionLayout,
   useScrollToBooking
 } from '../../composables/useScrollToBooking'
+import { useLenis } from '../../composables/useLenis'
 import { useBookingSession } from '../../composables/useBookingSession'
 import { registerBookingSeatMapSnap } from '../../composables/useBookingSeatMapSnap'
 import { registerBookingBannerActions } from '../../composables/useBookingBannerActions'
 const { scrollToBookingSection, scrollToBookingSectionIfMisaligned } = useScrollToBooking()
+const lenis = useLenis()
 const bookingSectionRef = ref<HTMLElement | null>(null)
 
 const {
@@ -137,6 +167,47 @@ let unregisterBookingBanner: (() => void) | undefined
 
 function onSeatMapBookingScrollIfNeeded() {
   void scrollToBookingSectionIfMisaligned()
+}
+
+function scrollToAdjacentSection(direction: 'prev' | 'next') {
+  if (!import.meta.client) return
+  const current = bookingSectionRef.value
+  if (!current) return
+
+  const sectionCandidates = Array.from(document.querySelectorAll('section[id]')) as HTMLElement[]
+  const sections = sectionCandidates.filter((el, idx) => sectionCandidates.indexOf(el) === idx)
+  const currentIndex = sections.findIndex((el) => el === current)
+  if (currentIndex < 0) return
+
+  const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1
+  const target = sections[targetIndex]
+  if (!target) return
+
+  const l = lenis.value as {
+    scrollTo?: (t: HTMLElement, opts?: { duration?: number }) => void
+  } | null
+  if (l?.scrollTo) {
+    l.scrollTo(target, { duration: 1.05 })
+    return
+  }
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function scrollToMapPricingSection() {
+  if (!import.meta.client) return
+  const target = document.querySelector('.mapPricingSection') as HTMLElement | null
+  if (!target) {
+    scrollToAdjacentSection('prev')
+    return
+  }
+  const l = lenis.value as {
+    scrollTo?: (t: HTMLElement, opts?: { duration?: number }) => void
+  } | null
+  if (l?.scrollTo) {
+    l.scrollTo(target, { duration: 1.05 })
+    return
+  }
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 const supabase = useSupabaseClient()
@@ -171,6 +242,19 @@ const error = ref<string | null>(null)
 
 const bookingInnerRef = ref<HTMLElement | null>(null)
 const seatMapSizerRef = ref<HTMLElement | null>(null)
+const isMapFocused = ref(false)
+const isBookingInView = ref(false)
+const edgeCueVisible = computed(
+  () => isMapFocused.value && isBookingInView.value && !showModal.value
+)
+const topEdgeCueText = computed(() =>
+  String(content.home.mapAndPricing.title || '')
+    .replace(/\n+/g, ' ')
+    .trim()
+)
+const bottomEdgeCueText = computed(() => String(content.home.location.title || '').trim())
+let bookingDocTop = 0
+let bookingDocBottom = 0
 
 /** Hauteur logique du plan (px) — le DOM est mis à jour en synchrone via `setSeatMapSizerHeight` (pas de :style Vue) pour animer en même temps que le bandeau. */
 const seatMapAreaHeightPx = ref(480)
@@ -179,6 +263,45 @@ function setSeatMapSizerHeight(px: number) {
   seatMapAreaHeightPx.value = px
   if (!import.meta.client) return
   seatMapSizerRef.value?.style.setProperty('height', `${px}px`)
+}
+
+function measureBookingBounds() {
+  if (!import.meta.client) return
+  const el = bookingSectionRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  const scrollY = window.scrollY
+  bookingDocTop = rect.top + scrollY
+  bookingDocBottom = rect.bottom + scrollY
+}
+
+function updateBookingInView() {
+  if (!import.meta.client) return
+  if (!bookingDocBottom || !bookingDocTop) {
+    isBookingInView.value = false
+    return
+  }
+  const viewportTop = window.scrollY
+  const viewportBottom = viewportTop + window.innerHeight
+  // Very strict alignment with tiny subpixel tolerance to avoid false negatives.
+  const EPSILON_PX = 2
+  isBookingInView.value =
+    Math.abs(bookingDocTop - viewportTop) <= EPSILON_PX &&
+    Math.abs(bookingDocBottom - viewportBottom) <= EPSILON_PX
+}
+
+function focusEdgeCues() {
+  updateBookingInView()
+  isMapFocused.value = true
+}
+
+function blurEdgeCuesOnOutsidePointer(event: PointerEvent) {
+  if (!import.meta.client) return
+  const root = bookingSectionRef.value
+  const target = event.target as Node | null
+  if (!root || !target) return
+  if (root.contains(target)) return
+  isMapFocused.value = false
 }
 
 /**
@@ -261,6 +384,8 @@ function scheduleSeatMapHeightMeasure() {
 const formStep = ref<1 | 2>(1)
 const isSubmitting = ref(false)
 const isSavingContact = ref(false)
+const isCreatingHold = ref(false)
+let createHoldAbortController: AbortController | null = null
 
 /** Garde bandeau timer + props stables le temps du fade-out de la modale (évite saut de hauteur). */
 const keepModalChromeDuringLeave = ref(false)
@@ -552,10 +677,12 @@ let resizeTimer: ReturnType<typeof setTimeout> | null = null
 function handleWindowResize() {
   if (resizeTimer) clearTimeout(resizeTimer)
   resizeTimer = setTimeout(() => {
+    measureBookingBounds()
     scheduleSeatMapHeightMeasure()
     if (import.meta.client) {
       measureBookingSectionLayout(bookingSectionRef.value)
     }
+    updateBookingInView()
     resizeTimer = null
   }, 100)
 }
@@ -579,6 +706,10 @@ onMounted(async () => {
   await restoreOrderFromStorage()
 
   await nextTick()
+  measureBookingBounds()
+  updateBookingInView()
+  window.addEventListener('scroll', updateBookingInView, { passive: true })
+  window.addEventListener('pointerdown', blurEdgeCuesOnOutsidePointer, { passive: true })
   window.addEventListener('resize', handleWindowResize)
   scheduleSeatMapHeightMeasure()
   measureBookingSectionLayout(bookingSectionRef.value)
@@ -598,6 +729,8 @@ onUnmounted(() => {
   unregisterBookingSnap?.()
   unregisterBookingBanner?.()
   if (import.meta.client) {
+    window.removeEventListener('scroll', updateBookingInView)
+    window.removeEventListener('pointerdown', blurEdgeCuesOnOutsidePointer)
     window.removeEventListener('pageshow', onPageShow)
     window.removeEventListener('resize', handleWindowResize)
     clearBookingSectionLayoutCache()
@@ -658,12 +791,17 @@ async function openModal() {
 
   if (!activeOrder.value) {
     suppressPageOrderAlert.value = true
+    // Show the reservation popup immediately; keep hold creation in background.
+    showModal.value = true
+    isCreatingHold.value = true
     isSubmitting.value = true
     try {
+      createHoldAbortController = new AbortController()
       const seatIds = [...selectedSeatIds.value]
       const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
         method: 'POST',
-        body: { quick: true, seatIds }
+        body: { quick: true, seatIds },
+        signal: createHoldAbortController.signal
       })
       activeOrder.value = {
         orderId: res.orderId,
@@ -680,10 +818,21 @@ async function openModal() {
       startTimerFromExpiresAt(res.expiresAt)
       await loadSeats()
     } catch (err) {
+      const abortError =
+        typeof err === 'object' &&
+        err !== null &&
+        'name' in err &&
+        (err as { name?: string }).name === 'AbortError'
+      if (abortError) {
+        return
+      }
       error.value = getErrorMessage(err)
+      showModal.value = false
       suppressPageOrderAlert.value = false
       return
     } finally {
+      isCreatingHold.value = false
+      createHoldAbortController = null
       isSubmitting.value = false
     }
   }
@@ -710,6 +859,13 @@ function resumePaymentOrOpenModal() {
 }
 
 async function onCancelReservationFromModal() {
+  if (isCreatingHold.value) {
+    createHoldAbortController?.abort()
+    isCreatingHold.value = false
+    showModal.value = false
+    suppressPageOrderAlert.value = false
+    return
+  }
   await cancelActiveOrder(CANCEL_REASON.USER)
 }
 
@@ -949,6 +1105,7 @@ async function pay(turnstileToken?: string) {
 
 <style lang="scss" scoped>
 .bookingBlock {
+  position: relative;
   margin: 0;
   padding: 10px 0 24px 0;
   height: 100dvh;
@@ -957,6 +1114,74 @@ async function pay(turnstileToken?: string) {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.bookingBlock__edgeCue {
+  display: none;
+}
+
+@include media-down(lg) {
+  .bookingBlock__edgeCue {
+    position: absolute;
+    z-index: 20;
+    width: auto;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    pointer-events: auto;
+    opacity: 0;
+    border: none;
+    background: transparent;
+    padding: 10px;
+    margin: -10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.26s ease;
+  }
+
+  .bookingBlock__edgeCue--visible {
+    opacity: 0.72;
+    transition-duration: 0.4s;
+  }
+
+  .bookingBlock__edgeCue--top {
+    top: max(14px, env(safe-area-inset-top));
+    left: 14px;
+  }
+
+  .bookingBlock__edgeCue--bottom {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    right: 14px;
+  }
+
+  .edgeCue__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 1;
+    color: rgba(33, 37, 41, 0.62);
+    flex-shrink: 0;
+  }
+
+  .edgeCue__arrow--up {
+    transform: none;
+  }
+
+  .edgeCue__arrow--down {
+    transform: none;
+  }
+
+  .edgeCue__text {
+    @include apply-font(caption-11);
+    color: rgba(33, 37, 41, 0.68);
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    transform: translateY(1.5px);
+  }
 }
 
 /** Pleine largeur sur desktop : évite que le shrink-to-fit du flex parent change la largeur du plan quand le bandeau apparaît. */

@@ -13,7 +13,7 @@
       >
         <Transition name="formReservationBanner">
           <div
-            v-if="showReservationTimer"
+            v-if="showReservationTimer || isCreatingHold"
             key="reservation-timer"
             class="formReservation__timer"
             role="status"
@@ -21,7 +21,17 @@
             <p class="timer__title">{{ content.home.modal.reservationBannerTitle }}</p>
             <p class="timer__line">
               <span class="timer__label">{{ content.home.modal.reservationTimeLabel }} :</span>
-              <span class="timer__clock" aria-live="polite">{{ formattedReservationTime }}</span>
+              <span
+                v-if="isCreatingHold"
+                class="timer__clock timer__clock--placeholder"
+                aria-hidden="true"
+                >--:--</span
+              >
+              <Transition name="timerClockFade">
+                <span v-if="!isCreatingHold" class="timer__clock" aria-live="polite">{{
+                  formattedReservationTime
+                }}</span>
+              </Transition>
             </p>
             <div
               class="formReservation__timerActions bookingOrderActions bookingOrderActions--single"
@@ -306,22 +316,48 @@ const props = withDefaults(
     isSubmitting: boolean
     /** Enregistrement coordonnées vers l’API (étape 1) — sans changer le libellé « Suivant ». */
     isSavingContact?: boolean
+    /** Hold en cours de création juste après le clic "Réserver". */
+    isCreatingHold?: boolean
     /** Bandeau décompte + annulation (hold créé au clic « Réserver »). */
     showReservationTimer: boolean
     formattedReservationTime: string
   }>(),
-  { isSavingContact: false }
+  { isSavingContact: false, isCreatingHold: false }
 )
 
 const config = useRuntimeConfig()
 const rootLenis = useLenis()
+let lockedScrollY = 0
 
 function lockDocumentScroll(lock: boolean) {
   if (import.meta.server) return
-  document.documentElement.style.overflow = lock ? 'hidden' : ''
+  const lenis = rootLenis.value as { stop?: () => void; start?: () => void } | undefined
+  const htmlEl = document.documentElement
+  const bodyEl = document.body
+  if (lock) {
+    lockedScrollY = window.scrollY || window.pageYOffset || 0
+    lenis?.stop?.()
+    // Lenis sets `overflow: clip` when stopped; force vertical scrollbar to stay visible.
+    htmlEl.style.overflowY = 'scroll'
+    // Freeze native page scroll while keeping scrollbar gutter visible.
+    bodyEl.style.position = 'fixed'
+    bodyEl.style.top = `-${lockedScrollY}px`
+    bodyEl.style.left = '0'
+    bodyEl.style.right = '0'
+    bodyEl.style.width = '100%'
+  } else {
+    bodyEl.style.position = ''
+    bodyEl.style.top = ''
+    bodyEl.style.left = ''
+    bodyEl.style.right = ''
+    bodyEl.style.width = ''
+    lenis?.start?.()
+    htmlEl.style.overflowY = ''
+    window.scrollTo(0, lockedScrollY)
+  }
 }
 
-/** Après la fin du fade-out : évite de rendre la scrollbar pendant que l’overlay est encore visible (saut de layout). */
+/** Après la fin du fade-out : réactive Lenis une fois la popup totalement fermée. */
 function onOverlayAfterLeave() {
   lockDocumentScroll(false)
   rootLenis.value?.resize()
@@ -687,6 +723,11 @@ function onSubmitStep2() {
     transform 0.28s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
+/* Delay only on enter so the popup appears first, then the reservation banner. */
+.formReservationBanner-enter-active {
+  transition-delay: 0.16s;
+}
+
 .formReservationBanner-enter-from,
 .formReservationBanner-leave-to {
   opacity: 0;
@@ -862,6 +903,25 @@ function onSubmitStep2() {
   @include media-down(lg) {
     @include apply-font(timer-clock-mobile);
   }
+}
+
+.timer__clock--placeholder {
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.timerClockFade-enter-active,
+.timerClockFade-leave-active {
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.timerClockFade-enter-from,
+.timerClockFade-leave-to {
+  opacity: 0;
+  transform: translateY(2px);
 }
 
 .formReservation {
@@ -1275,7 +1335,6 @@ function onSubmitStep2() {
           margin-left: -20px;
           margin-right: -20px;
           padding: 10px 20px 8px;
-          flex-direction: column;
           gap: 8px;
         }
       }

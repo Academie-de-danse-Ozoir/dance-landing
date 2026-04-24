@@ -1,7 +1,7 @@
 <template>
   <div
     class="seatMap"
-    :class="{ 'seatMap--fillHeight': fillHeight, 'seatMap--activeOrderLock': !!activeOrder }"
+    :class="{ 'seatMap--fillHeight': fillHeight, 'seatMap--activeOrderLock': hasActiveOrderLock }"
   >
     <div
       ref="viewportRef"
@@ -167,7 +167,7 @@
         </g>
       </svg>
       <Transition name="seatMapActiveOrderLock">
-        <div v-if="activeOrder" class="seatMap__activeOrderLock" role="status" aria-live="polite">
+        <div v-if="hasActiveOrderLock" class="seatMap__activeOrderLock" role="status" aria-live="polite">
           <div class="seatMap__activeOrderLockCard">
             <svg
               class="activeOrderLock__icon"
@@ -583,6 +583,8 @@ const props = withDefaults(
     seats: Seat[]
     selectedSeatIds: string[]
     activeOrder: ActiveOrder | null
+    /** Verrouille visuellement le plan dès l'ouverture de la popup, avant retour API hold. */
+    forceActiveOrderLock?: boolean
     /** Aligné sur `MAX_SEATS_PER_ORDER` (API hold-seats). */
     maxSeatsPerOrder: number
     /**
@@ -591,7 +593,7 @@ const props = withDefaults(
      */
     fillHeight?: boolean
   }>(),
-  { fillHeight: false }
+  { fillHeight: false, forceActiveOrderLock: false }
 )
 
 const emit = defineEmits<{
@@ -1520,8 +1522,10 @@ function clientToSvgPoint(clientX: number, clientY: number): { x: number; y: num
 }
 
 function isMapNavLocked() {
-  return !!props.activeOrder
+  return hasActiveOrderLock.value
 }
+
+const hasActiveOrderLock = computed(() => !!props.activeOrder || props.forceActiveOrderLock)
 
 let lastBookingScrollEmitTs = 0
 const BOOKING_SCROLL_EMIT_THROTTLE_MS = 500
@@ -1934,13 +1938,13 @@ function seatVisualClass(seat: Seat) {
 }
 
 function isSeatClickable(seat: Seat) {
-  if (seat.status !== 'free' || props.activeOrder) return false
+  if (seat.status !== 'free' || hasActiveOrderLock.value) return false
   if (selectedSet.value.has(seat.id)) return true
   return props.selectedSeatIds.length < props.maxSeatsPerOrder
 }
 
 function getSeatTitle(seat: Seat) {
-  if (props.activeOrder && seat.status === 'free')
+  if (hasActiveOrderLock.value && seat.status === 'free')
     return content.home.seats.tooltip.reservationInProgress
   if (seat.status !== 'free') return content.home.seats.tooltip.seatUnavailable
   return ''
@@ -2005,8 +2009,8 @@ function handleSeatClick(seat: Seat) {
     box-sizing: border-box;
     border-radius: 4px;
     background: rgba(15, 23, 42, 0.38);
-    backdrop-filter: blur(4px) saturate(0.92);
-    -webkit-backdrop-filter: blur(4px) saturate(0.92);
+    backdrop-filter: blur(2px) saturate(0.94);
+    -webkit-backdrop-filter: blur(2px) saturate(0.94);
   }
 
   .seatMapActiveOrderLock-enter-active,
@@ -2017,12 +2021,14 @@ function handleSeatClick(seat: Seat) {
       -webkit-backdrop-filter 0.52s ease;
   }
 
+
   .seatMapActiveOrderLock-enter-active .seatMap__activeOrderLockCard,
   .seatMapActiveOrderLock-leave-active .seatMap__activeOrderLockCard {
     transition:
       opacity 0.36s cubic-bezier(0.33, 1, 0.68, 1) 0.06s,
       transform 0.4s cubic-bezier(0.33, 1, 0.68, 1) 0.06s;
   }
+
 
   .seatMapActiveOrderLock-enter-from,
   .seatMapActiveOrderLock-leave-to {

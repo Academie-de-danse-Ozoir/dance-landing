@@ -85,6 +85,13 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       join(process.cwd(), '.output', 'public', 'images', '4.jpg')
     ])
     const hasHeroImage = Boolean(heroImagePath)
+    const brandLogoPath = resolveFirstExistingPath([
+      join(process.cwd(), 'server', 'pdf-assets', 'brand-logo-light.png'),
+      join(process.cwd(), '.output', 'server', 'pdf-assets', 'brand-logo-light.png'),
+      join(process.cwd(), 'public', 'brand-logo-light.png'),
+      join(process.cwd(), '.output', 'public', 'brand-logo-light.png')
+    ])
+    const hasBrandLogo = Boolean(brandLogoPath)
     const displayFontCandidates = [
       join(process.cwd(), 'server', 'pdf-assets', 'title.ttf'),
       join(process.cwd(), '.output', 'server', 'pdf-assets', 'title.ttf'),
@@ -222,6 +229,19 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       doc.roundedRect(cardX, cardY, cardW, cardHeight, cardRadius).clip()
       doc.rect(cardX, cardY, cardW, cardHeight).fill(cardGradient)
       doc.restore()
+
+      if (hasBrandLogo) {
+        const limg = (
+          doc as unknown as { openImage: (path: string) => { width?: number; height?: number } }
+        ).openImage(brandLogoPath!)
+        if (limg?.width && limg?.height) {
+          const logoH = 40
+          const logoW = (limg.width / limg.height) * logoH
+          const lPadR = 20
+          const lPadT = 16
+          doc.image(brandLogoPath!, cardX + cardW - lPadR - logoW, cardY + lPadT, { height: logoH })
+        }
+      }
 
       const cardLabelColor = '#d7dbe7'
       const cardPrimaryColor = '#f5f7ff'

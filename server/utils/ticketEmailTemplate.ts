@@ -83,6 +83,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       : null
 
   const publicBase = resolveEmailPublicBaseUrl(data)
+  const footerLogoUrl = publicBase ? `${publicBase}/brand-logo-light.png` : ''
   const titleFontTtfUrl = publicBase ? `${publicBase}/fonts/title.ttf` : ''
   const textFontTtfUrl = publicBase ? `${publicBase}/fonts/text.ttf` : ''
 
@@ -230,6 +231,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
           <!-- Pied de page -->
           <tr>
             <td style="padding: 44px 48px 48px; border-top: 1px solid #2a2a44; background-color: #1a1a2e;">
+              ${footerLogoUrl ? `<p style="margin: 0 0 16px 0; text-align: center;"><img src="${escapeHtml(footerLogoUrl)}" width="44" style="display: inline-block; width: 44px; height: auto; border: 0; outline: none; text-decoration: none;" alt=""></p>` : ''}
               <p style="margin: 0; font-size: 13px; color: #e8e8ef; text-align: center; line-height: 1.5;">${escapeHtml(
                 billetterieSenderName()
               )}</p>
