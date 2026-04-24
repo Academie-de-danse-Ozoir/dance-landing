@@ -211,7 +211,9 @@ export async function sendPaidOrderTicketEmailIfNeeded(
   const paidAtFormatted = formatDate(new Date())
   const amountTotalFormatted = formatAmount(amountTotal, currency)
 
-  const publicSiteFromEnv = process.env.NUXT_PUBLIC_SITE_URL?.replace(/\/$/, '')
+  const publicSiteFromEnv =
+    process.env.PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+    process.env.NUXT_PUBLIC_SITE_URL?.replace(/\/$/, '')
   const vercelUrl = process.env.VERCEL_URL?.trim()
   const vercelBase = vercelUrl
     ? (vercelUrl.startsWith('http') ? vercelUrl : `https://${vercelUrl}`).replace(/\/$/, '')

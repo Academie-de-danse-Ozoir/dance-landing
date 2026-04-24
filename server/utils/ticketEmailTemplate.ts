@@ -37,10 +37,7 @@ export interface TicketEmailData {
   paymentStatus: string
   /** Date de paiement formatée */
   paidAtFormatted: string
-  /**
-   * URL de base (origine) pour le petit logo du pied d’e-mail, ex. `https://billeterie.exemple.com`.
-   * Sinon `NUXT_PUBLIC_SITE_URL` ou l’hôte Vercel si défini. Sans origine, le pied reste texte seul.
-   */
+  /** URL de base (origine) pour les assets de polices de l'email. */
   publicSiteUrl?: string | null
 }
 
@@ -55,6 +52,8 @@ function escapeHtml(s: string): string {
 function resolveEmailPublicBaseUrl(data: TicketEmailData): string {
   const fromData = data.publicSiteUrl?.trim()
   if (fromData) return fromData.replace(/\/$/, '')
+  const pub = process.env.PUBLIC_SITE_URL?.trim()
+  if (pub) return pub.replace(/\/$/, '')
   const nuxt = process.env.NUXT_PUBLIC_SITE_URL?.trim()
   if (nuxt) return nuxt.replace(/\/$/, '')
   const v = process.env.VERCEL_URL?.trim()
@@ -84,8 +83,8 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       : null
 
   const publicBase = resolveEmailPublicBaseUrl(data)
-  const footerLogoUrl = publicBase ? `${publicBase}/brand-logo-light.png` : ''
-  const hasFooterLogo = Boolean(footerLogoUrl)
+  const titleFontTtfUrl = publicBase ? `${publicBase}/fonts/title.ttf` : ''
+  const textFontTtfUrl = publicBase ? `${publicBase}/fonts/text.ttf` : ''
 
   const lineItemsRows = data.lineItems
     .map(
@@ -143,20 +142,22 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    @font-face {
+    ${titleFontTtfUrl
+      ? `@font-face {
       font-family: 'title';
-      src: url('/fonts/title.woff') format('woff'),
-           url('/fonts/title.ttf') format('truetype');
+      src: url('${titleFontTtfUrl}') format('truetype');
       font-weight: 400;
       font-style: normal;
-    }
-    @font-face {
+    }`
+      : ''}
+    ${textFontTtfUrl
+      ? `@font-face {
       font-family: 'text';
-      src: url('/fonts/text.woff') format('woff'),
-           url('/fonts/text.ttf') format('truetype');
+      src: url('${textFontTtfUrl}') format('truetype');
       font-weight: 400;
       font-style: normal;
-    }
+    }`
+      : ''}
   </style>
   <title>Commande ${escapeHtml(orderRef)} — Confirmation billet – ${escapeHtml(brand.spectacleName)}</title>
 </head>
@@ -226,33 +227,13 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
               ${data.stripeSessionId ? `<p style="margin: 12px 0 0 0; font-size: 11px; color: #a8a29e;">Réf. paiement : ${escapeHtml(data.stripeSessionId)}</p>` : ''}
             </td>
           </tr>
-          <!-- Pied de page (bandeau haut, logo centré au-dessus de l’identité) -->
+          <!-- Pied de page -->
           <tr>
             <td style="padding: 44px 48px 48px; border-top: 1px solid #2a2a44; background-color: #1a1a2e;">
-              ${
-                hasFooterLogo
-                  ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-                <tr>
-                  <td style="text-align: center; padding: 0 0 20px 0; line-height: 0; vertical-align: top;">
-                    <img src="${escapeHtml(footerLogoUrl)}" width="44" style="display: block; width: 44px; max-width: 44px; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" alt="">
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; padding: 0; font-size: 13px; color: #e8e8ef; line-height: 1.5;">
-                    ${escapeHtml(billetterieSenderName())}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; padding: 16px 0 0 0;">
-                    <p style="margin: 0; font-size: 12px; color: rgba(255,255,255,0.72);">Cet email confirme votre réservation et votre paiement.</p>
-                  </td>
-                </tr>
-              </table>`
-                  : `<p style="margin: 0; font-size: 13px; color: #e8e8ef; text-align: center; line-height: 1.5;">${escapeHtml(
-                      billetterieSenderName()
-                    )}</p>
-              <p style="margin: 12px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.72); text-align: center;">Cet email confirme votre réservation et votre paiement.</p>`
-              }
+              <p style="margin: 0; font-size: 13px; color: #e8e8ef; text-align: center; line-height: 1.5;">${escapeHtml(
+                billetterieSenderName()
+              )}</p>
+              <p style="margin: 12px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.72); text-align: center;">Cet email confirme votre réservation et votre paiement.</p>
             </td>
           </tr>
         </table>
