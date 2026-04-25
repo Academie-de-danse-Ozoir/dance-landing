@@ -9,7 +9,7 @@ export default defineNuxtConfig({
     '~/assets/styles/reset.scss',
     '~/assets/styles/page-transitions.scss',
     '~/assets/styles/error-fade.scss',
-    '~/assets/styles/global/booking-order-actions.scss',
+    '~/assets/styles/global/booking-order-actions.scss'
   ],
   vite: {
     css: {
@@ -147,6 +147,6 @@ export default defineNuxtConfig({
      * Mets `types: '~/types/database.types.ts'` après génération :
      * `npx supabase gen types typescript --project-id <ref> > types/database.types.ts`
      */
-    types: false,
-  },
+    types: false
+  }
 })

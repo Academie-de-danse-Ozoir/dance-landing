@@ -54,6 +54,8 @@ export const RATE_LIMIT_CANCEL_ORDER_PER_MINUTE = 10
 export const RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE = 10
 export const RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE = 10
 export const RATE_LIMIT_UPDATE_ORDER_CONTACT_PER_MINUTE = 20
+/** Clôture gratuite orga (`POST /api/admin/complete-free-order`) — par IP, session admin requise. */
+export const RATE_LIMIT_ADMIN_COMPLETE_FREE_ORDER_PER_MINUTE = 12
 
 /** Longueurs max pour validation (hold-seats) */
 export const MAX_LENGTH = {

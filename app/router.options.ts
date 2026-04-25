@@ -8,9 +8,7 @@ const PAGE_TRANSITION_MS = 600
 const PENDING_SCROLL_TO_SEATS_KEY = 'billetterie:pending-seat-scroll'
 const PENDING_SCROLL_TO_HOME_KEY = 'billetterie:pending-home-scroll'
 
-function delayScroll(
-  position: { left: number; top: number } | { el: string; top?: number }
-) {
+function delayScroll(position: { left: number; top: number } | { el: string; top?: number }) {
   return new Promise<typeof position>((resolve) => {
     setTimeout(() => resolve(position), PAGE_TRANSITION_MS)
   })

@@ -66,6 +66,15 @@
     "labelStripeSession": "Session Stripe",
     "labelEvent": "Événement"
   },
+  "backoffice": {
+    "logoHomeAria": "Retour au site public",
+    "loginTitle": "Connexion",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "logout": "Déconnexion",
+    "confirmFreeOrder": "Confirmer (sans paiement)",
+    "recapNoPayment": "Aucun prélèvement : réservation validée côté orga. Les billets et e-mails de confirmation partent immédiatement."
+  },
   "home": {
     "title": "Plan de salle interactif",
     "organicGallery": {
@@ -207,7 +216,8 @@
       "reservationExpired": "Réservation expirée, libération en cours…",
       "generic": "Une erreur est survenue. Veuillez réessayer.",
       "completeContactBeforePay": "Complétez d’abord vos coordonnées et validez avec « Suivant ».",
-      "completeTicketDetailsBeforePay": "Complétez d’abord les informations de chaque billet, puis cliquez sur « Payer »."
+      "completeTicketDetailsBeforePay": "Complétez d’abord les informations de chaque billet, puis cliquez sur « Payer ».",
+      "seatsNotFreeAnymore": "Une ou plusieurs places ne sont plus libres (réservation en cours ou place indisponible). Le plan a été mis à jour : vérifiez votre sélection puis réessayez."
     },
     "hero": {
       "kicker": "Billetterie officielle",

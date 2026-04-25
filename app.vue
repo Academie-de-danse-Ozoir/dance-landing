@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { useRoute } from '#app'
 import { NARROW_VIEWPORT_MQ } from './constants'
 import AppLoader from '~/components/AppLoader.vue'
 import AppHeader from '~/components/AppHeader.vue'
@@ -14,8 +15,21 @@ const narrowViewport = ref(
     : false
 )
 
+const route = useRoute()
 const lenisInstance = useLenis()
 let rafId: number | null = null
+
+/** Tout le préfixe `/admin` : scroll verrouillé, pas de Lenis. */
+const isAdminBackofficeRoute = computed(() => {
+  const p = route.path.replace(/\/$/, '') || '/'
+  return p === '/admin' || p.startsWith('/admin/')
+})
+
+/** Billetterie orga seule : pas de header (logo géré dans BookingBlock). */
+const hideAppHeader = computed(() => {
+  const p = route.path.replace(/\/$/, '') || '/'
+  return p === '/admin'
+})
 
 function updateLenis(time: number) {
   lenisInstance.value?.raf(time)
@@ -52,6 +66,25 @@ function destroyLenis() {
   }
 }
 
+watch(
+  isAdminBackofficeRoute,
+  (fullscreen) => {
+    if (!import.meta.client) return
+    if (fullscreen) {
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.overflow = 'hidden'
+      destroyLenis()
+    } else {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+      if (!narrowViewport.value) {
+        initLenis()
+      }
+    }
+  },
+  { flush: 'post', immediate: true }
+)
+
 onMounted(() => {
   if (import.meta.client && typeof window !== 'undefined') {
     window.history.scrollRestoration = 'manual'
@@ -64,11 +97,16 @@ onMounted(() => {
   sync()
   mq.addEventListener('change', sync)
 
-  initLenis()
+  const p = route.path.replace(/\/$/, '') || '/'
+  if (!(p === '/admin' || p.startsWith('/admin/'))) {
+    initLenis()
+  }
 
   onUnmounted(() => {
     mq.removeEventListener('change', sync)
     destroyLenis()
+    document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
   })
 })
 
@@ -76,7 +114,7 @@ onMounted(() => {
 watch(narrowViewport, (isNarrow) => {
   if (isNarrow) {
     destroyLenis()
-  } else {
+  } else if (!isAdminBackofficeRoute.value) {
     initLenis()
   }
 })
@@ -86,7 +124,7 @@ watch(narrowViewport, (isNarrow) => {
   <div class="appContainer">
     <AppLoader />
     <ClientOnly>
-      <AppHeader />
+      <AppHeader v-if="!hideAppHeader" />
       <OrientationGuard />
     </ClientOnly>
     <NuxtLayout>

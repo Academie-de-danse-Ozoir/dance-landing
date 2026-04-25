@@ -1,13 +1,18 @@
 /**
  * Flux : commande PAID + sièges PAID + ticket_sent === false → envoi Mailjet (+ PDF) → si OK, ticket_sent = true.
  * (ticket_sent ne « déclenche » pas le mail : il marque que l’envoi a réussi.)
- * Appelé depuis le webhook Stripe (checkout.session.completed).
+ * Appelé depuis le webhook Stripe (checkout.session.completed) ou depuis l’espace billeterie orga (gratuit).
  */
 import type Stripe from 'stripe'
 import Mailjet from 'node-mailjet'
 import { stripe } from '../lib/stripe'
 import { supabaseAdmin } from '../lib/supabaseAdmin'
-import { ORDER_STATUS, SEAT_STATUS } from '../../constants'
+import {
+  ORDER_STATUS,
+  PRICE_ADULT_CENTS,
+  PRICE_CHILD_CENTS,
+  SEAT_STATUS
+} from '../../constants'
 import {
   brand,
   billetterieSenderName,
@@ -60,6 +65,28 @@ function formatDate(date: Date): string {
 function orderRefShort(orderId: string): string {
   const first = orderId.split('-')[0]
   return first && first.length >= 8 ? first : orderId.slice(0, 8)
+}
+
+type OrderEmailRow = {
+  id: string
+  status: string
+  email: string | null
+  first_name: string | null
+  last_name: string | null
+  phone: string | null
+}
+
+type PaymentEmailDetails = {
+  amountTotal: number
+  amountSubtotal: number
+  amountTax: number
+  amountNet: number
+  vatRatePercent: string
+  currency: string
+  lineItems: TicketEmailData['lineItems']
+  receiptUrl: string | null
+  stripeSessionId: string | null
+  paymentStatus: string
 }
 
 async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
@@ -124,57 +151,10 @@ export type SendPaidOrderTicketEmailResult =
       reason: 'order_not_found' | 'not_paid' | 'already_sent' | 'no_seats' | 'no_email'
     }
 
-/**
- * Envoie l’email billet si commande PAID et ticket_sent false.
- */
-export async function sendPaidOrderTicketEmailIfNeeded(
+async function buildPaymentDetailsFromStripeSession(
   session: Stripe.Checkout.Session,
-  orderId: string
-): Promise<SendPaidOrderTicketEmailResult> {
-  const { data: order, error } = await supabaseAdmin
-    .from('order')
-    .select('id, status, email, ticket_sent, first_name, last_name, phone')
-    .eq('id', orderId)
-    .single()
-
-  if (error || !order) {
-    return { sent: false, reason: 'order_not_found' }
-  }
-
-  if (order.status !== ORDER_STATUS.PAID) {
-    return { sent: false, reason: 'not_paid' }
-  }
-
-  const { data: lockedOrder, error: lockError } = await supabaseAdmin
-    .from('order')
-    .update({ ticket_sent: true })
-    .eq('id', order.id)
-    .eq('ticket_sent', false) // 🔥 LA CLÉ
-    .select('id')
-    .single()
-
-  if (lockError || !lockedOrder) {
-    // quelqu’un d’autre a déjà pris le lock
-    return { sent: false, reason: 'already_sent' }
-  }
-
-  if (!order.email?.trim()) {
-    return { sent: false, reason: 'no_email' }
-  }
-
-  const { data: paidRows } = await supabaseAdmin
-    .from('seat_reservation')
-    .select('seat_id')
-    .eq('order_id', orderId)
-    .eq('status', SEAT_STATUS.PAID)
-
-  const seatIds = (paidRows ?? []).map((r) => r.seat_id)
-  const seatCount = seatIds.length
-
-  if (seatCount === 0) {
-    return { sent: false, reason: 'no_seats' }
-  }
-
+  seatCount: number
+): Promise<PaymentEmailDetails> {
   const sessionId = session.id
   const currency = (session.currency ?? 'eur').toLowerCase()
   const amountTotal = session.amount_total ?? 0
@@ -225,6 +205,144 @@ export async function sendPaidOrderTicketEmailIfNeeded(
     })
   }
 
+  return {
+    amountTotal,
+    amountSubtotal,
+    amountTax,
+    amountNet,
+    vatRatePercent,
+    currency,
+    lineItems,
+    receiptUrl,
+    stripeSessionId: sessionId,
+    paymentStatus: session.payment_status ?? 'paid'
+  }
+}
+
+/**
+ * Montants = tarif catalogue (comme la vente publique), pour traçabilité email / PDF / Sheets,
+ * même si l’encaissement réel est 0 € (réservation orga sans paiement).
+ */
+function buildPaymentDetailsAdminFree(
+  adultCount: number,
+  childCount: number
+): PaymentEmailDetails {
+  const currency = 'eur'
+  const lineItems: TicketEmailData['lineItems'] = []
+  if (adultCount > 0) {
+    const lineTotal = adultCount * PRICE_ADULT_CENTS
+    lineItems.push({
+      description: brand.stripeLineAdult,
+      quantity: adultCount,
+      unitPriceFormatted: formatAmount(PRICE_ADULT_CENTS, currency),
+      totalFormatted: formatAmount(lineTotal, currency)
+    })
+  }
+  if (childCount > 0) {
+    const lineTotal = childCount * PRICE_CHILD_CENTS
+    lineItems.push({
+      description: brand.stripeLineChild,
+      quantity: childCount,
+      unitPriceFormatted: formatAmount(PRICE_CHILD_CENTS, currency),
+      totalFormatted: formatAmount(lineTotal, currency)
+    })
+  }
+
+  const amountTotal = adultCount * PRICE_ADULT_CENTS + childCount * PRICE_CHILD_CENTS
+
+  return {
+    amountTotal,
+    amountSubtotal: amountTotal,
+    amountTax: 0,
+    amountNet: amountTotal,
+    vatRatePercent: '0.00',
+    currency,
+    lineItems,
+    receiptUrl: null,
+    stripeSessionId: null,
+    paymentStatus: 'no_payment_required'
+  }
+}
+
+type PrepareResult =
+  | { ok: true; order: OrderEmailRow; seatIds: string[] }
+  | { ok: false; result: SendPaidOrderTicketEmailResult }
+
+async function tryPreparePaidOrderTicketSend(orderId: string): Promise<PrepareResult> {
+  const { data: order, error } = await supabaseAdmin
+    .from('order')
+    .select('id, status, email, ticket_sent, first_name, last_name, phone')
+    .eq('id', orderId)
+    .single()
+
+  if (error || !order) {
+    return { ok: false, result: { sent: false, reason: 'order_not_found' } }
+  }
+
+  if (order.status !== ORDER_STATUS.PAID) {
+    return { ok: false, result: { sent: false, reason: 'not_paid' } }
+  }
+
+  const { data: lockedOrder, error: lockError } = await supabaseAdmin
+    .from('order')
+    .update({ ticket_sent: true })
+    .eq('id', order.id)
+    .eq('ticket_sent', false)
+    .select('id')
+    .single()
+
+  if (lockError || !lockedOrder) {
+    return { ok: false, result: { sent: false, reason: 'already_sent' } }
+  }
+
+  if (!order.email?.trim()) {
+    return { ok: false, result: { sent: false, reason: 'no_email' } }
+  }
+
+  const { data: paidRows } = await supabaseAdmin
+    .from('seat_reservation')
+    .select('seat_id')
+    .eq('order_id', orderId)
+    .eq('status', SEAT_STATUS.PAID)
+
+  const seatIds = (paidRows ?? []).map((r) => r.seat_id)
+  if (seatIds.length === 0) {
+    return { ok: false, result: { sent: false, reason: 'no_seats' } }
+  }
+
+  return { ok: true, order, seatIds }
+}
+
+async function completePaidOrderTicketDelivery(
+  order: OrderEmailRow,
+  orderId: string,
+  seatIds: string[],
+  details: PaymentEmailDetails
+): Promise<SendPaidOrderTicketEmailResult> {
+  const seatCount = seatIds.length
+  const {
+    amountTotal,
+    amountSubtotal,
+    amountTax,
+    amountNet,
+    vatRatePercent,
+    currency,
+    lineItems: rawLineItems
+  } = details
+  const { receiptUrl, stripeSessionId, paymentStatus } = details
+
+  const lineItems: TicketEmailData['lineItems'] =
+    rawLineItems.length > 0
+      ? rawLineItems
+      : [
+          {
+            description: emailAggregateLineDescription(),
+            quantity: seatCount,
+            unitPriceFormatted: formatAmount(amountTotal / Math.max(1, seatCount), currency),
+            totalFormatted: formatAmount(amountTotal, currency)
+          }
+        ]
+
   const firstName = order.first_name ?? null
   const lastName = order.last_name ?? null
   const customerName = [firstName, lastName].filter(Boolean).join(' ') || null
@@ -241,29 +359,19 @@ export async function sendPaidOrderTicketEmailIfNeeded(
 
   const emailData: TicketEmailData = {
     orderId: order.id,
-    customerEmail: order.email,
+    customerEmail: order.email!,
     firstName,
     lastName,
     seatCount,
     amountTotalFormatted,
     currency,
     publicSiteUrl: publicSiteFromEnv || vercelBase,
-    lineItems:
-      lineItems.length > 0
-        ? lineItems
-        : [
-            {
-              description: emailAggregateLineDescription(),
-              quantity: seatCount,
-              unitPriceFormatted: formatAmount(amountTotal / Math.max(1, seatCount), currency),
-              totalFormatted: formatAmount(amountTotal, currency)
-            }
-          ],
+    lineItems,
     ticketsUrl: null,
     ticketsInAttachment: true,
     receiptUrl: receiptUrl ?? null,
-    stripeSessionId: sessionId,
-    paymentStatus: session.payment_status ?? 'paid',
+    stripeSessionId: stripeSessionId ?? null,
+    paymentStatus,
     paidAtFormatted
   }
 
@@ -350,7 +458,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
       orderId: order.id,
       buyerLastName: lastName?.trim() ?? '',
       buyerFirstName: firstName?.trim() ?? '',
-      buyerEmail: order.email,
+      buyerEmail: order.email!,
       buyerPhone: phoneForSheets,
       seats:
         tickets.length > 0
@@ -378,7 +486,7 @@ export async function sendPaidOrderTicketEmailIfNeeded(
       vatRatePercent,
       currency,
       seatCount,
-      customerEmail: order.email,
+      customerEmail: order.email!,
       customerName: customerName ?? '',
       customerPhone: phoneForSheets,
       seatLabelsJoined,
@@ -389,4 +497,35 @@ export async function sendPaidOrderTicketEmailIfNeeded(
   void sheetResult
   void paymentSheetResult
   return { sent: true }
+}
+
+/**
+ * Envoie l’email billet si commande PAID et ticket_sent false.
+ */
+export async function sendPaidOrderTicketEmailIfNeeded(
+  session: Stripe.Checkout.Session,
+  orderId: string
+): Promise<SendPaidOrderTicketEmailResult> {
+  const prep = await tryPreparePaidOrderTicketSend(orderId)
+  if (!prep.ok) {
+    return prep.result
+  }
+  const details = await buildPaymentDetailsFromStripeSession(session, prep.seatIds.length)
+  return completePaidOrderTicketDelivery(prep.order, orderId, prep.seatIds, details)
+}
+
+/**
+ * Même parcours d’envoi (Mailjet, PDF, feuilles, notif orga) sans session Stripe (réservation offerte côté billeterie).
+ */
+export async function sendPaidOrderTicketEmailForAdminFreeOrder(
+  orderId: string,
+  adultCount: number,
+  childCount: number
+): Promise<SendPaidOrderTicketEmailResult> {
+  const prep = await tryPreparePaidOrderTicketSend(orderId)
+  if (!prep.ok) {
+    return prep.result
+  }
+  const details = buildPaymentDetailsAdminFree(adultCount, childCount)
+  return completePaidOrderTicketDelivery(prep.order, orderId, prep.seatIds, details)
 }

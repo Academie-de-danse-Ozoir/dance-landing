@@ -4,7 +4,8 @@ import {
   EVENT_ID,
   MAX_SEATS_PER_ORDER,
   RATE_LIMIT_HOLD_SEATS_PER_MINUTE,
-  MAX_LENGTH
+  MAX_LENGTH,
+  SEAT_STATUS
 } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
@@ -67,6 +68,20 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const { data: blockingReservations } = await supabaseAdmin
+    .from('seat_reservation')
+    .select('seat_id')
+    .eq('event_id', EVENT_ID)
+    .in('seat_id', uniqueSeatIds)
+    .in('status', [SEAT_STATUS.HOLD, SEAT_STATUS.PAID])
+
+  if (blockingReservations && blockingReservations.length > 0) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: tApiError('seatsUnavailable')
+    })
+  }
+
   let fName: string
   let lName: string
   let em: string
@@ -122,7 +137,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { data, error } = await supabaseAdmin.rpc('hold_seats', {
-    p_seat_ids: seatIds,
+    p_seat_ids: uniqueSeatIds,
     p_event_id: EVENT_ID,
     p_first_name: fName,
     p_last_name: lName,

@@ -3,6 +3,7 @@
     ref="bookingSectionRef"
     :id="SEAT_SELECTION_SECTION_ID"
     class="bookingBlock"
+    :class="{ 'bookingBlock--adminOnly': props.isAdminFreeBooking }"
     aria-label="Réservation"
   >
     <button
@@ -26,6 +27,14 @@
       <span class="edgeCue__arrow edgeCue__arrow--down" aria-hidden="true">↓</span>
     </button>
 
+    <AppBrandLogoMark
+      v-if="props.isAdminFreeBooking"
+      floating
+      to="/"
+      variant="light"
+      :aria-label="content.backoffice.logoHomeAria"
+    />
+
     <div v-if="!seatsReady" class="bookingBlock__loader" role="status" aria-live="polite">
       <span class="bookingBlock__loaderSpinner" aria-hidden="true" />
       <span class="bookingBlock__visuallyHidden">{{ content.home.seats.map.mapLoading }}</span>
@@ -47,7 +56,11 @@
               :seats="seats"
               :selected-seat-ids="selectedSeatIds"
               :active-order="activeOrder"
-              :force-active-order-lock="showModal || isCreatingHold || keepModalChromeDuringLeave"
+              :force-active-order-lock="
+                isAdminFreeBooking
+                  ? isCreatingHold || keepModalChromeDuringLeave
+                  : showModal || isCreatingHold || keepModalChromeDuringLeave
+              "
               :max-seats-per-order="MAX_SEATS_PER_ORDER"
               class="bookingBlock__seatMap"
               @seat-click="toggleSeat"
@@ -106,8 +119,14 @@
           :is-submitting="isSubmitting"
           :is-saving-contact="isSavingContact"
           :is-creating-hold="isCreatingHold"
-          :show-reservation-timer="!!activeOrder && (showModal || keepModalChromeDuringLeave)"
+          :show-reservation-timer="
+            !isAdminFreeBooking && !!activeOrder && (showModal || keepModalChromeDuringLeave)
+          "
           :formatted-reservation-time="formattedTime"
+          :is-admin-free-mode="props.isAdminFreeBooking"
+          :final-submit-label="
+            props.isAdminFreeBooking ? content.backoffice.confirmFreeOrder : undefined
+          "
           @close="closeModal"
           @next="onFormNext"
           @back="formStep = 1"
@@ -136,6 +155,7 @@ import {
 import { layoutYerresTheaterSeats } from '../../utils/yerresSeatLayout'
 import content from '../../locales/fr.json'
 import ActiveOrderAlert from '../alerts/ActiveOrderAlert.vue'
+import AppBrandLogoMark from '../AppBrandLogoMark.vue'
 import SeatMap from '../seats/SeatMap.vue'
 import SelectionInfo from '../seats/SelectionInfo.vue'
 import FormReservation from '../forms/FormReservation.vue'
@@ -149,6 +169,15 @@ import { useLenis } from '../../composables/useLenis'
 import { useBookingSession } from '../../composables/useBookingSession'
 import { registerBookingSeatMapSnap } from '../../composables/useBookingSeatMapSnap'
 import { registerBookingBannerActions } from '../../composables/useBookingBannerActions'
+
+const props = withDefaults(
+  defineProps<{
+    /** Billeterie orga : confirmation sans Stripe, envoi des billets comme un achat. */
+    isAdminFreeBooking?: boolean
+  }>(),
+  { isAdminFreeBooking: false }
+)
+
 const { scrollToBookingSection, scrollToBookingSectionIfMisaligned } = useScrollToBooking()
 const lenis = useLenis()
 const bookingSectionRef = ref<HTMLElement | null>(null)
@@ -315,11 +344,25 @@ function bookingStackVerticalInsetPx(): number {
   return window.matchMedia(NARROW_VIEWPORT_MQ).matches ? 24 : 40
 }
 
+function seatMapCssMaxHeightPx(): number | null {
+  if (!import.meta.client) return null
+  /* Aligné sur `.bookingBlock__seatMapSizer` @include media-up(lg) { max-height: 70dvh } */
+  if (window.matchMedia(NARROW_VIEWPORT_MQ).matches) return null
+  return Math.round(window.innerHeight * 0.7)
+}
+
 function getSeatMapAreaHeightPx(): number | null {
   if (!import.meta.client) return null
   const inner = bookingInnerRef.value
   const wrap = seatMapSizerRef.value
   if (!inner || !wrap) return null
+
+  /*
+   * Libérer la hauteur inline du sizer le temps du calcul : sinon après un shrink,
+   * `inner.clientHeight` peut rester « coincé » et le plan ne repasse pas grand au resize up.
+   */
+  wrap.style.removeProperty('height')
+  void inner.offsetHeight
 
   const cs = getComputedStyle(inner)
   const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)
@@ -337,16 +380,20 @@ function getSeatMapAreaHeightPx(): number | null {
     const m = getComputedStyle(child)
     used += child.offsetHeight + (parseFloat(m.marginTop) || 0) + (parseFloat(m.marginBottom) || 0)
   }
-  if (flexItems.length > 1 && rowGap > 0) {
-    used += rowGap * (flexItems.length - 1)
+  const gapLines = flexItems.length - 1
+  if (gapLines > 0 && rowGap > 0) {
+    used += rowGap * gapLines
   }
 
   const wm = getComputedStyle(wrap)
   const wrapMy = (parseFloat(wm.marginTop) || 0) + (parseFloat(wm.marginBottom) || 0)
 
   const symmetricInset = bookingStackVerticalInsetPx() * 2
-  const raw = innerH - used - wrapMy - symmetricInset
-  return Math.round(Math.max(240, raw))
+  let raw = innerH - used - wrapMy - symmetricInset
+  raw = Math.round(Math.max(240, raw))
+  const cap = seatMapCssMaxHeightPx()
+  if (cap != null) raw = Math.min(raw, cap)
+  return raw
 }
 
 function computeSeatMapAreaHeight() {
@@ -510,6 +557,18 @@ async function loadSeats() {
   try {
     const data = await $fetch<SeatApiResponse[]>('/api/seats')
     seats.value = layoutYerresTheaterSeats(data)
+    if (props.isAdminFreeBooking && selectedSeatIds.value.length > 0) {
+      const freeIdSet = new Set(seats.value.filter((s) => s.status === 'free').map((s) => s.id))
+      const before = [...selectedSeatIds.value]
+      const pruned = before.filter((id) => freeIdSet.has(id))
+      if (pruned.length !== before.length) {
+        selectedSeatIds.value = pruned
+        selectionLimitMessage.value = null
+        if (showModal.value) {
+          adminDismissReservationModalForStaleSelection()
+        }
+      }
+    }
   } finally {
     seatsReady.value = true
   }
@@ -601,6 +660,7 @@ function stopMainAnimationLoop() {
 
 async function restoreOrderFromStorage() {
   if (!import.meta.client) return
+  if (props.isAdminFreeBooking) return
 
   const stored = localStorage.getItem(STORAGE_ORDER_KEY)
   if (!stored) return
@@ -673,12 +733,19 @@ function onPageShow(ev: PageTransitionEvent) {
   }
 }
 
+function onVisibilityRefreshAdminSeats() {
+  if (!props.isAdminFreeBooking) return
+  if (typeof document === 'undefined' || document.visibilityState !== 'visible') return
+  if (!showModal.value) return
+  void loadSeats()
+}
+
 let resizeTimer: ReturnType<typeof setTimeout> | null = null
 function handleWindowResize() {
   if (resizeTimer) clearTimeout(resizeTimer)
   resizeTimer = setTimeout(() => {
     measureBookingBounds()
-    scheduleSeatMapHeightMeasure()
+    snapSeatMapHeightToLayout()
     if (import.meta.client) {
       measureBookingSectionLayout(bookingSectionRef.value)
     }
@@ -715,6 +782,7 @@ onMounted(async () => {
   measureBookingSectionLayout(bookingSectionRef.value)
 
   window.addEventListener('pageshow', onPageShow)
+  window.addEventListener('visibilitychange', onVisibilityRefreshAdminSeats)
 
   unregisterBookingSnap = registerBookingSeatMapSnap(snapSeatMapHeightToLayout)
   unregisterBookingBanner = registerBookingBannerActions({
@@ -732,6 +800,7 @@ onUnmounted(() => {
     window.removeEventListener('scroll', updateBookingInView)
     window.removeEventListener('pointerdown', blurEdgeCuesOnOutsidePointer)
     window.removeEventListener('pageshow', onPageShow)
+    window.removeEventListener('visibilitychange', onVisibilityRefreshAdminSeats)
     window.removeEventListener('resize', handleWindowResize)
     clearBookingSectionLayoutCache()
   }
@@ -788,6 +857,13 @@ async function openModal() {
   const n = selectedSeatIds.value.length
   /* Nouveau hold : ne pas réutiliser nom / email / téléphone d’une réservation précédente. */
   form.value = { firstName: '', lastName: '', email: '', phone: '', adultCount: n, childCount: 0 }
+
+  if (props.isAdminFreeBooking) {
+    suppressPageOrderAlert.value = true
+    formStep.value = 1
+    showModal.value = true
+    return
+  }
 
   if (!activeOrder.value) {
     suppressPageOrderAlert.value = true
@@ -866,6 +942,10 @@ async function onCancelReservationFromModal() {
     suppressPageOrderAlert.value = false
     return
   }
+  if (props.isAdminFreeBooking && !activeOrder.value) {
+    closeModal()
+    return
+  }
   await cancelActiveOrder(CANCEL_REASON.USER)
 }
 
@@ -875,6 +955,19 @@ function closeModal() {
   suppressPageOrderAlert.value = false
   isSavingContact.value = false
   scheduleModalCloseReset()
+}
+
+/** Org : une place sélectionnée n’est plus libre (réservation ailleurs) — fermeture immédiate + message. */
+function adminDismissReservationModalForStaleSelection() {
+  error.value = content.home.errors.seatsNotFreeAnymore
+  cancelModalCloseReset()
+  keepModalChromeDuringLeave.value = false
+  showModal.value = false
+  suppressPageOrderAlert.value = false
+  formStep.value = 1
+  isSavingContact.value = false
+  errors.value = {}
+  touched.value = {}
 }
 
 const formFieldKeys = ['firstName', 'lastName', 'email', 'phone'] as const
@@ -922,6 +1015,23 @@ function validateForm() {
 async function onFormNext() {
   if (!validateForm()) return
 
+  if (props.isAdminFreeBooking) {
+    error.value = null
+    try {
+      await loadSeats()
+    } catch {
+      error.value = content.api.errors.loadSeatsFailed
+      return
+    }
+    if (!showModal.value) return
+    if (selectedSeatIds.value.length === 0) {
+      error.value = content.home.errors.seatsNotFreeAnymore
+      return
+    }
+    formStep.value = 2
+    return
+  }
+
   const order = activeOrder.value
   if (!order) {
     error.value = content.home.errors.generic
@@ -958,7 +1068,7 @@ async function onFormNext() {
   }
 }
 
-async function submitStep2(payload: {
+type ReservationStep2Payload = {
   form: {
     firstName: string
     lastName: string
@@ -969,7 +1079,122 @@ async function submitStep2(payload: {
   }
   ticketDetails: TicketDetail[]
   turnstileToken?: string
-}) {
+}
+
+/**
+ * Billeterie orga : aucun hold ni timer tant que l’utilisateur n’a pas cliqué sur « Confirmer ».
+ * À la confirmation : hold → contact → détails billets → clôture gratuite.
+ */
+async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
+  const adultCount = payload.ticketDetails.filter((t) => t.ticketType === 'adult').length
+  const childCount = payload.ticketDetails.filter((t) => t.ticketType === 'child').length
+  const seatIdsFromTickets = payload.ticketDetails.map((t) => t.seatId)
+  const uniqueFromTickets = [...new Set(seatIdsFromTickets)]
+  if (uniqueFromTickets.length !== seatIdsFromTickets.length || seatIdsFromTickets.length === 0) {
+    error.value = content.home.errors.generic
+    return
+  }
+
+  await loadSeats()
+  const freeIdSet = new Set(seats.value.filter((s) => s.status === 'free').map((s) => s.id))
+  const allStillFree = seatIdsFromTickets.every((id) => freeIdSet.has(id))
+  if (!allStillFree) {
+    error.value = content.home.errors.seatsNotFreeAnymore
+    selectedSeatIds.value = seatIdsFromTickets.filter((id) => freeIdSet.has(id))
+    return
+  }
+
+  const seatIds = seatIdsFromTickets
+
+  isSubmitting.value = true
+  isCreatingHold.value = true
+  error.value = null
+  let orderIdCancel: string | undefined
+  let orderTokenCancel: string | undefined
+  try {
+    const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
+      method: 'POST',
+      body: { quick: true, seatIds }
+    })
+    orderIdCancel = res.orderId
+    orderTokenCancel = res.orderToken
+
+    await $fetch('/api/update-order-contact', {
+      method: 'POST',
+      body: {
+        orderId: res.orderId,
+        orderToken: res.orderToken,
+        firstName: payload.form.firstName.trim(),
+        lastName: payload.form.lastName.trim(),
+        email: payload.form.email.trim(),
+        phone: payload.form.phone.replace(/\D/g, '')
+      }
+    })
+
+    await $fetch('/api/order-ticket-details', {
+      method: 'POST',
+      body: {
+        orderId: res.orderId,
+        orderToken: res.orderToken,
+        tickets: payload.ticketDetails.map((t) => ({
+          seatId: t.seatId,
+          firstName: t.firstName.trim(),
+          lastName: t.lastName.trim(),
+          ticketType: t.ticketType
+        }))
+      }
+    })
+
+    await $fetch('/api/admin/complete-free-order', {
+      method: 'POST',
+      body: {
+        orderId: res.orderId,
+        orderToken: res.orderToken,
+        adultCount,
+        childCount
+      },
+      credentials: 'include'
+    })
+
+    const rid = res.orderId
+    const rtoken = res.orderToken
+    closeModal()
+    selectedSeatIds.value = []
+    clearOrderClientState()
+    await loadSeats()
+    await navigateTo({
+      path: '/success',
+      query: { order_id: rid, order_token: rtoken }
+    })
+  } catch (err) {
+    if (orderIdCancel && orderTokenCancel) {
+      try {
+        await $fetch('/api/cancel-order', {
+          method: 'POST',
+          body: {
+            orderId: orderIdCancel,
+            orderToken: orderTokenCancel,
+            reason: CANCEL_REASON.USER
+          }
+        })
+      } catch {
+        // ignore
+      }
+      await loadSeats()
+    }
+    error.value = getErrorMessage(err)
+  } finally {
+    isCreatingHold.value = false
+    isSubmitting.value = false
+  }
+}
+
+async function submitStep2(payload: ReservationStep2Payload) {
+  if (props.isAdminFreeBooking) {
+    await submitAdminFreeOnConfirm(payload)
+    return
+  }
+
   const order = activeOrder.value
   if (!order) {
     error.value = content.home.errors.generic
@@ -1024,6 +1249,23 @@ async function submitStep2(payload: {
   }
 }
 
+function clearOrderClientState() {
+  activeOrder.value = null
+  remainingSeconds.value = 0
+  timerExpiresAt = null
+  timerHasExpired = false
+
+  showModal.value = false
+  formStep.value = 1
+  suppressPageOrderAlert.value = false
+
+  localStorage.removeItem(STORAGE_ORDER_KEY)
+
+  form.value = { firstName: '', lastName: '', email: '', phone: '', adultCount: 0, childCount: 0 }
+  errors.value = {}
+  touched.value = {}
+}
+
 async function cancelActiveOrder(
   reason: (typeof CANCEL_REASON)[keyof typeof CANCEL_REASON] = CANCEL_REASON.USER
 ) {
@@ -1039,20 +1281,7 @@ async function cancelActiveOrder(
       }
     })
 
-    activeOrder.value = null
-    remainingSeconds.value = 0
-    timerExpiresAt = null
-    timerHasExpired = false
-
-    showModal.value = false
-    formStep.value = 1
-    suppressPageOrderAlert.value = false
-
-    localStorage.removeItem(STORAGE_ORDER_KEY)
-
-    form.value = { firstName: '', lastName: '', email: '', phone: '', adultCount: 0, childCount: 0 }
-    errors.value = {}
-    touched.value = {}
+    clearOrderClientState()
 
     await loadSeats()
   } catch (err) {
@@ -1114,6 +1343,86 @@ async function pay(turnstileToken?: string) {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+/* Remplit le conteneur admin (100dvh, overflow hidden) sans dépasser la fenêtre. */
+.bookingBlock.bookingBlock--adminOnly {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+  background: #1a1a2e;
+  color: #e8e8ef;
+
+  .bookingBlock__inner {
+    position: relative;
+    background: transparent;
+    /* Évite 100dvh + padding > parent (overflow hidden) qui rognait le logo en haut. */
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+  }
+
+  .bookingBlock__title {
+    color: #fff;
+  }
+
+  .bookingBlock__loader {
+    background: #1a1a2e;
+  }
+
+  .bookingBlock__loaderSpinner {
+    border-color: rgba(255, 255, 255, 0.18);
+    border-top-color: #6ea8ff;
+  }
+
+  .bookingBlock__seatMapSizer {
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .bookingBlock__alert.bookingBlock__alert--danger {
+    color: #fecaca;
+    background: rgba(248, 113, 113, 0.14);
+    border-color: rgba(248, 113, 113, 0.4);
+  }
+
+  .bookingBlock__alert.bookingBlock__alert--warning {
+    color: #fde68a;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.35);
+  }
+
+  :deep(.selectionInfo .selectionInfo__text) {
+    color: #e8e8ef;
+
+    &.selectionInfo__text--empty {
+      color: rgba(232, 232, 239, 0.55);
+    }
+
+    .text__count {
+      color: #7db3ff;
+    }
+  }
+
+  :deep(.selectionInfo .selectionInfo__limit) {
+    color: #fcd34d;
+  }
+
+  .bookingBlock__actions :deep(.defaultButton--primary) {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 4px 14px rgba(13, 110, 253, 0.35);
+  }
+
+  .bookingBlock__actions :deep(.defaultButton.defaultButton--primary.defaultButton--disabled) {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.45);
+    box-shadow: none;
+  }
 }
 
 .bookingBlock__edgeCue {
@@ -1182,6 +1491,16 @@ async function pay(turnstileToken?: string) {
     letter-spacing: 0.01em;
     transform: translateY(1.5px);
   }
+
+  .bookingBlock--adminOnly {
+    .edgeCue__arrow {
+      color: rgba(232, 232, 239, 0.55);
+    }
+
+    .edgeCue__text {
+      color: rgba(232, 232, 239, 0.72);
+    }
+  }
 }
 
 /** Pleine largeur sur desktop : évite que le shrink-to-fit du flex parent change la largeur du plan quand le bandeau apparaît. */
@@ -1216,6 +1535,18 @@ async function pay(turnstileToken?: string) {
   }
 }
 
+/* Après la règle générale : garde la billetterie orga dans le cadre parent sans rogner le logo. */
+.bookingBlock.bookingBlock--adminOnly .bookingBlock__inner {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+
+  @include media-down(lg) {
+    height: 100%;
+    max-height: 100%;
+  }
+}
+
 .bookingBlock__title {
   margin: 0 0 30px 0;
   color: $color-text-primary;
@@ -1242,6 +1573,15 @@ $booking-seat-map-max-height-desktop: 70dvh;
   min-height: 220px;
   margin-bottom: 40px;
   transition: height $booking-layout-ms $booking-layout-ease;
+
+  @include media-down(lg) {
+    /*
+     * La hauteur inline (px) vient du JS : sur mobile elle peut rester basse (85dvh du parent, barres
+     * du navigateur, etc.). min-height / max-height en dvh corrigent la zone utile du plan.
+     */
+    min-height: clamp(260px, 52dvh, 640px);
+    max-height: min(78dvh, 680px);
+  }
 
   @include media-up(lg) {
     max-height: $booking-seat-map-max-height-desktop;
@@ -1312,6 +1652,10 @@ $booking-seat-map-max-height-desktop: 70dvh;
   .bookingBlock__loaderSpinner {
     animation: none;
     border-top-color: $color-border-subtle;
+  }
+
+  .bookingBlock--adminOnly .bookingBlock__loaderSpinner {
+    border-top-color: rgba(255, 255, 255, 0.45);
   }
 
   .bookingBlockReveal-enter-active {

@@ -49,7 +49,10 @@
 
         <div
           class="formReservation"
-          :class="{ 'formReservation--stepHidden': stepCardHidden }"
+          :class="{
+            'formReservation--stepHidden': stepCardHidden,
+            'formReservation--adminFree': isAdminFreeMode
+          }"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="dialogTitleId"
@@ -212,7 +215,7 @@
                       </select>
                     </div>
                   </div>
-                  <div class="priceSummary">
+                  <div v-if="!isAdminFreeMode" class="priceSummary">
                     <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
                     <template v-if="priceSummary.adultCount > 0">
                       <p class="priceSummary__line">{{ priceSummary.adultsLine }}</p>
@@ -224,10 +227,20 @@
                       {{ content.home.modal.totalLabel }} : {{ priceSummary.totalAmount }}
                     </p>
                   </div>
+                  <div v-else class="priceSummary priceSummary--orga">
+                    <p class="priceSummary__title">{{ content.home.modal.priceSummary }}</p>
+                    <p class="priceSummary__line priceSummary__line--orga">
+                      {{ content.backoffice.recapNoPayment }}
+                    </p>
+                  </div>
                 </div>
                 <ClientOnly>
                   <Transition name="formTurnstileFade" appear>
-                    <div v-if="turnstileSiteKey" key="turnstile" class="form__turnstileShell">
+                    <div
+                      v-if="turnstileSiteKey && !isAdminFreeMode"
+                      key="turnstile"
+                      class="form__turnstileShell"
+                    >
                       <div class="form__turnstileInner">
                         <TurnstileField
                           :site-key="turnstileSiteKey"
@@ -258,7 +271,9 @@
                     variant="primary"
                     type="submit"
                     :label="
-                      isSubmitting ? content.home.modal.submitting : content.home.modal.submit
+                      isSubmitting
+                        ? content.home.modal.submitting
+                        : (finalSubmitLabel || content.home.modal.submit)
                     "
                     :disabled="isSubmitting || !isStep2Valid"
                   />
@@ -321,8 +336,12 @@ const props = withDefaults(
     /** Bandeau décompte + annulation (hold créé au clic « Réserver »). */
     showReservationTimer: boolean
     formattedReservationTime: string
+    /** Billeterie orga : pas de captcha, libellé final et récapitulatif sans tarif public. */
+    isAdminFreeMode?: boolean
+    /** Surcharge du libellé du bouton de validation (étape 2). */
+    finalSubmitLabel?: string
   }>(),
-  { isSavingContact: false, isCreatingHold: false }
+  { isSavingContact: false, isCreatingHold: false, isAdminFreeMode: false }
 )
 
 const config = useRuntimeConfig()
@@ -530,7 +549,8 @@ const isStep2Valid = computed(() => {
   const ticketsValid = ticketDetails.value.every(
     (t) => isValidPersonName(t.firstName) && isValidPersonName(t.lastName)
   )
-  const captchaValid = turnstileSiteKey.value ? !!turnstileToken.value : true
+  const captchaValid =
+    props.isAdminFreeMode || (turnstileSiteKey.value ? !!turnstileToken.value : true)
   return ticketsValid && captchaValid
 })
 
@@ -686,7 +706,7 @@ function onNext() {
 
 function onSubmitStep2() {
   if (!validateStep2()) return
-  if (turnstileSiteKey.value && !turnstileToken.value) {
+  if (!props.isAdminFreeMode && turnstileSiteKey.value && !turnstileToken.value) {
     turnstileError.value = content.home.modal.validation.turnstileRequired
     return
   }
@@ -944,6 +964,13 @@ function onSubmitStep2() {
   &.formReservation--stepHidden {
     opacity: 0;
     pointer-events: none;
+  }
+
+  &.formReservation--adminFree {
+    border-top: 4px solid #1a1a2e;
+    box-shadow:
+      0 0 0 1px rgba(26, 26, 46, 0.1),
+      0 12px 36px rgba(0, 0, 0, 0.26);
   }
 
   .formReservation__header {
@@ -1275,6 +1302,14 @@ function onSubmitStep2() {
           border-top: 1px solid #dee2e6;
           @include apply-font(price-summary-total);
           color: #212529;
+        }
+
+        &.priceSummary--orga {
+          .priceSummary__line--orga {
+            margin: 0;
+            line-height: 1.5;
+            color: #495057;
+          }
         }
       }
 
