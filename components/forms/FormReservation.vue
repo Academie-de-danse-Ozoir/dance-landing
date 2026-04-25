@@ -346,34 +346,10 @@ const props = withDefaults(
 
 const config = useRuntimeConfig()
 const rootLenis = useLenis()
-let lockedScrollY = 0
 
 function lockDocumentScroll(lock: boolean) {
   if (import.meta.server) return
-  const lenis = rootLenis.value as { stop?: () => void; start?: () => void } | undefined
-  const htmlEl = document.documentElement
-  const bodyEl = document.body
-  if (lock) {
-    lockedScrollY = window.scrollY || window.pageYOffset || 0
-    lenis?.stop?.()
-    // Lenis sets `overflow: clip` when stopped; force vertical scrollbar to stay visible.
-    htmlEl.style.overflowY = 'scroll'
-    // Freeze native page scroll while keeping scrollbar gutter visible.
-    bodyEl.style.position = 'fixed'
-    bodyEl.style.top = `-${lockedScrollY}px`
-    bodyEl.style.left = '0'
-    bodyEl.style.right = '0'
-    bodyEl.style.width = '100%'
-  } else {
-    bodyEl.style.position = ''
-    bodyEl.style.top = ''
-    bodyEl.style.left = ''
-    bodyEl.style.right = ''
-    bodyEl.style.width = ''
-    lenis?.start?.()
-    htmlEl.style.overflowY = ''
-    window.scrollTo(0, lockedScrollY)
-  }
+  document.documentElement.style.overflow = lock ? 'hidden' : ''
 }
 
 /** Après la fin du fade-out : réactive Lenis une fois la popup totalement fermée. */
