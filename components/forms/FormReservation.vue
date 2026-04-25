@@ -942,13 +942,6 @@ function onSubmitStep2() {
     pointer-events: none;
   }
 
-  &.formReservation--adminFree {
-    border-top: 4px solid #1a1a2e;
-    box-shadow:
-      0 0 0 1px rgba(26, 26, 46, 0.1),
-      0 12px 36px rgba(0, 0, 0, 0.26);
-  }
-
   .formReservation__header {
     display: flex;
     align-items: center;
@@ -1285,6 +1278,7 @@ function onSubmitStep2() {
             margin: 0;
             line-height: 1.5;
             color: #495057;
+            white-space: pre-line;
           }
         }
       }

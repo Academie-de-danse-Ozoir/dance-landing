@@ -73,7 +73,7 @@
     "submit": "Se connecter",
     "logout": "Déconnexion",
     "confirmFreeOrder": "Confirmer (sans paiement)",
-    "recapNoPayment": "Aucun prélèvement : réservation validée côté orga. Les billets et e-mails de confirmation partent immédiatement."
+    "recapNoPayment": "Aucun prélèvement : réservation validée côté organisation.\nLes billets et e-mails de confirmation partent immédiatement."
   },
   "home": {
     "title": "Plan de salle interactif",

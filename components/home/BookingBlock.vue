@@ -1423,6 +1423,26 @@ async function pay(turnstileToken?: string) {
     color: rgba(255, 255, 255, 0.45);
     box-shadow: none;
   }
+
+  /* Modale réservation : le shell admin impose une couleur claire — on repasse en texte foncé sur la carte blanche. */
+  :deep(.formReservation.formReservation--adminFree) {
+    color: #212529;
+  }
+
+  :deep(.formReservation.formReservation--adminFree .priceSummary.priceSummary--orga) {
+    margin-bottom: 20px;
+  }
+
+  :deep(.formReservation.formReservation--adminFree .ticketBlock__type .type__select) {
+    color: #212529;
+    background-color: #fff;
+    -webkit-text-fill-color: #212529;
+  }
+
+  :deep(.formReservation.formReservation--adminFree .ticketBlock__type .type__select option) {
+    color: #212529;
+    background-color: #fff;
+  }
 }
 
 .bookingBlock__edgeCue {
