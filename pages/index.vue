@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import content from '../locales/fr.json'
 import HeroBlock from '../components/home/HeroBlock.vue'
 import HomeOrganicGallery from '../components/home/HomeOrganicGallery.vue'
@@ -50,9 +50,13 @@ import {
   SEAT_SELECTION_SECTION_ID
 } from '../constants'
 import { useLenis } from '../composables/useLenis'
+import { useAppLoader } from '../composables/useAppLoader'
+import { useParallaxLayoutSync } from '../composables/useParallaxLayoutSync'
 
 const homeHighlightRows = content.home.highlights.rows as AlternatingFeatureRow[]
 const lenis = useLenis()
+const { isRevealed } = useAppLoader()
+const { scheduleParallaxLayoutSync } = useParallaxLayoutSync()
 const maskHomeContentForBookingJump = ref(false)
 
 function jumpToBookingWithFade() {
@@ -92,8 +96,13 @@ function jumpToBookingWithFade() {
   }, FADE_OUT_MS)
 }
 
+watch(isRevealed, (revealed) => {
+  if (revealed) scheduleParallaxLayoutSync(120)
+})
+
 onMounted(() => {
   if (!import.meta.client) return
+  scheduleParallaxLayoutSync(480)
   if (sessionStorage.getItem(PENDING_SCROLL_TO_SEATS_KEY)) {
     maskHomeContentForBookingJump.value = true
     sessionStorage.removeItem(PENDING_SCROLL_TO_SEATS_KEY)
