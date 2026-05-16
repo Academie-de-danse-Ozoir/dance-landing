@@ -11,8 +11,10 @@ export const STORAGE_ORDER_KEY = 'order_id'
 export const EVENT_ID = '3dbc76cc-4a6d-4c79-b6f0-4b878ad02b43'
 
 /** Tarifs en centimes (affichage front + Stripe) */
-export const PRICE_ADULT_CENTS = 1800
-export const PRICE_CHILD_CENTS = 1300
+export const PRICE_ADULT_CENTS = 50
+export const PRICE_CHILD_CENTS = 50
+// export const PRICE_ADULT_CENTS = 1800
+// export const PRICE_CHILD_CENTS = 1300
 
 // =============================================================================
 // Réservation
