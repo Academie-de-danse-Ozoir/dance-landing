@@ -13,8 +13,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
-import { useParallaxLayoutSync } from '../../composables/useParallaxLayoutSync'
+import { onMounted, onUnmounted, ref, nextTick } from 'vue'
 
 const props = defineProps({
   url: { type: String, default: null },
@@ -47,7 +46,6 @@ function remap(value, low1, high1, low2, high2) {
 
 const parallaxMediaRef = ref()
 const mediaRef = ref()
-const { scheduleParallaxLayoutSync } = useParallaxLayoutSync()
 
 let rectTop = 0
 let rectHeight = 0
@@ -108,58 +106,25 @@ function applyTransforms() {
   }
 }
 
-function refreshLayout() {
-  measureRect()
-  applyTransforms()
-}
-
 function handleScroll() {
   applyTransforms()
 }
 
 function handleResize() {
-  refreshLayout()
+  measureRect()
+  applyTransforms()
 }
-
-function onImageReady() {
-  refreshLayout()
-  scheduleParallaxLayoutSync()
-}
-
-function setupImageReady() {
-  const img = mediaRef.value
-  if (!img) return
-  if (img.complete && img.naturalWidth > 0) {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(onImageReady)
-    })
-    return
-  }
-  img.addEventListener('load', onImageReady, { once: true })
-  img.addEventListener('error', onImageReady, { once: true })
-}
-
-let resizeObserver = null
 
 onMounted(() => {
   if (import.meta.server) return
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('resize', handleResize, { passive: true })
 
-  refreshLayout()
-  setupImageReady()
+  measureRect()
+  applyTransforms()
 
-  if (typeof ResizeObserver !== 'undefined' && parallaxMediaRef.value) {
-    resizeObserver = new ResizeObserver(() => {
-      refreshLayout()
-      scheduleParallaxLayoutSync(32)
-    })
-    resizeObserver.observe(parallaxMediaRef.value)
-  }
-
-  requestAnimationFrame(() => {
-    refreshLayout()
-    scheduleParallaxLayoutSync(0)
+  nextTick(() => {
+    window.dispatchEvent(new Event('resize'))
   })
 })
 
@@ -167,14 +132,11 @@ onUnmounted(() => {
   if (import.meta.client) {
     window.removeEventListener('scroll', handleScroll)
     window.removeEventListener('resize', handleResize)
-    resizeObserver?.disconnect()
-    resizeObserver = null
   }
 })
 
 defineExpose({
-  mediaRef,
-  refreshLayout
+  mediaRef
 })
 </script>
 

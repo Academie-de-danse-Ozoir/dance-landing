@@ -58,7 +58,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
-import { useParallaxLayoutSync } from '../../composables/useParallaxLayoutSync'
 
 /** Aligné sur `@include media-down(sm)` → max-width: 640px (`_breakpoints.scss`). */
 const SM_DOWN_MQ = '(max-width: 640px)'
@@ -69,14 +68,12 @@ defineProps<{
 
 /** ≤ sm : masque parallax actif, pas de parallax position (scroll). */
 const isSmDown = ref(false)
-const { scheduleParallaxLayoutSync } = useParallaxLayoutSync()
 
 onMounted(() => {
   if (!import.meta.client) return
   const mq = window.matchMedia(SM_DOWN_MQ)
   const sync = () => {
     isSmDown.value = mq.matches
-    scheduleParallaxLayoutSync(80)
   }
   sync()
   mq.addEventListener('change', sync)
