@@ -6,12 +6,13 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "nuxt build",
+    "generate:pdf-assets": "node scripts/generate-pdf-assets.mjs",
+    "build": "npm run generate:pdf-assets && nuxt build",
     "dev": "nuxt dev --no-fork",
     "dev:lan": "nuxt dev --no-fork --host 0.0.0.0",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "npm run generate:pdf-assets && nuxt prepare"
   },
   "dependencies": {
     "@nuxtjs/supabase": "^2.0.4",

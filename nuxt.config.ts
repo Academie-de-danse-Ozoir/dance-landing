@@ -140,14 +140,6 @@ export default defineNuxtConfig({
       }
     }
   },
-  nitro: {
-    serverAssets: [
-      {
-        baseName: 'pdf-assets',
-        dir: './server/pdf-assets'
-      }
-    ]
-  },
   modules: ['@nuxtjs/supabase'],
   supabase: {
     url: process.env.SUPABASE_URL,

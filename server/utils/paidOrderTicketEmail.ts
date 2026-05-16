@@ -429,8 +429,11 @@ async function completePaidOrderTicketDelivery(
         eventVenue: brand.eventVenue,
         lineItems: lineItems.length > 0 ? lineItems : undefined
       })
-    } catch {
-      // ignore PDF generation failures
+    } catch (pdfErr) {
+      console.error('[paid-order-ticket-email] PDF generation failed', {
+        orderId: order.id,
+        error: pdfErr instanceof Error ? pdfErr.message : pdfErr
+      })
     }
   }
 
