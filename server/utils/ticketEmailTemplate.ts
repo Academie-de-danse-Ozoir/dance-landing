@@ -83,7 +83,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       : null
 
   const publicBase = resolveEmailPublicBaseUrl(data)
-  /** Fond #1a1a2e intégré — évite l’inversion du logo blanc en mode sombre (Gmail / Apple Mail). */
+  /** PNG blanc transparent (voir scripts/generate-email-logo.mjs). */
   const footerLogoUrl = publicBase ? `${publicBase}/brand-logo-email.png` : ''
   const titleFontTtfUrl = publicBase ? `${publicBase}/fonts/title.ttf` : ''
   const textFontTtfUrl = publicBase ? `${publicBase}/fonts/text.ttf` : ''
@@ -166,10 +166,31 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       font-style: normal;
     }`
       : ''}
+    .email-footer-logo-wrap {
+      background-color: #1a1a2e !important;
+    }
+    .email-footer-logo-img {
+      display: block !important;
+      filter: none !important;
+      -webkit-filter: none !important;
+    }
+    @media (prefers-color-scheme: dark) {
+      .email-footer-logo-wrap,
+      .email-footer-logo-wrap td {
+        background-color: #1a1a2e !important;
+      }
+      .email-footer-logo-img {
+        filter: invert(1) !important;
+        -webkit-filter: invert(1) !important;
+      }
+    }
+    u + .body .email-footer-logo-wrap {
+      background-color: #1a1a2e !important;
+    }
   </style>
   <title>Commande ${escapeHtml(orderRef)} — Confirmation billet – ${escapeHtml(brand.spectacleName)}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'text', 'PP Neue Montreal', Arial, sans-serif; background-color: #f4f5f8; -webkit-font-smoothing: antialiased;">
+<body class="body" style="margin: 0; padding: 0; font-family: 'text', 'PP Neue Montreal', Arial, sans-serif; background-color: #f4f5f8; -webkit-font-smoothing: antialiased;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f5f8;">
     <tr>
       <td style="padding: 40px 20px;">
@@ -240,7 +261,17 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
           <!-- Pied de page -->
           <tr>
             <td style="padding: 44px 48px 48px; border-top: 1px solid #2a2a44; background-color: #1a1a2e;">
-              ${footerLogoUrl ? `<p style="margin: 0 0 16px 0; text-align: center;"><img src="${escapeHtml(footerLogoUrl)}" width="44" height="79" class="email-footer-logo-img" style="display: inline-block; width: 44px; height: auto; max-width: 44px; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;" alt="${escapeHtml(brand.spectacleName)}"></p>` : ''}
+              ${
+                footerLogoUrl
+                  ? `<table role="presentation" cellpadding="0" cellspacing="0" align="center" class="email-footer-logo-wrap" style="margin: 0 auto 16px; background-color: #1a1a2e;">
+                <tr>
+                  <td align="center" style="background-color: #1a1a2e; line-height: 0; font-size: 0; mso-line-height-rule: exactly;">
+                    <img src="${escapeHtml(footerLogoUrl)}" width="44" height="79" class="email-footer-logo-img" alt="${escapeHtml(brand.spectacleName)}" style="display: block; width: 44px; height: auto; max-width: 44px; margin: 0 auto; border: 2px solid #1a1a2e; outline: none; text-decoration: none; background-color: #1a1a2e; -ms-interpolation-mode: bicubic;">
+                  </td>
+                </tr>
+              </table>`
+                  : ''
+              }
               <p style="margin: 0; font-size: 13px; color: #e8e8ef; text-align: center; line-height: 1.5;">${escapeHtml(
                 billetterieSenderName()
               )}</p>

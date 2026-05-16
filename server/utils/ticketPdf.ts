@@ -121,12 +121,31 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
         data.tickets && data.tickets.length > 0
           ? data.tickets
           : data.seatLabels.map((seatLabel) => ({ seatLabel }) as TicketPdfTicket)
-      const ticketHeaderHeight = 122
       const recapHeaderHeight = 102
       /** Position verticale du haut de la carte billet (sous le bandeau titre). */
       const ticketCardTopY = 350
 
       function drawSpectacleTicketHeader() {
+        const titleY = 48
+        const titleFontSize = 26
+        const taglineFontSize = 17
+        const gapAfterTitle = 4
+        const headerBottomPadding = 24
+
+        doc.font(displayFontName).fontSize(titleFontSize)
+        const titleHeight = doc.heightOfString(brand.spectacleName, {
+          align: 'center',
+          width: pageWidth
+        })
+        const taglineY = titleY + titleHeight + gapAfterTitle
+
+        doc.fontSize(taglineFontSize)
+        const taglineHeight = doc.heightOfString(brand.eventTagline, {
+          align: 'center',
+          width: pageWidth
+        })
+        const ticketHeaderHeight = taglineY + taglineHeight + headerBottomPadding
+
         doc.rect(0, 0, doc.page.width, ticketHeaderHeight).fill(palette.footerBg)
         doc
           .fillColor('#c9b896')
@@ -139,14 +158,14 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
           })
         doc
           .fillColor('#ffffff')
-          .fontSize(26)
+          .fontSize(titleFontSize)
           .font(displayFontName)
-          .text(brand.spectacleName, 40, 48, { align: 'center', width: pageWidth })
+          .text(brand.spectacleName, 40, titleY, { align: 'center', width: pageWidth })
         doc
           .fillColor('#c9b896')
-          .fontSize(14)
+          .fontSize(taglineFontSize)
           .font(displayFontName)
-          .text(brand.eventTagline, 40, 80, { align: 'center', width: pageWidth })
+          .text(brand.eventTagline, 40, taglineY, { align: 'center', width: pageWidth })
       }
 
       function drawHeroBackgroundCover() {
