@@ -109,13 +109,13 @@ function fadeOutBeforeHomeNavigation() {
 
 /** Ligne tactile par défaut uniquement pour tel / mail (pas les autres liens du footer). */
 function isContactLink(link: FooterColumnLink) {
-  if (!link.external) return false
+  if (!link.external || typeof link.to !== 'string') return false
   const t = link.to.toLowerCase()
   return t.startsWith('tel:') || t.startsWith('mailto:')
 }
 
 function isEmailLink(link: FooterColumnLink) {
-  if (!link.external) return false
+  if (!link.external || typeof link.to !== 'string') return false
   return link.to.toLowerCase().startsWith('mailto:')
 }
 

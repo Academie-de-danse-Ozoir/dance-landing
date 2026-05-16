@@ -5,7 +5,8 @@ export default defineNuxtPlugin(() => {
   if (import.meta.dev) return
 
   const blockDevToolsShortcut = (event: KeyboardEvent) => {
-    const key = event.key.toLowerCase()
+    const key = (event.key ?? '').toLowerCase()
+    if (!key) return
 
     const isDevtoolsKey =
       key === 'f12' ||
