@@ -8,6 +8,8 @@ import { ORDER_STATUS, SEAT_STATUS, RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE }
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 import { isValidPersonName } from '../utils/inputValidation'
+import { assertBookingOpenForRequest, getEventBookingState } from '../utils/eventBooking'
+import { EVENT_ID } from '../../constants'
 
 type TicketPayload = {
   seatId: string
@@ -21,6 +23,9 @@ export default defineEventHandler(async (event) => {
   if (!checkRateLimit(ip, 'ticket-details', RATE_LIMIT_ORDER_TICKET_DETAILS_PER_MINUTE).ok) {
     throw createError({ statusCode: 429, statusMessage: tApiError('rateLimit') })
   }
+
+  const eventState = await getEventBookingState(EVENT_ID)
+  assertBookingOpenForRequest(event, eventState)
 
   const body = await readBody(event)
   const { orderId, orderToken: rawToken, tickets } = body as {

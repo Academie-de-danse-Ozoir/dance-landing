@@ -56,6 +56,7 @@
               :seats="seats"
               :selected-seat-ids="selectedSeatIds"
               :active-order="activeOrder"
+              :booking-closed="publicBookingClosed"
               :force-active-order-lock="
                 isAdminFreeBooking
                   ? isCreatingHold || keepModalChromeDuringLeave
@@ -86,6 +87,7 @@
               variant="primary"
               :label="content.home.actions.reserve"
               :disabled="
+                publicBookingClosed ||
                 (blockNewReserve && !canReopenReservation) ||
                 (!canReopenReservation && selectedSeatIds.length === 0)
               "
@@ -264,7 +266,16 @@ type SeatApiResponse = {
   status: SeatStatus
 }
 
+type SeatsApiPayload = {
+  seats: SeatApiResponse[]
+  event: {
+    startsAt: string | null
+    bookingClosed: boolean
+  }
+}
+
 const seats = ref<Seat[]>([])
+const bookingClosed = ref(false)
 const selectedSeatIds = ref<string[]>([])
 const selectionLimitMessage = ref<string | null>(null)
 const error = ref<string | null>(null)
@@ -554,6 +565,11 @@ const canReopenReservation = computed(() => {
   return !!o && (o.contactComplete !== true || o.ticketDetailsComplete !== true)
 })
 
+/** Fermeture billetterie publique (date spectacle dépassée) — pas le back-office admin. */
+const publicBookingClosed = computed(
+  () => bookingClosed.value && !props.isAdminFreeBooking
+)
+
 function startTimerFromExpiresAt(expiresAt: string) {
   const t = new Date(expiresAt).getTime()
   timerHasExpired = false
@@ -568,8 +584,9 @@ function startTimerFromExpiresAt(expiresAt: string) {
 
 async function loadSeats() {
   try {
-    const data = await $fetch<SeatApiResponse[]>('/api/seats')
-    seats.value = layoutYerresTheaterSeats(data)
+    const data = await $fetch<SeatsApiPayload>('/api/seats')
+    bookingClosed.value = data.event.bookingClosed
+    seats.value = layoutYerresTheaterSeats(data.seats)
     if (props.isAdminFreeBooking && selectedSeatIds.value.length > 0) {
       const freeIdSet = new Set(seats.value.filter((s) => s.status === 'free').map((s) => s.id))
       const before = [...selectedSeatIds.value]
@@ -823,6 +840,7 @@ onUnmounted(() => {
 })
 
 function toggleSeat(id: string) {
+  if (publicBookingClosed.value) return
   const seat = seats.value.find((s) => s.id === id)
   if (!seat || seat.status !== 'free') return
 
@@ -850,6 +868,11 @@ async function openModal() {
   if (isSubmitting.value) return
   cancelModalCloseReset()
   keepModalChromeDuringLeave.value = false
+
+  if (publicBookingClosed.value) {
+    error.value = content.home.errors.bookingClosed
+    return
+  }
 
   if (canReopenReservation.value && activeOrder.value) {
     const o = activeOrder.value
@@ -1318,6 +1341,11 @@ async function pay(turnstileToken?: string) {
   const orderId = order?.orderId
 
   if (!orderId || !order) return
+
+  if (publicBookingClosed.value) {
+    error.value = content.home.errors.bookingClosed
+    return
+  }
 
   if (order.contactComplete !== true) {
     error.value = content.home.errors.completeContactBeforePay

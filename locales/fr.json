@@ -30,7 +30,9 @@
       "noSeatsForOrder": "Aucune place trouvée pour cette commande.",
       "loadSeatsTicketPageFailed": "Impossible de charger les places.",
       "staffSeatsNotBookable": "Une ou plusieurs places sont réservées au personnel et ne peuvent pas être réservées.",
-      "orderUpdateFailed": "Impossible de mettre à jour la commande."
+      "orderUpdateFailed": "Impossible de mettre à jour la commande.",
+      "bookingClosed": "Les réservations en ligne ne sont plus possibles pour ce spectacle.",
+      "loadEventFailed": "Impossible de charger les informations du spectacle."
     }
   },
   "brand": {
@@ -131,6 +133,8 @@
         "mapLoading": "Chargement du plan de salle…",
         "activeOrderLockTitle": "Plan en pause",
         "activeOrderLockHint": "Une réservation est en cours — reprenez ou annulez depuis le bandeau.",
+        "bookingClosedTitle": "Réservations terminées",
+        "bookingClosedHint": "La billetterie en ligne est fermée pour ce spectacle. Merci de votre compréhension.",
         "accessibilityZoneTitle": "Places accès facilité",
         "accessibilityZoneSubtitle": "Rangée O — côtés O22 à O2 et O5 à O21",
         "pmrZoneAreaLabel": "Zone places PMR (sous G26 à G30)"
@@ -217,7 +221,8 @@
       "generic": "Une erreur est survenue. Veuillez réessayer.",
       "completeContactBeforePay": "Complétez d’abord vos coordonnées et validez avec « Suivant ».",
       "completeTicketDetailsBeforePay": "Complétez d’abord les informations de chaque billet, puis cliquez sur « Payer ».",
-      "seatsNotFreeAnymore": "Une ou plusieurs places ne sont plus libres (réservation en cours ou place indisponible). Le plan a été mis à jour : vérifiez votre sélection puis réessayez."
+      "seatsNotFreeAnymore": "Une ou plusieurs places ne sont plus libres (réservation en cours ou place indisponible). Le plan a été mis à jour : vérifiez votre sélection puis réessayez.",
+      "bookingClosed": "Les réservations en ligne sont terminées pour ce spectacle."
     },
     "hero": {
       "kicker": "Billetterie officielle",

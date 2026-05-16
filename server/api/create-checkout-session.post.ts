@@ -11,12 +11,17 @@ import { brand, tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 import { verifyTurnstileToken } from '../utils/verifyTurnstile'
 import { updateOrderStatusAndClearContact } from '../utils/updateOrderStatusAndClearContact'
+import { assertBookingOpenForRequest, getEventBookingState } from '../utils/eventBooking'
+import { EVENT_ID } from '../../constants'
 
 export default defineEventHandler(async (event) => {
   const ip = getClientIp(event)
   if (!checkRateLimit(ip, 'checkout', RATE_LIMIT_CREATE_CHECKOUT_PER_MINUTE).ok) {
     throw createError({ statusCode: 429, statusMessage: tApiError('rateLimit') })
   }
+
+  const eventState = await getEventBookingState(EVENT_ID)
+  assertBookingOpenForRequest(event, eventState)
 
   const body = await readBody(event)
   const { orderId, orderToken, adultCount: bodyAdult, childCount: bodyChild, turnstileToken } = body

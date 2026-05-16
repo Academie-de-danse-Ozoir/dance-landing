@@ -453,7 +453,7 @@ async function completePaidOrderTicketDelivery(
       orderRefShort: orderRefShort(order.id),
       registerUrl,
       emailData,
-      customerPhone: order.phone ?? null,
+      customerPhone: phoneForSheets || null,
       seatLabelsJoined,
       ticketsDetailLines
     }),

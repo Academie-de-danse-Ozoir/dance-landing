@@ -1,11 +1,13 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { EVENT_ID, SEAT_STATUS } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
+import { getEventBookingState } from '../utils/eventBooking'
 
 type SeatStatus = 'free' | 'hold' | 'paid' | 'staff'
 
 export default defineEventHandler(async () => {
-  // 1️⃣ Tous les sièges
+  const eventState = await getEventBookingState(EVENT_ID)
+
   const { data: seats, error: seatError } = await supabaseAdmin
     .from('seat')
     .select('id, label, reserved_for_staff')
@@ -17,7 +19,6 @@ export default defineEventHandler(async () => {
     })
   }
 
-  // 2️⃣ TOUTES les réservations existantes = BLOQUANTES
   const { data: reservations, error: resError } = await supabaseAdmin
     .from('seat_reservation')
     .select('seat_id, status')
@@ -31,14 +32,13 @@ export default defineEventHandler(async () => {
     })
   }
 
-  // 3️⃣ Fusion DB → UI
   const reservationMap = new Map<string, SeatStatus>()
 
-  reservations.forEach(r => {
+  reservations.forEach((r) => {
     reservationMap.set(r.seat_id, r.status)
   })
 
-  return seats.map(seat => {
+  const seatList = seats.map((seat) => {
     const row = seat as { id: string; label: string; reserved_for_staff?: boolean }
     const reserved = reservationMap.get(row.id)
     let status: SeatStatus = SEAT_STATUS.FREE
@@ -53,6 +53,12 @@ export default defineEventHandler(async () => {
       status
     }
   })
+
+  return {
+    seats: seatList,
+    event: {
+      startsAt: eventState.startsAt,
+      bookingClosed: eventState.bookingClosed
+    }
+  }
 })
-
-

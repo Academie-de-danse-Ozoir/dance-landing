@@ -1,7 +1,7 @@
 <template>
   <div
     class="seatMap"
-    :class="{ 'seatMap--fillHeight': fillHeight, 'seatMap--activeOrderLock': hasActiveOrderLock }"
+    :class="{ 'seatMap--fillHeight': fillHeight, 'seatMap--activeOrderLock': hasMapLock }"
   >
     <div
       ref="viewportRef"
@@ -167,24 +167,46 @@
         </g>
       </svg>
       <Transition name="seatMapActiveOrderLock">
-        <div v-if="hasActiveOrderLock" class="seatMap__activeOrderLock" role="status" aria-live="polite">
+        <div v-if="hasMapLock" class="seatMap__activeOrderLock" role="status" aria-live="polite">
           <div class="seatMap__activeOrderLockCard">
-            <svg
-              class="activeOrderLock__icon"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <p class="activeOrderLock__title">{{ mapUi.activeOrderLockTitle }}</p>
-            <p class="activeOrderLock__hint">{{ mapUi.activeOrderLockHint }}</p>
+            <template v-if="bookingClosed">
+              <svg
+                class="activeOrderLock__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <p class="activeOrderLock__title">{{ mapUi.bookingClosedTitle }}</p>
+              <p class="activeOrderLock__hint">{{ mapUi.bookingClosedHint }}</p>
+            </template>
+            <template v-else>
+              <svg
+                class="activeOrderLock__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <p class="activeOrderLock__title">{{ mapUi.activeOrderLockTitle }}</p>
+              <p class="activeOrderLock__hint">{{ mapUi.activeOrderLockHint }}</p>
+            </template>
           </div>
         </div>
       </Transition>
@@ -475,6 +497,8 @@ type SeatMapNavCopy = {
   legendMaxPerOrder: string
   activeOrderLockTitle: string
   activeOrderLockHint: string
+  bookingClosedTitle: string
+  bookingClosedHint: string
   accessibilityZoneTitle: string
   accessibilityZoneSubtitle: string
   pmrZoneAreaLabel: string
@@ -585,6 +609,8 @@ const props = withDefaults(
     activeOrder: ActiveOrder | null
     /** Verrouille visuellement le plan dès l'ouverture de la popup, avant retour API hold. */
     forceActiveOrderLock?: boolean
+    /** Billetterie fermée (date de début du spectacle dépassée). */
+    bookingClosed?: boolean
     /** Aligné sur `MAX_SEATS_PER_ORDER` (API hold-seats). */
     maxSeatsPerOrder: number
     /**
@@ -593,7 +619,7 @@ const props = withDefaults(
      */
     fillHeight?: boolean
   }>(),
-  { fillHeight: false, forceActiveOrderLock: false }
+  { fillHeight: false, forceActiveOrderLock: false, bookingClosed: false }
 )
 
 const emit = defineEmits<{
@@ -1522,10 +1548,11 @@ function clientToSvgPoint(clientX: number, clientY: number): { x: number; y: num
 }
 
 function isMapNavLocked() {
-  return hasActiveOrderLock.value
+  return hasMapLock.value
 }
 
 const hasActiveOrderLock = computed(() => !!props.activeOrder || props.forceActiveOrderLock)
+const hasMapLock = computed(() => props.bookingClosed || hasActiveOrderLock.value)
 
 let lastBookingScrollEmitTs = 0
 const BOOKING_SCROLL_EMIT_THROTTLE_MS = 500
@@ -1938,12 +1965,13 @@ function seatVisualClass(seat: Seat) {
 }
 
 function isSeatClickable(seat: Seat) {
-  if (seat.status !== 'free' || hasActiveOrderLock.value) return false
+  if (seat.status !== 'free' || hasMapLock.value) return false
   if (selectedSet.value.has(seat.id)) return true
   return props.selectedSeatIds.length < props.maxSeatsPerOrder
 }
 
 function getSeatTitle(seat: Seat) {
+  if (props.bookingClosed) return mapUi.bookingClosedTitle
   if (hasActiveOrderLock.value && seat.status === 'free')
     return content.home.seats.tooltip.reservationInProgress
   if (seat.status !== 'free') return content.home.seats.tooltip.seatUnavailable

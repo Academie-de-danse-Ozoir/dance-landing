@@ -1,7 +1,26 @@
 import { JWT } from 'google-auth-library'
+import { formatFrenchPhoneForDisplay } from '../../utils/phoneInput'
 
 /** Nombre de colonnes écrites (A→H). */
 const SHEET_COL_COUNT = 8
+
+/** Col. D = téléphone acheteur (registre réservations). */
+const REGISTRATION_PHONE_COL = 3
+
+/** Affichage export : `06 46 09 70 14` (groupes de 2 chiffres). */
+function formatPhoneForSheetExport(raw: string | null | undefined): string {
+  const formatted = formatFrenchPhoneForDisplay(raw)
+  if (formatted) return formatted
+  return raw?.trim() ?? ''
+}
+
+function normalizeRegistrationRowPhones(row: string[]): string[] {
+  const padded = padSheetRow(row)
+  if (padded[REGISTRATION_PHONE_COL]?.trim()) {
+    padded[REGISTRATION_PHONE_COL] = formatPhoneForSheetExport(padded[REGISTRATION_PHONE_COL])
+  }
+  return padded
+}
 
 /** Hauteur max lue / effacée sous la ligne d’en-tête (évite une plage ouverte infinie). */
 const SHEET_DATA_MAX_ROWS = 5000
@@ -361,7 +380,7 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
     row.buyerLastName,
     row.buyerFirstName,
     row.buyerEmail,
-    row.buyerPhone
+    formatPhoneForSheetExport(row.buyerPhone)
   ] as const
 
   const newRows: string[][] =
@@ -385,7 +404,12 @@ export async function appendPaidOrderRowToGoogleSheetIfConfigured(row: SheetOrde
   }
   if (existing === null) return
 
-  const merged = [...existing.filter((r) => !isSheetRowEmpty(padSheetRow(r))), ...newRows]
+  const merged = [
+    ...existing
+      .filter((r) => !isSheetRowEmpty(padSheetRow(r)))
+      .map((r) => normalizeRegistrationRowPhones(r)),
+    ...newRows
+  ]
   const sorted = sortSheetRowsByReservationName(merged)
 
   const cleared = await sheetsValuesClear(spreadsheetId, clearRangeA1, token)
@@ -440,7 +464,7 @@ export async function appendPaidPaymentRowToGoogleSheetIfConfigured(row: SheetPa
       String(row.seatCount),
       row.customerEmail,
       row.customerName,
-      row.customerPhone,
+      formatPhoneForSheetExport(row.customerPhone),
       row.seatLabelsJoined,
       row.receiptUrl
     ]

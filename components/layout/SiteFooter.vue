@@ -93,7 +93,7 @@ const copyrightLine = computed(() =>
 const copyrightPrefix = computed(() =>
   copyrightLine.value.replace(' Tous droits réservés.', '').trim()
 )
-const copyrightRights = computed(() => 'Tous droits réservés.')
+const copyrightRights = computed(() => ' Tous droits réservés.')
 </script>
 
 <style lang="scss" scoped>

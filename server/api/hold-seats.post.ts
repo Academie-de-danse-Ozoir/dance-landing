@@ -10,6 +10,7 @@ import {
 import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 import { isValidEmail, isValidPersonName } from '../utils/inputValidation'
+import { assertBookingOpenForRequest, getEventBookingState } from '../utils/eventBooking'
 
 function trimStr(s: unknown, max: number): string {
   const str = typeof s === 'string' ? s.trim() : ''
@@ -23,6 +24,9 @@ export default defineEventHandler(async (event) => {
   if (!checkRateLimit(ip, 'hold', RATE_LIMIT_HOLD_SEATS_PER_MINUTE).ok) {
     throw createError({ statusCode: 429, statusMessage: tApiError('rateLimit') })
   }
+
+  const eventState = await getEventBookingState(EVENT_ID)
+  assertBookingOpenForRequest(event, eventState)
 
   const body = await readBody(event)
   let seatIds: unknown
