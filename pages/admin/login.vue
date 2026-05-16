@@ -2,6 +2,16 @@
   <div class="backofficeLogin">
     <h1 class="backofficeLogin__title">{{ t.loginTitle }}</h1>
     <form class="backofficeLogin__form" @submit.prevent="onSubmit">
+      <!-- Champ utilisateur masqué : requis par les gestionnaires de mots de passe (autocomplete). -->
+      <input
+        class="backofficeLogin__usernameAutofill"
+        type="text"
+        name="username"
+        autocomplete="username"
+        value="admin"
+        tabindex="-1"
+        aria-hidden="true"
+      />
       <label class="backofficeLogin__label">
         <span>{{ t.password }}</span>
         <input
@@ -92,7 +102,20 @@ async function onSubmit() {
   letter-spacing: 0.07em;
 }
 
+.backofficeLogin__usernameAutofill {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .backofficeLogin__form {
+  position: relative;
   width: 100%;
   max-width: 360px;
   display: flex;

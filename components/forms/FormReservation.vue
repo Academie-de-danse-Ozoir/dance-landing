@@ -53,10 +53,11 @@
             'formReservation--stepHidden': stepCardHidden,
             'formReservation--adminFree': isAdminFreeMode
           }"
+          ref="dialogRef"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="dialogTitleId"
-          :aria-hidden="stepCardHidden ? 'true' : undefined"
+          :aria-busy="stepCardHidden ? 'true' : undefined"
         >
           <div class="formReservation__header">
             <h2 :id="dialogTitleId" class="header__title">
@@ -361,7 +362,18 @@ function onOverlayAfterLeave() {
 /** Affichage réel après fondu complet de la carte (toute la popup, pas seulement le body). */
 const displayedStep = ref<1 | 2>(props.step)
 const stepCardHidden = ref(false)
+const dialogRef = ref<HTMLElement | null>(null)
 const STEP_CARD_FADE_MS = 260
+
+/** Évite l’avertissement navigateur : pas de focus dans un sous-arbre masqué (aria-hidden / inert). */
+function releaseDialogFocus() {
+  if (import.meta.server) return
+  const root = dialogRef.value
+  const active = document.activeElement
+  if (root && active instanceof HTMLElement && root.contains(active)) {
+    active.blur()
+  }
+}
 /** Après swap d’étape : laisser le layout se stabiliser avant le fade-in (évite le saut). */
 const STEP_REVEAL_DELAY_MS = 100
 let stepChangeGeneration = 0
@@ -404,6 +416,7 @@ watch(
     }
     const gen = ++stepChangeGeneration
     stepCardHidden.value = true
+    releaseDialogFocus()
     await new Promise((r) => setTimeout(r, STEP_CARD_FADE_MS))
     if (gen !== stepChangeGeneration || !props.show) {
       stepCardHidden.value = false
