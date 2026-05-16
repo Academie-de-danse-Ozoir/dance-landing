@@ -1,8 +1,12 @@
 import PDFDocument from 'pdfkit'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { formatFrenchPhoneForDisplay } from '../../utils/phoneInput'
 import { brand, pdfOrderRecapFooter } from '../../locales/frDisplay'
+import { loadPdfAssetBuffer, resolvePdfAssetPath } from './resolvePdfAsset'
+
+const PDF_HERO_IMAGE = 'affiche_vertical.jpg'
+const PDF_DISPLAY_FONT_FILE = 'title.ttf'
+const PDF_TEXT_FONT_FILE = 'text.ttf'
+const PDF_BRAND_LOGO_FILE = 'brand-logo-light.png'
 
 export interface TicketPdfLineItem {
   description: string
@@ -47,96 +51,89 @@ export interface TicketPdfData {
  * Génère un PDF : 1 page A4 par billet (infos du billet uniquement) + 1 page A4 récapitulatif de la commande.
  * Ex. 2 places → 3 pages (billet 1, billet 2, récap commande).
  */
+function registerPdfFont(
+  doc: InstanceType<typeof PDFDocument>,
+  name: string,
+  buffer: Buffer | null,
+  fallback: string
+): string {
+  if (!buffer?.length) return fallback
+  try {
+    doc.registerFont(name, buffer)
+    return name
+  } catch {
+    return fallback
+  }
+}
+
 export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    // Improve compatibility with conservative PDF renderers (mail clients / previews).
-    const doc = new PDFDocument({ size: 'A4', margin: 40, pdfVersion: '1.4', compress: false })
-    const chunks: Buffer[] = []
-    const debugPdf = process.env.DEBUG_TICKET_PDF === '1'
-
-    doc.on('data', (chunk: Buffer) => chunks.push(chunk))
-    doc.on('end', () => {
-      const finalBuffer = Buffer.concat(chunks)
-      if (debugPdf) {
-        console.info('[ticket-pdf] generated', {
-          orderId: data.orderId,
-          heroImagePath,
-          hasHeroImage,
-          displayFontName,
-          textFontName,
-          sizeBytes: finalBuffer.length
-        })
-      }
-      resolve(finalBuffer)
-    })
-    doc.on('error', reject)
-
-    const pageWidth = doc.page.width - 80
-    const pageHeight = doc.page.height
-    const resolveFirstExistingPath = (candidates: string[]): string | null => {
-      for (const p of candidates) {
-        if (existsSync(p)) return p
-      }
-      return null
-    }
-    const heroImagePath = resolveFirstExistingPath([
-      join(process.cwd(), 'server', 'pdf-assets', '4.jpg'),
-      join(process.cwd(), '.output', 'server', 'pdf-assets', '4.jpg'),
-      join(process.cwd(), 'public', 'images', '4.jpg'),
-      join(process.cwd(), '.output', 'public', 'images', '4.jpg')
-    ])
-    const hasHeroImage = Boolean(heroImagePath)
-    const brandLogoPath = resolveFirstExistingPath([
-      join(process.cwd(), 'server', 'pdf-assets', 'brand-logo-light.png'),
-      join(process.cwd(), '.output', 'server', 'pdf-assets', 'brand-logo-light.png'),
-      join(process.cwd(), 'public', 'brand-logo-light.png'),
-      join(process.cwd(), '.output', 'public', 'brand-logo-light.png')
-    ])
-    const hasBrandLogo = Boolean(brandLogoPath)
-    const displayFontCandidates = [
-      join(process.cwd(), 'server', 'pdf-assets', 'title.ttf'),
-      join(process.cwd(), '.output', 'server', 'pdf-assets', 'title.ttf'),
-      join(process.cwd(), 'public', 'fonts', 'title.ttf'),
-      join(process.cwd(), '.output', 'public', 'fonts', 'title.ttf')
-    ]
-    const textFontCandidates = [
-      join(process.cwd(), 'server', 'pdf-assets', 'text.ttf'),
-      join(process.cwd(), '.output', 'server', 'pdf-assets', 'text.ttf'),
-      join(process.cwd(), 'public', 'fonts', 'text.ttf'),
-      join(process.cwd(), '.output', 'public', 'fonts', 'text.ttf')
-    ]
-    let displayFontName = 'Times-Bold'
-    let textFontName = 'Helvetica'
-    for (const fontPath of displayFontCandidates) {
-      if (!existsSync(fontPath)) continue
+    void (async () => {
       try {
-        doc.registerFont('display-font', fontPath)
-        displayFontName = 'display-font'
-        break
-      } catch {
-        // fallback to built-in font
+        await renderTicketPdf(data, resolve, reject)
+      } catch (err) {
+        reject(err)
       }
-    }
-    for (const fontPath of textFontCandidates) {
-      if (!existsSync(fontPath)) continue
-      try {
-        doc.registerFont('text-font', fontPath)
-        textFontName = 'text-font'
-        break
-      } catch {
-        // fallback to built-in font
-      }
-    }
+    })()
+  })
+}
+
+async function renderTicketPdf(
+  data: TicketPdfData,
+  resolve: (buffer: Buffer) => void,
+  reject: (err: unknown) => void
+) {
+  const [heroImageBuf, displayFontBuf, textFontBuf, brandLogoBuf] = await Promise.all([
+    loadPdfAssetBuffer(PDF_HERO_IMAGE),
+    loadPdfAssetBuffer(PDF_DISPLAY_FONT_FILE),
+    loadPdfAssetBuffer(PDF_TEXT_FONT_FILE),
+    loadPdfAssetBuffer(PDF_BRAND_LOGO_FILE)
+  ])
+
+  const heroImagePath = resolvePdfAssetPath(PDF_HERO_IMAGE)
+  const brandLogoPath = resolvePdfAssetPath(PDF_BRAND_LOGO_FILE)
+  const hasHeroImage = Boolean(heroImageBuf?.length || heroImagePath)
+  const hasBrandLogo = Boolean(brandLogoBuf?.length || brandLogoPath)
+
+  // Improve compatibility with conservative PDF renderers (mail clients / previews).
+  const doc = new PDFDocument({ size: 'A4', margin: 40, pdfVersion: '1.4', compress: false })
+  const chunks: Buffer[] = []
+  const debugPdf = process.env.DEBUG_TICKET_PDF === '1'
+
+  const displayFontName = registerPdfFont(doc, 'TicketDisplay', displayFontBuf, 'Times-Bold')
+  const textFontName = registerPdfFont(doc, 'TicketText', textFontBuf, 'Helvetica')
+
+  doc.on('data', (chunk: Buffer) => chunks.push(chunk))
+  doc.on('end', () => {
+    const finalBuffer = Buffer.concat(chunks)
     if (debugPdf) {
-      console.info('[ticket-pdf] assets resolved', {
+      console.info('[ticket-pdf] generated', {
         orderId: data.orderId,
         heroImagePath,
-        displayFontCandidates,
-        textFontCandidates,
+        hasHeroImage,
         displayFontName,
-        textFontName
+        textFontName,
+        sizeBytes: finalBuffer.length
       })
     }
+    resolve(finalBuffer)
+  })
+  doc.on('error', reject)
+
+  if (debugPdf) {
+    console.info('[ticket-pdf] assets resolved', {
+      orderId: data.orderId,
+      heroImagePath,
+      hasHeroImage,
+      hasDisplayFont: displayFontName === 'TicketDisplay',
+      hasTextFont: textFontName === 'TicketText',
+      displayFontName,
+      textFontName
+    })
+  }
+
+  const pageWidth = doc.page.width - 80
+  const pageHeight = doc.page.height
     const palette = {
       footerBg: '#1a1a2e',
       cardBg: '#ffffff',
@@ -155,14 +152,19 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
 
     function drawHeroBackgroundCover() {
       if (!hasHeroImage) return
-      const image = (doc as unknown as { openImage: (src: string) => { width?: number; height?: number } }).openImage(heroImagePath!)
+      const openImage = (doc as unknown as {
+        openImage: (src: string | Buffer) => { width?: number; height?: number }
+      }).openImage
+      const source = heroImageBuf?.length ? heroImageBuf : heroImagePath
+      if (!source) return
+      const image = openImage(source)
       if (!image?.width || !image?.height) return
       const scale = Math.max(doc.page.width / image.width, pageHeight / image.height)
       const drawWidth = image.width * scale
       const drawHeight = image.height * scale
       const x = (doc.page.width - drawWidth) / 2
       const y = (pageHeight - drawHeight) / 2
-      doc.image(heroImagePath!, x, y, { width: drawWidth, height: drawHeight })
+      doc.image(source, x, y, { width: drawWidth, height: drawHeight })
     }
 
     // —— Pages billets : 1 A4 par place (place, titulaire, type adulte/enfant) ——
@@ -175,13 +177,13 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
         ticket.ticketType === 'child' ? 'Enfant' : ticket.ticketType === 'adult' ? 'Adulte' : null
 
       drawHeroBackgroundCover()
-      doc.save().fillOpacity(0.78).rect(0, 0, doc.page.width, pageHeight).fill('#0f1726').restore()
+      doc.save().fillOpacity(0.62).rect(0, 0, doc.page.width, pageHeight).fill('#0f1726').restore()
 
       // Bandeau haut
       doc.rect(0, 0, doc.page.width, headerHeight).fill(palette.footerBg)
       doc
         .fillColor('#c9b896')
-        .font('Helvetica')
+        .font(textFontName)
         .fontSize(8)
         .text(brand.billetterieLabel.toUpperCase(), 40, 26, {
           align: 'center',
@@ -232,15 +234,22 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       doc.restore()
 
       if (hasBrandLogo) {
-        const limg = (
-          doc as unknown as { openImage: (path: string) => { width?: number; height?: number } }
-        ).openImage(brandLogoPath!)
-        if (limg?.width && limg?.height) {
-          const logoH = 40
-          const logoW = (limg.width / limg.height) * logoH
-          const lPadR = 20
-          const lPadT = 16
-          doc.image(brandLogoPath!, cardX + cardW - lPadR - logoW, cardY + lPadT, { height: logoH })
+        const logoSource = brandLogoBuf?.length ? brandLogoBuf : brandLogoPath
+        if (!logoSource) {
+          // skip
+        } else {
+          const limg = (
+            doc as unknown as {
+              openImage: (src: string | Buffer) => { width?: number; height?: number }
+            }
+          ).openImage(logoSource)
+          if (limg?.width && limg?.height) {
+            const logoH = 40
+            const logoW = (limg.width / limg.height) * logoH
+            const lPadR = 20
+            const lPadT = 16
+            doc.image(logoSource, cardX + cardW - lPadR - logoW, cardY + lPadT, { height: logoH })
+          }
         }
       }
 
@@ -330,7 +339,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
     doc.rect(0, 0, doc.page.width, headerHeight).fill(palette.footerBg)
     doc
       .fillColor('#c9b896')
-      .font('Helvetica')
+      .font(textFontName)
       .fontSize(8)
       .text(brand.billetterieLabel.toUpperCase(), 40, 26, {
         align: 'center',
@@ -480,6 +489,5 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       .font(textFontName)
       .text(pdfOrderRecapFooter(), 40, doc.y + 18, { align: 'center', width: pageWidth })
 
-    doc.end()
-  })
+  doc.end()
 }

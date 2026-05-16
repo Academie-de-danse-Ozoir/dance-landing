@@ -66,27 +66,29 @@
             {{ content.home.mapAndPricing.saleInfo.title }}
           </h3>
           <ul class="mapPricingSection__saleInfoList" role="list">
-            <template v-for="(line, i) in content.home.mapAndPricing.saleInfo.items" :key="i">
-              <li class="mapPricingSection__saleInfoItem">
-                <template v-for="(seg, j) in parseBoldSegments(line)" :key="j">
-                  <template v-for="(part, k) in seg.text.split('\n')" :key="`${j}-${k}`">
-                    <br v-if="k > 0" />
-                    <span v-if="seg.bold" class="mapPricingSection__hl">{{ part }}</span>
-                    <template v-else>{{ part }}</template>
-                  </template>
+            <li
+              v-for="(line, i) in content.home.mapAndPricing.saleInfo.items"
+              :key="i"
+              class="mapPricingSection__saleInfoItem"
+            >
+              <template v-for="(seg, j) in parseBoldSegments(line)" :key="j">
+                <template v-for="(part, k) in seg.text.split('\n')" :key="`${j}-${k}`">
+                  <br v-if="k > 0" />
+                  <span v-if="seg.bold" class="mapPricingSection__hl">{{ part }}</span>
+                  <template v-else>{{ part }}</template>
                 </template>
-              </li>
-              <li v-if="line.includes('17h')" class="mapPricingSection__saleInfoItem">
-                {{ content.home.practicalNotice.prefix }}
-                <button
-                  type="button"
-                  class="mapPricingSection__practicalLinkButton"
-                  @click="scrollToPracticalInfo"
-                >
-                  {{ content.home.practicalNotice.link }}
-                </button>
-              </li>
-            </template>
+              </template>
+            </li>
+            <li class="mapPricingSection__saleInfoItem">
+              {{ content.home.mapAndPricing.saleInfo.practicalNotice.prefix }}
+              <button
+                type="button"
+                class="mapPricingSection__practicalLinkButton"
+                @click="scrollToPracticalInfo"
+              >
+                {{ content.home.mapAndPricing.saleInfo.practicalNotice.link }}
+              </button>
+            </li>
           </ul>
         </article>
 
@@ -115,27 +117,6 @@
               <span class="mapPricingSection__legendBody">
                 <span class="mapPricingSection__legendTerm">{{ row.term }}</span>
                 <span class="mapPricingSection__legendDetail"> — {{ row.detail }}</span>
-              </span>
-            </li>
-          </ul>
-        </article>
-
-        <article class="mapPricingSection__card">
-          <h3 class="mapPricingSection__cardTitle">
-            {{ content.home.mapAndPricing.controls.title }}
-          </h3>
-          <ul class="mapPricingSection__controlList">
-            <li
-              v-for="(item, i) in content.home.mapAndPricing.controls.items"
-              :key="i"
-              class="mapPricingSection__controlItem"
-            >
-              <span class="mapPricingSection__controlLabel">{{ item.label }}</span>
-              <span class="mapPricingSection__controlText">
-                <span v-for="(seg, j) in parseBoldSegments(item.text)" :key="j">
-                  <span v-if="seg.bold" class="mapPricingSection__hl">{{ seg.text }}</span>
-                  <template v-else>{{ seg.text }}</template>
-                </span>
               </span>
             </li>
           </ul>
@@ -314,6 +295,7 @@ function scrollToPracticalInfo() {
   margin: 0;
   color: $color-text-secondary;
   @include apply-font(text-l);
+  display: none;
 
   @include media-down(md) {
     grid-template-columns: 1fr;
@@ -355,6 +337,7 @@ function scrollToPracticalInfo() {
 .mapPricingSection__lead {
   margin: 0 0 1.25rem 0;
   color: $color-text-secondary;
+  display: none;
   @include apply-font(text-sm-body);
 }
 
@@ -531,33 +514,6 @@ function scrollToPracticalInfo() {
   }
 }
 
-.mapPricingSection__controlList {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.mapPricingSection__controlItem {
-  margin-bottom: 1rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.mapPricingSection__controlLabel {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: color.mix($color-text-primary, $color-text-secondary, 58%);
-  @include apply-font(control-label);
-}
-
-.mapPricingSection__controlText {
-  display: block;
-  color: $color-text-secondary;
-  @include apply-font(text-sm-body-tight);
-}
-
 .mapPricingSection__limitHighlight {
   margin: 0 0 0.85rem 0;
   color: $color-text-secondary;
@@ -639,8 +595,7 @@ function scrollToPracticalInfo() {
   .mapPricingSection__saleInfoItem,
   .mapPricingSection__priceLabel,
   .mapPricingSection__legendItem,
-  .mapPricingSection__controlLabel,
-  .mapPricingSection__controlText,
+  .mapPricingSection__limitHighlight,
   .mapPricingSection__limitDetail,
   .mapPricingSection__pmrText,
   .mapPricingSection__pmrContact {

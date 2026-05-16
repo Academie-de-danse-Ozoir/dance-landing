@@ -12,6 +12,9 @@ export default defineNuxtConfig({
     '~/assets/styles/global/booking-order-actions.scss'
   ],
   vite: {
+    esbuild: {
+      drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : []
+    },
     css: {
       preprocessorOptions: {
         scss: {
@@ -136,6 +139,14 @@ export default defineNuxtConfig({
           "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://challenges.cloudflare.com https://www.google.com https://maps.google.com; form-action 'self' https://checkout.stripe.com; upgrade-insecure-requests"
       }
     }
+  },
+  nitro: {
+    serverAssets: [
+      {
+        baseName: 'pdf-assets',
+        dir: './server/pdf-assets'
+      }
+    ]
   },
   modules: ['@nuxtjs/supabase'],
   supabase: {

@@ -432,7 +432,8 @@ const formStep = ref<1 | 2>(1)
 const isSubmitting = ref(false)
 const isSavingContact = ref(false)
 const isCreatingHold = ref(false)
-let createHoldAbortController: AbortController | null = null
+/** Incrémenté à l’annulation pendant un hold en cours : invalide la réponse tardive et déclenche l’annulation serveur. */
+let holdCreationGeneration = 0
 
 /** Garde bandeau timer + props stables le temps du fade-out de la modale (évite saut de hauteur). */
 const keepModalChromeDuringLeave = ref(false)
@@ -525,6 +526,18 @@ watch(
 function getErrorMessage(err: unknown): string {
   const e = err as { data?: { statusMessage?: string; message?: string } }
   return e?.data?.statusMessage ?? e?.data?.message ?? content.home.errors.generic
+}
+
+/** Libère un hold créé côté serveur alors que l’utilisateur a déjà annulé (réponse API tardive). */
+async function releasePendingHold(orderId: string, orderToken: string) {
+  try {
+    await $fetch('/api/cancel-order', {
+      method: 'POST',
+      body: { orderId, orderToken, reason: CANCEL_REASON.USER }
+    })
+  } catch {
+    // Meilleur effort : éviter un siège bloqué sans commande active côté client.
+  }
 }
 
 const displayedSeatCount = computed(() => {
@@ -792,6 +805,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  holdCreationGeneration++
   if (resizeTimer) clearTimeout(resizeTimer)
   cancelModalCloseReset()
   unregisterBookingSnap?.()
@@ -866,20 +880,26 @@ async function openModal() {
   }
 
   if (!activeOrder.value) {
+    const creationGen = holdCreationGeneration
     suppressPageOrderAlert.value = true
     // Show the reservation popup immediately; keep hold creation in background.
     showModal.value = true
     isCreatingHold.value = true
     isSubmitting.value = true
     try {
-      createHoldAbortController = new AbortController()
       const seatIds = [...selectedSeatIds.value]
       const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
         method: 'POST',
-        body: { quick: true, seatIds },
-        signal: createHoldAbortController.signal
+        body: { quick: true, seatIds }
       })
-      activeOrder.value = {
+
+      if (creationGen !== holdCreationGeneration) {
+        await releasePendingHold(res.orderId, res.orderToken)
+        await loadSeats()
+        return
+      }
+
+      const pendingOrder: ActiveOrder = {
         orderId: res.orderId,
         orderToken: res.orderToken,
         expiresAt: res.expiresAt,
@@ -890,25 +910,24 @@ async function openModal() {
         contactComplete: false,
         ticketDetailsComplete: false
       }
-      localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(activeOrder.value))
+
+      if (creationGen !== holdCreationGeneration) {
+        await releasePendingHold(res.orderId, res.orderToken)
+        await loadSeats()
+        return
+      }
+
+      activeOrder.value = pendingOrder
+      localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(pendingOrder))
       startTimerFromExpiresAt(res.expiresAt)
       await loadSeats()
     } catch (err) {
-      const abortError =
-        typeof err === 'object' &&
-        err !== null &&
-        'name' in err &&
-        (err as { name?: string }).name === 'AbortError'
-      if (abortError) {
-        return
-      }
       error.value = getErrorMessage(err)
       showModal.value = false
       suppressPageOrderAlert.value = false
       return
     } finally {
       isCreatingHold.value = false
-      createHoldAbortController = null
       isSubmitting.value = false
     }
   }
@@ -935,18 +954,19 @@ function resumePaymentOrOpenModal() {
 }
 
 async function onCancelReservationFromModal() {
-  if (isCreatingHold.value) {
-    createHoldAbortController?.abort()
-    isCreatingHold.value = false
-    showModal.value = false
-    suppressPageOrderAlert.value = false
-    return
-  }
+  holdCreationGeneration++
+  isCreatingHold.value = false
+  showModal.value = false
+  suppressPageOrderAlert.value = false
+  keepModalChromeDuringLeave.value = false
+
   if (props.isAdminFreeBooking && !activeOrder.value) {
-    closeModal()
     return
   }
-  await cancelActiveOrder(CANCEL_REASON.USER)
+
+  if (activeOrder.value) {
+    await cancelActiveOrder(CANCEL_REASON.USER)
+  }
 }
 
 function closeModal() {

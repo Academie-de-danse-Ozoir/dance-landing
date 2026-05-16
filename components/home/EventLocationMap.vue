@@ -288,6 +288,10 @@ onUnmounted(() => {
 .eventLocation__parkingInfoList {
   margin: 0;
   padding: 0;
+
+  @include media-up(lg) {
+    max-width: 28rem;
+  }
 }
 
 .eventLocation__parkingInfoText {

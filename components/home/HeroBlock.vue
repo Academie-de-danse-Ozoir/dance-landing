@@ -49,7 +49,7 @@
         {{ subtitle }}
       </AnimatedTextElt>
       <div class="heroBlock__ctaWrapper">
-        <div class="heroBlock__ctaReveal" :class="{ 'heroBlock__ctaReveal--reveal': isCtaVisible }">
+        <!-- <div class="heroBlock__ctaReveal" :class="{ 'heroBlock__ctaReveal--reveal': isCtaVisible }">
           <button
             v-if="ctaBookingNow"
             type="button"
@@ -59,11 +59,8 @@
           >
             {{ ctaBookingNow }}
           </button>
-        </div>
-        <div
-          class="heroBlock__ctaReveal heroBlock__ctaReveal--late"
-          :class="{ 'heroBlock__ctaReveal--reveal': isCtaVisible }"
-        >
+        </div> -->
+        <div class="heroBlock__ctaReveal" :class="{ 'heroBlock__ctaReveal--reveal': isCtaVisible }">
           <button
             v-if="ctaScroll"
             type="button"

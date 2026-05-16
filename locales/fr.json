@@ -152,9 +152,9 @@
       "mapTitleAria": "Carte Google Maps indiquant l'emplacement du Théâtre de Yerres",
       "parkingInfoTitle": "Informations pratiques",
       "parkingInfoItems": [
-        "Prévoyez un délai suffisant pour le stationnement (pas de parking spécifiquement réservé pour la salle).",
-        "Le spectacle commencera à 17h impérativement. Vous ne pourrez plus accéder à la salle de spectacle passé 17h.",
-        "De nombreux parkings existent aux alentours. Voici une carte pour vous aider."
+        "Prévoyez un délai suffisant pour le stationnement. Il n'y pas de parking réservé spécifiquement pour le thêatre.",
+        "De nombreux parkings existent aux alentours. Voici une carte pour vous aider.",
+        "Le spectacle commencera à 17h. Vous ne pourrez plus accéder à la salle de spectacle passé ce délai."
       ],
       "parkingMapAlt": "Carte des parkings autour du Théâtre de Yerres"
     },
@@ -231,10 +231,6 @@
       "title": "Une soirée à vivre ensemble",
       "lead": "« Quand les tissus deviennent élégance » vous invite à découvrir un spectacle alliant danse classique et modern' jazz où la mode rencontre la danse ! Au fil de chorégraphies captivantes et pleines d'émotions, laissez-vous emporter dans les coulisses du monde de la couture et l'univers fascinant des défilés. Un lieu dans lequel l'élégance prend vie."
     },
-    "practicalNotice": {
-      "prefix": "Pour le stationnement ",
-      "link": "voir les informations pratiques"
-    },
     "highlights": {
       "sectionAria": "Informations sur le spectacle et la réservation",
       "rows": [
@@ -252,7 +248,7 @@
         },
         {
           "title": "Avant votre venue",
-          "text": "Pour rappel : l'ouverture des portes se fera à 16h15 et le lever de rideau à 17h. L'entrée sera interdite après le début du spectacle et aucune vente de billets ne s'effectuera sur place. Pour toute précision, contactez-nous sur : ",
+          "text": "L'ouverture des portes se fera à 16h15 et le lever de rideau à 17h. L'entrée sera interdite après le début du spectacle et aucune vente de billets ne s'effectuera sur place. Pour toute précision, contactez-nous sur : ",
           "textAfterEmail": "Nous vous répondons dans les meilleurs délais.",
           "billingEmailLink": true,
           "imageSide": "right",
@@ -276,14 +272,18 @@
       "saleInfo": {
         "title": "Infos vente",
         "items": [
+          "Lieu : **Théâtre de Yerres**.",
           "Représentation : **dimanche 21 juin 2026**",
           "Ouverture des portes à **16h15**.",
           "Lever de rideau à **17h**.",
           "Spectacle déconseillé aux enfants\n de moins de **4 ans**.",
           "Aucune entrée n’est autorisée une fois le spectacle commencé",
-          "Aucune vente de places sur place : réservation et paiement **uniquement en ligne** sur ce site.",
-          "Lieu : **Théâtre de Yerres**."
-        ]
+          "Aucune vente de places sur place : réservation et paiement **uniquement en ligne** sur ce site."
+        ],
+        "practicalNotice": {
+          "prefix": "Pour le stationnement ",
+          "link": "voir les informations pratiques"
+        }
       },
       "map": {
         "title": "Lire le plan interactif",
@@ -309,23 +309,6 @@
             "key": "paid",
             "term": "Indisponible",
             "detail": "Place vendue, bloquée pour la vente ou réservée au personnel."
-          }
-        ]
-      },
-      "controls": {
-        "title": "Contrôles du plan",
-        "items": [
-          {
-            "label": "Zoom",
-            "text": "Molette de la souris (souvent avec Ctrl sur PC), pincement à deux doigts sur écran tactile, ou boutons + et − sur le bord du plan."
-          },
-          {
-            "label": "Déplacement",
-            "text": "Clic ou appui maintenu, puis glisser sur la carte pour vous déplacer dans la salle sans changer le zoom."
-          },
-          {
-            "label": "Tout voir d’un coup",
-            "text": "Touche Échap ou 0 du clavier, ou le bouton de réinitialisation (par ex. « Tout afficher » ou icône ⟲) pour recadrer l’ensemble du plan."
           }
         ]
       },

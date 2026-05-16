@@ -14,40 +14,7 @@
           </template>
         </AnimatedTextElt>
         <AnimatedTextElt tag="p" class="altFeatures__text" :delay="0.06">
-          <template v-if="row.billingEmailLink && splitAtSurPlace(row.text).hasSplit">
-            {{ splitAtSurPlace(row.text).before }}
-            <br />
-            <span class="altFeatures__practicalNotice">
-              {{ practicalNoticePrefix }}
-              <UnderlineLink
-                class="altFeatures__emailLink"
-                href="#practical-info"
-                @click.prevent="scrollToPracticalInfo"
-              >
-                {{ practicalNoticeLink }}
-              </UnderlineLink>
-            </span>
-            <template v-if="splitAtSurPlace(row.text).after">
-              <br />
-              <br />
-              {{ splitAtSurPlace(row.text).after }}
-            </template>
-          </template>
-          <template v-else>{{ row.text }}</template>
-          <span
-            v-if="!row.billingEmailLink && row.text.includes('17h')"
-            class="altFeatures__practicalNotice"
-          >
-            <br />
-            {{ practicalNoticePrefix }}
-            <UnderlineLink
-              class="altFeatures__emailLink"
-              href="#practical-info"
-              @click.prevent="scrollToPracticalInfo"
-            >
-              {{ practicalNoticeLink }}
-            </UnderlineLink>
-          </span>
+          {{ row.text }}
           <template v-if="row.billingEmailLink">
             <UnderlineLink class="altFeatures__emailLink" :href="`mailto:${billingEmail}`">{{
               billingEmail
@@ -77,12 +44,10 @@ import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
 import content from '../../locales/fr.json'
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useLenis } from '../../composables/useLenis'
 
 const ROW_IMAGES = ['/images/3.jpg', '/images/10.jpg', '/images/6.jpg']
 
 const isDesktop = ref(true)
-const lenis = useLenis()
 
 onMounted(() => {
   const mq = window.matchMedia('(min-width: 1100px)')
@@ -108,31 +73,6 @@ defineProps<{
 }>()
 
 const billingEmail = content.brand.displayEmail
-const practicalNoticePrefix = content.home.practicalNotice.prefix
-const practicalNoticeLink = content.home.practicalNotice.link
-
-function splitAtSurPlace(text: string) {
-  const marker = 'sur place.'
-  const idx = text.indexOf(marker)
-  if (idx < 0) return { hasSplit: false, before: text, after: '' }
-  const cut = idx + marker.length
-  return {
-    hasSplit: true,
-    before: text.slice(0, cut),
-    after: text.slice(cut).trimStart()
-  }
-}
-
-function scrollToPracticalInfo() {
-  const practicalEl = document.getElementById('practical-info')
-  if (!practicalEl) return
-  const l = lenis.value
-  if (l) {
-    l.scrollTo(practicalEl, { offset: 0, immediate: false })
-  } else {
-    practicalEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-}
 </script>
 
 <style lang="scss" scoped>
@@ -170,6 +110,12 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
       grid-template-columns: #{$alt-features-visual-col} minmax(0, 1fr);
     }
   }
+
+  @media (min-width: 1920px) {
+    max-width: min(1560px, 92vw);
+    column-gap: clamp(140px, 12vw, 420px);
+    padding-inline: clamp(40px, 3vw, 72px);
+  }
 }
 
 .altFeatures__row--mediaLeft .altFeatures__copy {
@@ -180,10 +126,22 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   order: 1;
 }
 
+.altFeatures__copy {
+  @media (min-width: 1920px) {
+    min-width: min(34rem, 100%);
+  }
+}
+
 .altFeatures__title {
   margin: 0 0 16px 0;
   color: $color-text-primary;
+  max-width: min(16ch, 100%);
   @include apply-font(title-l);
+
+  @media (min-width: 1920px) {
+    max-width: min(20ch, 100%);
+    font-size: clamp(2.75rem, 2.8vw, 4.5rem);
+  }
 }
 
 .altFeatures__text {
@@ -217,12 +175,6 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
   white-space: nowrap;
 }
 
-.altFeatures__practicalNotice {
-  display: inline;
-  margin-top: 0;
-  white-space: nowrap;
-}
-
 .altFeatures__figure {
   margin: 0;
   min-width: 0;
@@ -250,7 +202,7 @@ $alt-features-column-gap-lg: clamp(120px, 18vw, 380px);
 
   .altFeatures__copy {
     width: 100%;
-    max-width: min(32rem, 100%);
+    max-width: min(33rem, 100%);
     margin: 0 auto;
   }
 
