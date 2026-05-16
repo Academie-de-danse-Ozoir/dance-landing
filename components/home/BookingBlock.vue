@@ -97,7 +97,7 @@
 
           <Transition name="errorFade">
             <div
-              v-if="error"
+              v-if="error && !adminBookingErrorHidden"
               key="booking-error"
               class="bookingBlock__alert bookingBlock__alert--danger"
             >
@@ -279,6 +279,8 @@ const bookingClosed = ref(false)
 const selectedSeatIds = ref<string[]>([])
 const selectionLimitMessage = ref<string | null>(null)
 const error = ref<string | null>(null)
+/** Empêche le rechargement temps réel d’invalider la sélection pendant la confirmation admin. */
+const adminConfirmInFlight = ref(false)
 
 const bookingInnerRef = ref<HTMLElement | null>(null)
 const seatMapSizerRef = ref<HTMLElement | null>(null)
@@ -536,8 +538,14 @@ watch(
 
 function getErrorMessage(err: unknown): string {
   const e = err as { data?: { statusMessage?: string; message?: string } }
-  return e?.data?.statusMessage ?? e?.data?.message ?? content.home.errors.generic
+  const msg = e?.data?.statusMessage ?? e?.data?.message ?? content.home.errors.generic
+  if (msg === content.api.errors.seatsUnavailable) {
+    return content.home.errors.seatsNotFreeAnymore
+  }
+  return msg
 }
+
+const adminBookingFetch = { credentials: 'include' as const }
 
 /** Libère un hold créé côté serveur alors que l’utilisateur a déjà annulé (réponse API tardive). */
 async function releasePendingHold(orderId: string, orderToken: string) {
@@ -570,6 +578,11 @@ const publicBookingClosed = computed(
   () => bookingClosed.value && !props.isAdminFreeBooking
 )
 
+/** Masque l’alerte sous le plan à l’étape 1 admin (évite un flash avant l’étape 2). */
+const adminBookingErrorHidden = computed(
+  () => props.isAdminFreeBooking && showModal.value && formStep.value === 1
+)
+
 function startTimerFromExpiresAt(expiresAt: string) {
   const t = new Date(expiresAt).getTime()
   timerHasExpired = false
@@ -587,14 +600,19 @@ async function loadSeats() {
     const data = await $fetch<SeatsApiPayload>('/api/seats')
     bookingClosed.value = data.event.bookingClosed
     seats.value = layoutYerresTheaterSeats(data.seats)
-    if (props.isAdminFreeBooking && selectedSeatIds.value.length > 0) {
+    if (
+      props.isAdminFreeBooking &&
+      selectedSeatIds.value.length > 0 &&
+      !adminConfirmInFlight.value &&
+      !isSubmitting.value
+    ) {
       const freeIdSet = new Set(seats.value.filter((s) => s.status === 'free').map((s) => s.id))
       const before = [...selectedSeatIds.value]
       const pruned = before.filter((id) => freeIdSet.has(id))
       if (pruned.length !== before.length) {
         selectedSeatIds.value = pruned
         selectionLimitMessage.value = null
-        if (showModal.value) {
+        if (showModal.value && pruned.length === 0) {
           adminDismissReservationModalForStaleSelection()
         }
       }
@@ -1060,13 +1078,6 @@ async function onFormNext() {
 
   if (props.isAdminFreeBooking) {
     error.value = null
-    try {
-      await loadSeats()
-    } catch {
-      error.value = content.api.errors.loadSeatsFailed
-      return
-    }
-    if (!showModal.value) return
     if (selectedSeatIds.value.length === 0) {
       error.value = content.home.errors.seatsNotFreeAnymore
       return
@@ -1138,17 +1149,9 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
     return
   }
 
-  await loadSeats()
-  const freeIdSet = new Set(seats.value.filter((s) => s.status === 'free').map((s) => s.id))
-  const allStillFree = seatIdsFromTickets.every((id) => freeIdSet.has(id))
-  if (!allStillFree) {
-    error.value = content.home.errors.seatsNotFreeAnymore
-    selectedSeatIds.value = seatIdsFromTickets.filter((id) => freeIdSet.has(id))
-    return
-  }
-
   const seatIds = seatIdsFromTickets
 
+  adminConfirmInFlight.value = true
   isSubmitting.value = true
   isCreatingHold.value = true
   error.value = null
@@ -1157,7 +1160,8 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
   try {
     const res = await $fetch<HoldSeatsResponse>('/api/hold-seats', {
       method: 'POST',
-      body: { quick: true, seatIds }
+      body: { quick: true, seatIds },
+      ...adminBookingFetch
     })
     orderIdCancel = res.orderId
     orderTokenCancel = res.orderToken
@@ -1171,7 +1175,8 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
         lastName: payload.form.lastName.trim(),
         email: payload.form.email.trim(),
         phone: payload.form.phone.replace(/\D/g, '')
-      }
+      },
+      ...adminBookingFetch
     })
 
     await $fetch('/api/order-ticket-details', {
@@ -1185,7 +1190,8 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
           lastName: t.lastName.trim(),
           ticketType: t.ticketType
         }))
-      }
+      },
+      ...adminBookingFetch
     })
 
     await $fetch('/api/admin/complete-free-order', {
@@ -1196,7 +1202,7 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
         adultCount,
         childCount
       },
-      credentials: 'include'
+      ...adminBookingFetch
     })
 
     const rid = res.orderId
@@ -1218,7 +1224,8 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
             orderId: orderIdCancel,
             orderToken: orderTokenCancel,
             reason: CANCEL_REASON.USER
-          }
+          },
+          ...adminBookingFetch
         })
       } catch {
         // ignore
@@ -1227,6 +1234,7 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
     }
     error.value = getErrorMessage(err)
   } finally {
+    adminConfirmInFlight.value = false
     isCreatingHold.value = false
     isSubmitting.value = false
   }

@@ -11,6 +11,7 @@ import { tApiError } from '../../locales/frDisplay'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 import { isValidEmail, isValidPersonName } from '../utils/inputValidation'
 import { assertBookingOpenForRequest, getEventBookingState } from '../utils/eventBooking'
+import { reservationBlocksSeatId } from '../utils/seatAvailability'
 
 function trimStr(s: unknown, max: number): string {
   const str = typeof s === 'string' ? s.trim() : ''
@@ -74,12 +75,17 @@ export default defineEventHandler(async (event) => {
 
   const { data: blockingReservations } = await supabaseAdmin
     .from('seat_reservation')
-    .select('seat_id')
+    .select('seat_id, status, expires_at')
     .eq('event_id', EVENT_ID)
     .in('seat_id', uniqueSeatIds)
     .in('status', [SEAT_STATUS.HOLD, SEAT_STATUS.PAID])
 
-  if (blockingReservations && blockingReservations.length > 0) {
+  const now = Date.now()
+  const hasBlocking = uniqueSeatIds.some((seatId) =>
+    reservationBlocksSeatId(blockingReservations ?? [], seatId, now)
+  )
+
+  if (hasBlocking) {
     throw createError({
       statusCode: 409,
       statusMessage: tApiError('seatsUnavailable')

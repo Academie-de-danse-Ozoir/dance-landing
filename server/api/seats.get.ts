@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { EVENT_ID, SEAT_STATUS } from '../../constants'
 import { tApiError } from '../../locales/frDisplay'
 import { getEventBookingState } from '../utils/eventBooking'
+import { isReservationBlockingSeat } from '../utils/seatAvailability'
 
 type SeatStatus = 'free' | 'hold' | 'paid' | 'staff'
 
@@ -21,7 +22,7 @@ export default defineEventHandler(async () => {
 
   const { data: reservations, error: resError } = await supabaseAdmin
     .from('seat_reservation')
-    .select('seat_id, status')
+    .select('seat_id, status, expires_at')
     .eq('event_id', EVENT_ID)
     .in('status', [SEAT_STATUS.HOLD, SEAT_STATUS.PAID])
 
@@ -32,11 +33,13 @@ export default defineEventHandler(async () => {
     })
   }
 
+  const now = Date.now()
   const reservationMap = new Map<string, SeatStatus>()
 
-  reservations.forEach((r) => {
-    reservationMap.set(r.seat_id, r.status)
-  })
+  for (const r of reservations ?? []) {
+    if (!isReservationBlockingSeat(r, now)) continue
+    reservationMap.set(r.seat_id, r.status as SeatStatus)
+  }
 
   const seatList = seats.map((seat) => {
     const row = seat as { id: string; label: string; reserved_for_staff?: boolean }
