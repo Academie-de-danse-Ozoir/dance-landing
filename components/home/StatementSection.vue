@@ -1,5 +1,10 @@
 <template>
-  <section class="statementSection" aria-labelledby="statementSectionTitle">
+  <section
+    id="statement-section"
+    ref="sectionRef"
+    class="statementSection"
+    aria-labelledby="statementSectionTitle"
+  >
     <ParallaxMediaElt
       :key="posterSrc"
       class="statementSection__bg"
@@ -31,6 +36,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import AnimatedTextElt from '../elements/AnimatedTextElt.vue'
 import ParallaxMediaElt from '../elements/ParallaxMediaElt.vue'
+import { useStatementLogoTrigger } from '../../composables/useStatementLogoTrigger'
 
 const POSTER_LANDSCAPE = '/images/affiche.jpg'
 const POSTER_PORTRAIT = '/images/affiche_vertical.jpg'
@@ -42,6 +48,9 @@ defineProps<{
 }>()
 
 const posterSrc = ref(POSTER_LANDSCAPE)
+const sectionRef = ref<HTMLElement | null>(null)
+
+useStatementLogoTrigger(sectionRef)
 
 function updatePosterSrc() {
   if (import.meta.server) return

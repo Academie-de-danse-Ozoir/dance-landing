@@ -1,4 +1,21 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import fr from './locales/fr.json'
+
+const siteUrl = (
+  process.env.NUXT_PUBLIC_SITE_URL ||
+  process.env.PUBLIC_SITE_URL ||
+  'http://localhost:3000'
+).replace(/\/$/, '')
+
+function absolutePublicUrl(path: string) {
+  const normalized = path.startsWith('/') ? path : `/${path}`
+  return `${siteUrl}${normalized}`
+}
+
+const shareTitle = "Billetterie officielle - Spectacle de l'Academie de Danse d'Ozoir"
+const shareDescription = fr.home.statement.lead
+const shareImage = absolutePublicUrl('/images/affiche.jpg')
+const shareImageAlt = fr.home.statement.title
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -34,8 +51,7 @@ export default defineNuxtConfig({
       meta: [
         {
           name: 'description',
-          content:
-            "Billetterie officielle du Spectacle de l'Academie de Danse d'Ozoir au Theatre de Yerres, le dimanche 21 juin 2026."
+          content: shareDescription
         },
         {
           name: 'theme-color',
@@ -58,21 +74,32 @@ export default defineNuxtConfig({
           content: "Academie de Danse d'Ozoir"
         },
         {
+          property: 'og:url',
+          content: siteUrl
+        },
+        {
           property: 'og:title',
-          content: "Billetterie officielle - Spectacle de l'Academie de Danse d'Ozoir"
+          content: shareTitle
         },
         {
           property: 'og:description',
-          content:
-            "Reservez vos places pour le spectacle de l'Academie de Danse d'Ozoir au Theatre de Yerres."
+          content: shareDescription
         },
         {
           property: 'og:image',
-          content: '/images/parking.jpg'
+          content: shareImage
+        },
+        {
+          property: 'og:image:secure_url',
+          content: shareImage
+        },
+        {
+          property: 'og:image:type',
+          content: 'image/jpeg'
         },
         {
           property: 'og:image:alt',
-          content: 'Carte des parkings autour du Theatre de Yerres'
+          content: shareImageAlt
         },
         {
           name: 'twitter:card',
@@ -80,16 +107,19 @@ export default defineNuxtConfig({
         },
         {
           name: 'twitter:title',
-          content: "Billetterie officielle - Spectacle de l'Academie de Danse d'Ozoir"
+          content: shareTitle
         },
         {
           name: 'twitter:description',
-          content:
-            "Reservez vos places pour le spectacle de l'Academie de Danse d'Ozoir au Theatre de Yerres."
+          content: shareDescription
         },
         {
           name: 'twitter:image',
-          content: '/images/parking.jpg'
+          content: shareImage
+        },
+        {
+          name: 'twitter:image:alt',
+          content: shareImageAlt
         }
       ],
       link: [

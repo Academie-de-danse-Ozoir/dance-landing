@@ -36,6 +36,18 @@ export const NARROW_VIEWPORT_MAX_WIDTH_PX = 1025
 /** `matchMedia` partagée pour tout le front (équivalent à `max-width: NARROW_VIEWPORT_MAX_WIDTH_PX`). */
 export const NARROW_VIEWPORT_MQ = `(max-width: ${NARROW_VIEWPORT_MAX_WIDTH_PX}px)`
 
+/** Pages légales (CGV, mentions, confidentialité). */
+export const LEGAL_PAGE_PATHS = [
+  '/cgv',
+  '/mentions-legales',
+  '/politique-confidentialite'
+] as const
+
+export function isLegalPagePath(path: string): boolean {
+  const normalized = path.replace(/\/$/, '') || '/'
+  return (LEGAL_PAGE_PATHS as readonly string[]).includes(normalized)
+}
+
 /** Footer « Choisir mes places » depuis une autre page : après `router.push('/')`, scroll ici. */
 export const PENDING_SCROLL_TO_SEATS_KEY = 'billetterie:pending-seat-scroll'
 

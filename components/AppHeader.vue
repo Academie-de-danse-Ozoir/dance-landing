@@ -1,50 +1,74 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute, navigateTo } from '#app'
+import { useRoute, useRouter, navigateTo } from '#app'
 import AppBrandLogoMark from './AppBrandLogoMark.vue'
+import { useStatementLogoZone } from '~/composables/useStatementLogoZone'
+import { isLegalPagePath, NARROW_VIEWPORT_MQ } from '~/constants'
+
+/** Aligné sur `page-transitions.scss` et `router.options.ts`. */
+const PAGE_TRANSITION_MS = 600
 
 const route = useRoute()
-const { isRevealed } = useAppLoader()
+const router = useRouter()
+const statementInView = useStatementLogoZone()
+const isNarrow = ref(false)
 const isScrolled = ref(false)
 const isVisible = ref(true)
-let lastScrollY = 0
-
-// État de la variante du logo synchronisé avec la transition
+const mobileLogoVisible = ref(true)
 const currentLogoVariant = ref<'light' | 'dark'>('light')
+let lastScrollY = 0
+let mobileFadeInTimer: ReturnType<typeof setTimeout> | null = null
 
-// On détecte si on est sur une page légale
-const isLegalPage = computed(() => {
-  const legalPaths = ['/cgv', '/mentions-legales', '/politique-confidentialite']
-  return legalPaths.includes(route.path)
-})
+const isLegalPage = computed(() => isLegalPagePath(route.path))
 
-/** Met à jour la variante du logo (immédiat pour scroll, différé pour route) */
+/** Mobile : toujours clair. Desktop : selon scroll / statement / légal. */
+const logoVariant = computed<'light' | 'dark'>(() =>
+  isNarrow.value ? 'light' : currentLogoVariant.value
+)
+
+const mobileLogoHidden = computed(
+  () => isNarrow.value && (!mobileLogoVisible.value || isLegalPage.value)
+)
+
 function syncLogoVariant(immediate = false) {
-  const nextVariant = isScrolled.value || isLegalPage.value ? 'dark' : 'light'
+  if (isNarrow.value) {
+    currentLogoVariant.value = 'light'
+    return
+  }
+
+  let nextVariant: 'light' | 'dark' = 'light'
+  if (isLegalPage.value) {
+    nextVariant = 'dark'
+  } else if (statementInView.value) {
+    nextVariant = 'light'
+  } else if (isScrolled.value) {
+    nextVariant = 'dark'
+  }
 
   if (immediate) {
     currentLogoVariant.value = nextVariant
   } else {
-    // On attend le "point mort" de la transition de page (0.6s / 2)
     setTimeout(() => {
       currentLogoVariant.value = nextVariant
     }, 300)
   }
 }
 
+function applyMobileLogoAfterNav() {
+  mobileLogoVisible.value = !isLegalPage.value
+}
+
 function handleScroll() {
   const currentScrollY = window.scrollY
   const isLargeScreen = typeof window !== 'undefined' && window.innerWidth >= 1025
 
-  // 1. Logique de variante (Lumière / Sombre)
   const oldScrolled = isScrolled.value
   isScrolled.value = currentScrollY > window.innerHeight * 0.94
 
-  if (oldScrolled !== isScrolled.value) {
+  if (!isNarrow.value && oldScrolled !== isScrolled.value) {
     syncLogoVariant(true)
   }
 
-  // 2. Logique de Visibilité (Apparition / Disparition)
   if (isLargeScreen || currentScrollY < 100) {
     isVisible.value = true
   } else {
@@ -59,25 +83,80 @@ function goHome() {
   void navigateTo('/')
 }
 
-// Suivi de la route pour le logo et la croix
 watch(
   () => route.path,
   () => {
-    syncLogoVariant(false)
+    if (isNarrow.value) return
+    syncLogoVariant(isLegalPage.value)
   }
 )
+
+watch(statementInView, () => {
+  if (isNarrow.value) return
+  syncLogoVariant(true)
+})
+
+let removeBeforeEach: (() => void) | undefined
+let removeAfterEach: (() => void) | undefined
+let removeMqListener: (() => void) | undefined
 
 onMounted(() => {
   lastScrollY = window.scrollY
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('resize', handleScroll, { passive: true })
-  syncLogoVariant(true) // Initial
+
+  const mq = window.matchMedia(NARROW_VIEWPORT_MQ)
+  const syncNarrow = () => {
+    isNarrow.value = mq.matches
+    if (mq.matches) {
+      currentLogoVariant.value = 'light'
+      applyMobileLogoAfterNav()
+    } else {
+      syncLogoVariant(true)
+    }
+  }
+  syncNarrow()
+  mq.addEventListener('change', syncNarrow)
+  removeMqListener = () => mq.removeEventListener('change', syncNarrow)
+
+  removeBeforeEach = router.beforeEach((to, from) => {
+    if (to.path === from.path) return
+    if (!mq.matches) return
+    if (mobileFadeInTimer) {
+      clearTimeout(mobileFadeInTimer)
+      mobileFadeInTimer = null
+    }
+    mobileLogoVisible.value = false
+  })
+
+  removeAfterEach = router.afterEach(() => {
+    if (!mq.matches) {
+      syncLogoVariant(true)
+      return
+    }
+    isVisible.value = true
+    lastScrollY = 0
+    isScrolled.value = false
+    currentLogoVariant.value = 'light'
+
+    if (mobileFadeInTimer) clearTimeout(mobileFadeInTimer)
+    mobileFadeInTimer = setTimeout(() => {
+      applyMobileLogoAfterNav()
+      mobileFadeInTimer = null
+    }, PAGE_TRANSITION_MS)
+  })
+
+  syncLogoVariant(true)
   handleScroll()
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('resize', handleScroll)
+  removeBeforeEach?.()
+  removeAfterEach?.()
+  removeMqListener?.()
+  if (mobileFadeInTimer) clearTimeout(mobileFadeInTimer)
 })
 </script>
 
@@ -92,14 +171,19 @@ onUnmounted(() => {
   >
     <div class="appHeader__inner">
       <AppBrandLogoMark
-        :variant="currentLogoVariant"
+        :variant="logoVariant"
         :is-static="route.path === '/'"
-        :extra-hit-class="['appHeader__logo', { 'appHeader__logo--static': route.path === '/' }]"
+        :extra-hit-class="[
+          'appHeader__logo',
+          {
+            'appHeader__logo--static': route.path === '/',
+            'appHeader__logo--mobileHidden': mobileLogoHidden
+          }
+        ]"
         aria-label="Retour à l'accueil"
         @activate="goHome"
       />
 
-      <!-- Bouton Croix (Fermer) à droite — Uniquement pages légales -->
       <Transition name="closeBtn">
         <button
           v-if="isLegalPage"
@@ -146,17 +230,15 @@ onUnmounted(() => {
     left: 0;
     right: 0;
     width: 100%;
-    /* On mobile/tablette, le header vit dans la page : pas de hide/show lié au scroll. */
     transform: none !important;
   }
 }
 
 .appHeader__inner {
-  // Padding identique en haut et à gauche pour l'équilibre
   padding: clamp(20px, 4vw, 36px);
   display: flex;
   align-items: center;
-  justify-content: space-between; // Pour séparer Logo et Croix
+  justify-content: space-between;
 }
 
 :deep(.appHeader__logo),
@@ -170,12 +252,30 @@ onUnmounted(() => {
     transform 0.3s ease,
     opacity 0.2s ease;
   -webkit-tap-highlight-color: transparent;
+
+  @include media-down(lg) {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+:deep(.appHeader__logo--mobileHidden) {
+  @include media-down(lg) {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 :deep(.appHeader__logo--static) {
   cursor: default;
   pointer-events: none;
-  transition: none;
+
+  @include media-up(lg) {
+    transition: none;
+  }
 
   &:active {
     transform: none;
@@ -206,7 +306,6 @@ onUnmounted(() => {
   opacity: 0.8;
 }
 
-// Transition du bouton fermer
 .closeBtn-enter-active {
   transition:
     opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
@@ -231,7 +330,7 @@ onUnmounted(() => {
   height: 44px;
   background: white;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 4px; // Maximum 4px comme les autres boutons
+  border-radius: 4px;
   color: #1a1a1a;
   display: flex;
   align-items: center;

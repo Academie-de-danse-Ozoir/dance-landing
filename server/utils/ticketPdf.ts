@@ -122,6 +122,8 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
           ? data.tickets
           : data.seatLabels.map((seatLabel) => ({ seatLabel }) as TicketPdfTicket)
       const headerHeight = 102
+      /** Position verticale du haut de la carte billet (sous le bandeau titre). */
+      const ticketCardTopY = 350
 
       function drawHeroBackgroundCover() {
         doc.image(heroImage, 0, 0, {
@@ -141,7 +143,12 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
           ticket.ticketType === 'child' ? 'Enfant' : ticket.ticketType === 'adult' ? 'Adulte' : null
 
         drawHeroBackgroundCover()
-        doc.save().fillOpacity(0.55).rect(0, 0, doc.page.width, pageHeight).fill('#0f1726').restore()
+        doc
+          .save()
+          .fillOpacity(0.55)
+          .rect(0, 0, doc.page.width, pageHeight)
+          .fill('#0f1726')
+          .restore()
 
         doc.rect(0, 0, doc.page.width, headerHeight).fill(palette.footerBg)
         doc
@@ -159,10 +166,10 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
           .font(displayFontName)
           .text(brand.spectacleName, 40, 46, { align: 'center', width: pageWidth })
 
-        doc.y = 142
+        doc.y = ticketCardTopY
 
         const cardX = 40
-        const cardY = doc.y
+        const cardY = ticketCardTopY
         const cardW = pageWidth
         const placeSeatFontSize = 40
         const cardBaseHeight = 292
@@ -199,7 +206,10 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
           const lPadR = 20
           const lPadT = 16
           const logoMeta = doc.openImage(brandLogo)
-          const logoW = logoMeta?.width && logoMeta?.height ? (logoMeta.width / logoMeta.height) * logoH : logoH * 2
+          const logoW =
+            logoMeta?.width && logoMeta?.height
+              ? (logoMeta.width / logoMeta.height) * logoH
+              : logoH * 2
           doc.image(brandLogo, cardX + cardW - lPadR - logoW, cardY + lPadT, { height: logoH })
         }
 
@@ -359,7 +369,8 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
         recapY += 20
         ticketList.forEach((t) => {
           const name = [t.firstName, t.lastName].filter(Boolean).join(' ') || '—'
-          const type = t.ticketType === 'child' ? 'Enfant' : t.ticketType === 'adult' ? 'Adulte' : '—'
+          const type =
+            t.ticketType === 'child' ? 'Enfant' : t.ticketType === 'adult' ? 'Adulte' : '—'
           valueStyle()
           doc.text(`${t.seatLabel} : ${name} (${type})`, recapX, recapY)
           recapY += 20

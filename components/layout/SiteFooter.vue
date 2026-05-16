@@ -24,13 +24,26 @@
       </nav>
 
       <div class="siteFooter__bottom">
-        <p class="bottom__venue">
-          {{ content.brand.eventVenue }} · {{ content.brand.eventDate }}<br />
-          {{ content.brand.eventTimes }}
-        </p>
-        <p class="bottom__copy">
-          <span class="bottom__copyPrefix">{{ copyrightPrefix }}</span>
-          <span class="bottom__copyRights">{{ copyrightRights }}</span>
+        <div class="bottom__main">
+          <p class="bottom__venue">
+            {{ content.brand.eventVenue }} · {{ content.brand.eventDate }}<br />
+            {{ content.brand.eventTimes }}
+          </p>
+          <p class="bottom__copy">
+            <span class="bottom__copyPrefix">{{ copyrightPrefix }}</span>
+            <span class="bottom__copyRights">{{ copyrightRights }}</span>
+          </p>
+        </div>
+        <p class="bottom__credit">
+          {{ content.footer.creditPrefix }}
+          <UnderlineLink
+            href="https://x.com/LecornuThoma"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="bottom__creditLink"
+          >
+            {{ content.footer.creditName }}
+          </UnderlineLink>
         </p>
       </div>
     </div>
@@ -41,6 +54,7 @@
 import { computed } from 'vue'
 import content from '~/locales/fr.json'
 import FooterLinkColumn from '~/components/layout/FooterLinkColumn.vue'
+import UnderlineLink from '~/components/buttons/UnderlineLink.vue'
 
 const bookingLinks = [
   { to: '/', label: content.footer.links.home, sameAsHomeScroll: true },
@@ -154,10 +168,19 @@ const copyrightRights = computed(() => 'Tous droits réservés.')
 }
 
 .siteFooter__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   @include apply-font(footer-tagline);
   color: rgba(255, 255, 255, 0.5);
+
+  .bottom__main {
+    min-width: 0;
+  }
 
   .bottom__copy {
     margin: 8px 0 0 0;
@@ -166,6 +189,17 @@ const copyrightRights = computed(() => 'Tous droits réservés.')
   .bottom__venue {
     margin: 0;
     line-height: 1.5;
+  }
+
+  .bottom__credit {
+    margin: 0;
+    margin-left: auto;
+    text-align: right;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .bottom__creditLink {
+    color: rgba(255, 255, 255, 0.72);
   }
 }
 
@@ -176,6 +210,20 @@ const copyrightRights = computed(() => 'Tous droits réservés.')
 
   .siteFooter__mapCol {
     justify-self: stretch;
+  }
+}
+
+@include media-down(lg) {
+  .siteFooter__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .bottom__credit {
+      margin-left: 0;
+      margin-top: 28px;
+      text-align: left;
+      width: 100%;
+    }
   }
 }
 
@@ -201,6 +249,10 @@ const copyrightRights = computed(() => 'Tous droits réservés.')
     .bottom__copyRights {
       display: block;
     }
+  }
+
+  .siteFooter__bottom .bottom__credit {
+    margin-top: 36px;
   }
 }
 </style>

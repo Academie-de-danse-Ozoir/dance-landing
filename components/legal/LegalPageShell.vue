@@ -24,7 +24,12 @@ import SiteFooter from '~/components/layout/SiteFooter.vue'
 }
 
 .legalPage__inner {
-  padding-top: clamp(100px, 14vh, 160px); // Évite le chevauchement avec le logo fixe
+  padding-top: clamp(100px, 14vh, 160px);
+
+  @include media-down(lg) {
+    /* Mobile : pas de logo, seulement le bouton fermer en haut à droite */
+    padding-top: clamp(72px, 12vh, 96px);
+  }
   padding-left: clamp(20px, 4vw, 36px);
   padding-right: clamp(20px, 4vw, 36px);
   flex: 1 0 auto;

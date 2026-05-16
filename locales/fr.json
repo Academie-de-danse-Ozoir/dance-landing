@@ -343,6 +343,8 @@
     "tagline": "Billetterie en direct pour le Spectacle de Danse d'Ozoir (Théâtre de Yerres) — réservation encadrée, paiement en ligne sécurisé, confirmation et billets par email.",
     "navAria": "Pied de page",
     "copyright": "© {year} — Spectacle de Danse d’Ozoir. Tous droits réservés.",
+    "creditPrefix": "dev with ♥ by ",
+    "creditName": "Thoma Lecornu",
     "columns": {
       "bookingTitle": "Réservation",
       "legalTitle": "Informations légales",
