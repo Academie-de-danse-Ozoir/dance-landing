@@ -27,7 +27,8 @@ const t = fr.backoffice
 
 definePageMeta({
   ssr: false,
-  layout: false,
+  layout: 'admin',
+  pageTransition: { name: 'page-opacity', mode: 'out-in' },
   head: { meta: [{ name: 'robots', content: 'noindex, nofollow' }] }
 })
 

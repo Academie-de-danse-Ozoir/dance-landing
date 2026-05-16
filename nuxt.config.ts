@@ -40,9 +40,10 @@ export default defineNuxtConfig({
       }
     }
   },
-  /* Transition sur NuxtPage (évite le flash : le <slot> du layout ne duplique pas l’ancienne page). */
+  /* Transitions page + layout (même fade — ex. /admin → accueil). */
   app: {
     pageTransition: { name: 'page-opacity', mode: 'out-in' },
+    layoutTransition: { name: 'page-opacity', mode: 'out-in' },
     head: {
       htmlAttrs: {
         lang: 'fr'

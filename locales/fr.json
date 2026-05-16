@@ -35,6 +35,19 @@
       "loadEventFailed": "Impossible de charger les informations du spectacle."
     }
   },
+  "errors": {
+    "notFound": {
+      "code": "404",
+      "title": "Page introuvable",
+      "description": "La page que vous cherchez n'existe pas <br> ou n'est plus disponible.",
+      "ctaHome": "Retour à l'accueil"
+    },
+    "generic": {
+      "title": "Une erreur est survenue",
+      "description": "Un problème est survenu. Vous pouvez revenir à l'accueil du site.",
+      "ctaHome": "Retour à l'accueil"
+    }
+  },
   "brand": {
     "eventDate": "Dimanche 21 juin 2026",
     "eventTimes": "Ouverture des portes à 16h15, lever de rideau à 17h",
