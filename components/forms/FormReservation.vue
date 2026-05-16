@@ -13,7 +13,7 @@
       >
         <Transition name="formReservationBanner">
           <div
-            v-if="showReservationTimer || isCreatingHold"
+            v-if="!isAdminFreeMode && (showReservationTimer || isCreatingHold)"
             key="reservation-timer"
             class="formReservation__timer"
             role="status"

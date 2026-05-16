@@ -32,7 +32,10 @@ import {
   appendPaidPaymentRowToGoogleSheetIfConfigured,
   buildGoogleSheetsRegisterUrl
 } from './googleSheetsAppendOrder'
-import { sendAdminNewOrderNotificationIfConfigured } from './sendAdminNewOrderNotification'
+import {
+  ADMIN_ORDER_NOTIFICATION_EMAIL,
+  sendAdminNewOrderNotificationIfConfigured
+} from './sendAdminNewOrderNotification'
 import { formatFrenchPhoneForDisplay } from '../../utils/phoneInput'
 
 const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ_APIKEY_PRIVATE!)
@@ -72,6 +75,29 @@ function orderRefShort(orderId: string): string {
   return first && first.length >= 8 ? first : orderId.slice(0, 8)
 }
 
+function sanitizePdfFilenamePart(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[/\\?%*:|"<>]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Pièce jointe admin : « Nom Prénom.pdf » (contact commande), repli sur billets-{orderId}. */
+function buildAdminTicketPdfFilename(
+  firstName: string | null,
+  lastName: string | null,
+  orderId: string
+): string {
+  const nom = sanitizePdfFilenamePart(lastName ?? '')
+  const prenom = sanitizePdfFilenamePart(firstName ?? '')
+  if (nom && prenom) return `${nom} ${prenom}.pdf`
+  if (nom) return `${nom}.pdf`
+  if (prenom) return `${prenom}.pdf`
+  return `billets-${orderId}.pdf`
+}
+
 type OrderEmailRow = {
   id: string
   status: string
@@ -94,9 +120,21 @@ type PaymentEmailDetails = {
   paymentStatus: string
 }
 
-async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
+type SendTicketEmailOverrides = {
+  toEmail?: string
+  pdfFilename?: string
+  mailjetCustomId?: string
+}
+
+async function sendTicketEmail(
+  data: TicketEmailData,
+  pdfBuffer?: Buffer,
+  overrides?: SendTicketEmailOverrides
+) {
   const ref = orderRefShort(data.orderId)
-  void ref
+  const toEmail = overrides?.toEmail?.trim() || data.customerEmail
+  const pdfFilename = overrides?.pdfFilename ?? `billets-${data.orderId}.pdf`
+  const customId = overrides?.mailjetCustomId ?? data.orderId
 
   const logoBase64 = await readEmailFooterLogoBase64()
   const html = buildTicketEmailHtml(
@@ -107,17 +145,17 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
       Email: brand.senderEmail,
       Name: billetterieSenderName()
     },
-    To: [{ Email: data.customerEmail }],
+    To: [{ Email: toEmail }],
     Subject: emailTicketSubject(ref),
     HTMLPart: html,
     /** Mailjet : traçabilité ; un envoi par commande (pas de fusion avec un autre achat). */
-    CustomID: data.orderId
+    CustomID: customId
   }
   const attachments: Record<string, string>[] = []
   if (pdfBuffer && pdfBuffer.length > 0) {
     attachments.push({
       ContentType: 'application/pdf',
-      Filename: `billets-${data.orderId}.pdf`,
+      Filename: pdfFilename,
       Base64Content: pdfBuffer.toString('base64')
     })
   }
@@ -451,6 +489,19 @@ async function completePaidOrderTicketDelivery(
   }
 
   await sendTicketEmail(emailData, pdfBuffer)
+
+  try {
+    await sendTicketEmail(emailData, pdfBuffer, {
+      toEmail: ADMIN_ORDER_NOTIFICATION_EMAIL,
+      pdfFilename: buildAdminTicketPdfFilename(firstName, lastName, order.id),
+      mailjetCustomId: `admin-tickets-${order.id}`
+    })
+  } catch (adminMailErr) {
+    console.error('[paid-order-ticket-email] Admin ticket email duplicate failed', {
+      orderId: order.id,
+      error: adminMailErr instanceof Error ? adminMailErr.message : adminMailErr
+    })
+  }
 
   const registerUrl = buildGoogleSheetsRegisterUrl()
   const phoneForSheets = formatFrenchPhoneForDisplay(order.phone) || order.phone?.trim() || ''

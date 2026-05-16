@@ -120,9 +120,11 @@
           :touched="touched"
           :is-submitting="isSubmitting"
           :is-saving-contact="isSavingContact"
-          :is-creating-hold="isCreatingHold"
+          :is-creating-hold="!isAdminFreeBooking && isCreatingHold"
           :show-reservation-timer="
-            !isAdminFreeBooking && !!activeOrder && (showModal || keepModalChromeDuringLeave)
+            !isAdminFreeBooking &&
+            !!activeOrder &&
+            (showModal || keepModalChromeDuringLeave)
           "
           :formatted-reservation-time="formattedTime"
           :is-admin-free-mode="props.isAdminFreeBooking"
@@ -547,12 +549,17 @@ function getErrorMessage(err: unknown): string {
 
 const adminBookingFetch = { credentials: 'include' as const }
 
+function bookingApiFetch() {
+  return props.isAdminFreeBooking ? adminBookingFetch : {}
+}
+
 /** Libère un hold créé côté serveur alors que l’utilisateur a déjà annulé (réponse API tardive). */
 async function releasePendingHold(orderId: string, orderToken: string) {
   try {
     await $fetch('/api/cancel-order', {
       method: 'POST',
-      body: { orderId, orderToken, reason: CANCEL_REASON.USER }
+      body: { orderId, orderToken, reason: CANCEL_REASON.USER },
+      ...bookingApiFetch()
     })
   } catch {
     // Meilleur effort : éviter un siège bloqué sans commande active côté client.
@@ -1153,7 +1160,6 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
 
   adminConfirmInFlight.value = true
   isSubmitting.value = true
-  isCreatingHold.value = true
   error.value = null
   let orderIdCancel: string | undefined
   let orderTokenCancel: string | undefined
@@ -1235,7 +1241,6 @@ async function submitAdminFreeOnConfirm(payload: ReservationStep2Payload) {
     error.value = getErrorMessage(err)
   } finally {
     adminConfirmInFlight.value = false
-    isCreatingHold.value = false
     isSubmitting.value = false
   }
 }
@@ -1329,7 +1334,8 @@ async function cancelActiveOrder(
         orderId: activeOrder.value.orderId,
         orderToken: activeOrder.value.orderToken,
         reason
-      }
+      },
+      ...bookingApiFetch()
     })
 
     clearOrderClientState()

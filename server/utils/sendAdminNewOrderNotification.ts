@@ -5,7 +5,7 @@ import { escapeHtml } from './htmlEscape'
 import type { TicketEmailData } from './ticketEmailTemplate'
 
 /** Destinataire fixe pour les notifications de nouvelle commande (admin). */
-const ADMIN_ORDER_NOTIFICATION_EMAIL = 'spectacle.academiedanseozoir@gmail.com'
+export const ADMIN_ORDER_NOTIFICATION_EMAIL = 'spectacle.academiedanseozoir@gmail.com'
 
 const mailjet = Mailjet.apiConnect(process.env.MJ_APIKEY_PUBLIC!, process.env.MJ_APIKEY_PRIVATE!)
 
