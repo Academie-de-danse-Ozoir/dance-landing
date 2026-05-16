@@ -8,7 +8,7 @@ export const STORAGE_ORDER_KEY = 'order_id'
 // Événement & tarification
 // =============================================================================
 
-export const EVENT_ID = 'f179039c-c6a9-4c93-ac39-2153c02105ec'
+export const EVENT_ID = '3dbc76cc-4a6d-4c79-b6f0-4b878ad02b43'
 
 /** Tarifs en centimes (affichage front + Stripe) */
 export const PRICE_ADULT_CENTS = 1800
@@ -37,11 +37,7 @@ export const NARROW_VIEWPORT_MAX_WIDTH_PX = 1025
 export const NARROW_VIEWPORT_MQ = `(max-width: ${NARROW_VIEWPORT_MAX_WIDTH_PX}px)`
 
 /** Pages légales (CGV, mentions, confidentialité). */
-export const LEGAL_PAGE_PATHS = [
-  '/cgv',
-  '/mentions-legales',
-  '/politique-confidentialite'
-] as const
+export const LEGAL_PAGE_PATHS = ['/cgv', '/mentions-legales', '/politique-confidentialite'] as const
 
 export function isLegalPagePath(path: string): boolean {
   const normalized = path.replace(/\/$/, '') || '/'

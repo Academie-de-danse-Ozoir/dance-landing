@@ -121,9 +121,33 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
         data.tickets && data.tickets.length > 0
           ? data.tickets
           : data.seatLabels.map((seatLabel) => ({ seatLabel }) as TicketPdfTicket)
-      const headerHeight = 102
+      const ticketHeaderHeight = 122
+      const recapHeaderHeight = 102
       /** Position verticale du haut de la carte billet (sous le bandeau titre). */
       const ticketCardTopY = 350
+
+      function drawSpectacleTicketHeader() {
+        doc.rect(0, 0, doc.page.width, ticketHeaderHeight).fill(palette.footerBg)
+        doc
+          .fillColor('#c9b896')
+          .font(textFontName)
+          .fontSize(8)
+          .text(brand.billetterieLabel.toUpperCase(), 40, 28, {
+            align: 'center',
+            width: pageWidth,
+            characterSpacing: 1.3
+          })
+        doc
+          .fillColor('#ffffff')
+          .fontSize(26)
+          .font(displayFontName)
+          .text(brand.spectacleName, 40, 48, { align: 'center', width: pageWidth })
+        doc
+          .fillColor('#c9b896')
+          .fontSize(14)
+          .font(displayFontName)
+          .text(brand.eventTagline, 40, 80, { align: 'center', width: pageWidth })
+      }
 
       function drawHeroBackgroundCover() {
         doc.image(heroImage, 0, 0, {
@@ -150,21 +174,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
           .fill('#0f1726')
           .restore()
 
-        doc.rect(0, 0, doc.page.width, headerHeight).fill(palette.footerBg)
-        doc
-          .fillColor('#c9b896')
-          .font(textFontName)
-          .fontSize(8)
-          .text(brand.billetterieLabel.toUpperCase(), 40, 26, {
-            align: 'center',
-            width: pageWidth,
-            characterSpacing: 1.3
-          })
-        doc
-          .fillColor('#ffffff')
-          .fontSize(26)
-          .font(displayFontName)
-          .text(brand.spectacleName, 40, 46, { align: 'center', width: pageWidth })
+        drawSpectacleTicketHeader()
 
         doc.y = ticketCardTopY
 
@@ -296,7 +306,7 @@ export function buildTicketPdfBuffer(data: TicketPdfData): Promise<Buffer> {
       // —— Dernière page A4 : récapitulatif ——
       doc.addPage({ size: 'A4', margin: 40 })
 
-      doc.rect(0, 0, doc.page.width, headerHeight).fill(palette.footerBg)
+      doc.rect(0, 0, doc.page.width, recapHeaderHeight).fill(palette.footerBg)
       doc
         .fillColor('#c9b896')
         .font(textFontName)

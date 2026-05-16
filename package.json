@@ -7,6 +7,7 @@
   },
   "scripts": {
     "generate:pdf-assets": "node scripts/generate-pdf-assets.mjs",
+    "generate:email-logo": "node scripts/generate-email-logo.mjs",
     "build": "npm run generate:pdf-assets && nuxt build",
     "dev": "nuxt dev --no-fork",
     "dev:lan": "nuxt dev --no-fork --host 0.0.0.0",
@@ -27,6 +28,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "sass": "^1.97.2"
+    "sass": "^1.97.2",
+    "sharp": "^0.34.5"
   }
 }

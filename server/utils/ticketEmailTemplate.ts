@@ -83,7 +83,8 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       : null
 
   const publicBase = resolveEmailPublicBaseUrl(data)
-  const footerLogoUrl = publicBase ? `${publicBase}/brand-logo-light.png` : ''
+  /** Fond #1a1a2e intégré — évite l’inversion du logo blanc en mode sombre (Gmail / Apple Mail). */
+  const footerLogoUrl = publicBase ? `${publicBase}/brand-logo-email.png` : ''
   const titleFontTtfUrl = publicBase ? `${publicBase}/fonts/title.ttf` : ''
   const textFontTtfUrl = publicBase ? `${publicBase}/fonts/text.ttf` : ''
 
@@ -102,7 +103,7 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
   const ticketsBlock = data.ticketsInAttachment
     ? `
     <p style="margin: 24px 0 8px 0; font-size: 13px; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;">Vos billets</p>
-    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Vos billets sont en <strong>pièce jointe</strong> de cet email. Ouvrez ou téléchargez la pièce jointe pour les consulter et présentez-les à l'entrée du spectacle.</p>
+    <p style="margin: 0 0 12px 0; font-size: 14px; color: #57534e; line-height: 1.5;">Vos billets sont en <strong>pièce jointe</strong> de cet email.<br>Ouvrez ou téléchargez la pièce jointe pour les consulter et présentez-les à l'entrée du spectacle.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px;">
       <tr>
         <td style="padding: 12px 14px; background-color: #f4f5f8; border: 1px solid #dee2e6; color: #495057; font-size: 13px; line-height: 1.45; border-radius: 8px;">
@@ -142,7 +143,13 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
   <style>
+    :root {
+      color-scheme: light only;
+      supported-color-schemes: light only;
+    }
     ${titleFontTtfUrl
       ? `@font-face {
       font-family: 'title';
@@ -169,10 +176,11 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 10px 34px rgba(26,26,46,0.16); overflow: hidden;">
           <!-- En-tête -->
           <tr>
-            <td style="background-color: #1a1a2e; padding: 36px 40px; text-align: center;">
+            <td style="background-color: #1a1a2e; padding: 48px 40px 44px; text-align: center;">
               <p style="margin: 0; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #c9b896; font-weight: 600;">${escapeHtml(brand.billetterieLabel)}</p>
-              <h1 style="margin: 12px 0 0 0; font-size: 36px; font-weight: 400; color: #ffffff; letter-spacing: -0.02em; font-family: 'title', 'Williwaw Book', Georgia, 'Times New Roman', serif;">${escapeHtml(brand.spectacleName)}</h1>
-              <p style="margin: 16px 0 0 0; font-size: 14px; color: #a8a29e;">Confirmation — commande ${escapeHtml(orderRef)}</p>
+              <h1 style="margin: 14px 0 0 0; font-size: 36px; font-weight: 400; color: #ffffff; letter-spacing: -0.02em; font-family: 'title', 'Williwaw Book', Georgia, 'Times New Roman', serif;">${escapeHtml(brand.spectacleName)}</h1>
+              <p style="margin: 12px 0 0 0; font-size: 20px; font-weight: 400; color: #c9b896; letter-spacing: 0.01em; font-family: 'title', 'Williwaw Book', Georgia, 'Times New Roman', serif;">${escapeHtml(brand.eventTagline)}</p>
+              <p style="margin: 20px 0 0 0; font-size: 14px; color: #a8a29e;">Confirmation — commande ${escapeHtml(orderRef)}</p>
             </td>
           </tr>
           <!-- Contenu principal -->
@@ -225,14 +233,14 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
               ${ticketsBlock}
               ${receiptBlock}
               <p style="margin: 28px 0 0 0; font-size: 15px; color: #495057; line-height: 1.6;">Conservez cet email et présentez vos billets à l'entrée du spectacle.</p>
-              <p style="margin: 24px 0 0 0; font-size: 14px; color: #495057; line-height: 1.6; text-align: left;">Pour toute information complémentaire, contactez-nous par e-mail à <a href="mailto:${escapeHtml(brand.displayEmail)}" style="color: #0d6efd; text-decoration: underline;">${escapeHtml(brand.displayEmail)}</a> ou par téléphone au <a href="tel:${escapeHtml(brand.contactPhone.replace(/\s/g, ''))}" style="color: #0d6efd; text-decoration: underline;">${escapeHtml(brand.contactPhone)}</a>.</p>
+              <p style="margin: 24px 0 0 0; font-size: 14px; color: #495057; line-height: 1.6; text-align: left;">Pour toute information complémentaire,<br>contactez-nous par e-mail à <a href="mailto:${escapeHtml(brand.displayEmail)}" style="color: #0d6efd; text-decoration: underline;">${escapeHtml(brand.displayEmail)}</a><br>ou par téléphone au <a href="tel:${escapeHtml(brand.contactPhone.replace(/\s/g, ''))}" style="color: #0d6efd; text-decoration: underline;">${escapeHtml(brand.contactPhone)}</a>.</p>
               ${data.stripeSessionId ? `<p style="margin: 12px 0 0 0; font-size: 11px; color: #a8a29e;">Réf. paiement : ${escapeHtml(data.stripeSessionId)}</p>` : ''}
             </td>
           </tr>
           <!-- Pied de page -->
           <tr>
             <td style="padding: 44px 48px 48px; border-top: 1px solid #2a2a44; background-color: #1a1a2e;">
-              ${footerLogoUrl ? `<p style="margin: 0 0 16px 0; text-align: center;"><img src="${escapeHtml(footerLogoUrl)}" width="44" style="display: inline-block; width: 44px; height: auto; border: 0; outline: none; text-decoration: none;" alt=""></p>` : ''}
+              ${footerLogoUrl ? `<p style="margin: 0 0 16px 0; text-align: center;"><img src="${escapeHtml(footerLogoUrl)}" width="44" height="79" class="email-footer-logo-img" style="display: inline-block; width: 44px; height: auto; max-width: 44px; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;" alt="${escapeHtml(brand.spectacleName)}"></p>` : ''}
               <p style="margin: 0; font-size: 13px; color: #e8e8ef; text-align: center; line-height: 1.5;">${escapeHtml(
                 billetterieSenderName()
               )}</p>
