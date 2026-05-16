@@ -21,6 +21,11 @@ import {
 } from '../../locales/frDisplay'
 import type { TicketEmailData } from './ticketEmailTemplate'
 import { buildTicketEmailHtml } from './ticketEmailTemplate'
+import {
+  EMAIL_FOOTER_LOGO_CID,
+  mailjetInlineEmailLogoAttachment,
+  readEmailFooterLogoBase64
+} from './emailLogoInline'
 import { buildTicketPdfBuffer } from './ticketPdf'
 import {
   appendPaidOrderRowToGoogleSheetIfConfigured,
@@ -93,7 +98,10 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
   const ref = orderRefShort(data.orderId)
   void ref
 
-  const html = buildTicketEmailHtml(data)
+  const logoBase64 = await readEmailFooterLogoBase64()
+  const html = buildTicketEmailHtml(
+    logoBase64 ? { ...data, footerLogoCid: EMAIL_FOOTER_LOGO_CID } : data
+  )
   const message: Record<string, unknown> = {
     From: {
       Email: brand.senderEmail,
@@ -105,14 +113,19 @@ async function sendTicketEmail(data: TicketEmailData, pdfBuffer?: Buffer) {
     /** Mailjet : traçabilité ; un envoi par commande (pas de fusion avec un autre achat). */
     CustomID: data.orderId
   }
+  const attachments: Record<string, string>[] = []
   if (pdfBuffer && pdfBuffer.length > 0) {
-    message.Attachments = [
-      {
-        ContentType: 'application/pdf',
-        Filename: `billets-${data.orderId}.pdf`,
-        Base64Content: pdfBuffer.toString('base64')
-      }
-    ]
+    attachments.push({
+      ContentType: 'application/pdf',
+      Filename: `billets-${data.orderId}.pdf`,
+      Base64Content: pdfBuffer.toString('base64')
+    })
+  }
+  if (attachments.length > 0) {
+    message.Attachments = attachments
+  }
+  if (logoBase64) {
+    message.InlinedAttachments = [mailjetInlineEmailLogoAttachment(logoBase64)]
   }
 
   if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {

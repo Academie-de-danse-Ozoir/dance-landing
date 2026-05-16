@@ -1,7 +1,5 @@
 /**
- * Logo email : PNG blanc transparent (redimensionné pour le pied de page).
- * Le fond #1a1a2e est appliqué dans le HTML de l’email — pas dans l’image,
- * pour éviter l’inversion sombre (logo noir + cadre blanc sur mobile).
+ * Logo email : blanc sur fond #1a1a2e opaque (lisible sur mobile, y compris Gmail / Apple Mail).
  * Exécuter : node scripts/generate-email-logo.mjs
  */
 import sharp from 'sharp'
@@ -12,6 +10,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const src = join(root, 'public', 'brand-logo-light.png')
 const out = join(root, 'public', 'brand-logo-email.png')
 
-await sharp(src).resize({ width: 88 }).png().toFile(out)
+const FOOTER_BG = { r: 26, g: 26, b: 46 }
 
-console.log(`[generate-email-logo] Wrote ${out} (transparent)`)
+await sharp(src)
+  .resize({ width: 88 })
+  .flatten({ background: FOOTER_BG })
+  .png()
+  .toFile(out)
+
+console.log(`[generate-email-logo] Wrote ${out}`)

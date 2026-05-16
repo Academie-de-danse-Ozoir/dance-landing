@@ -39,6 +39,8 @@ export interface TicketEmailData {
   paidAtFormatted: string
   /** URL de base (origine) pour les assets de polices de l'email. */
   publicSiteUrl?: string | null
+  /** Logo embarqué (Mailjet InlinedAttachments) — prioritaire sur l’URL distante. */
+  footerLogoCid?: string | null
 }
 
 function escapeHtml(s: string): string {
@@ -83,8 +85,10 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       : null
 
   const publicBase = resolveEmailPublicBaseUrl(data)
-  /** PNG blanc transparent (voir scripts/generate-email-logo.mjs). */
   const footerLogoUrl = publicBase ? `${publicBase}/brand-logo-email.png` : ''
+  const footerLogoSrc = data.footerLogoCid
+    ? `cid:${data.footerLogoCid}`
+    : footerLogoUrl
   const titleFontTtfUrl = publicBase ? `${publicBase}/fonts/title.ttf` : ''
   const textFontTtfUrl = publicBase ? `${publicBase}/fonts/text.ttf` : ''
 
@@ -166,26 +170,19 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
       font-style: normal;
     }`
       : ''}
-    .email-footer-logo-wrap {
+    .email-footer-logo-wrap,
+    .email-footer-logo-wrap td {
       background-color: #1a1a2e !important;
     }
     .email-footer-logo-img {
       display: block !important;
-      filter: none !important;
-      -webkit-filter: none !important;
-    }
-    @media (prefers-color-scheme: dark) {
-      .email-footer-logo-wrap,
-      .email-footer-logo-wrap td {
-        background-color: #1a1a2e !important;
-      }
-      .email-footer-logo-img {
-        filter: invert(1) !important;
-        -webkit-filter: invert(1) !important;
-      }
-    }
-    u + .body .email-footer-logo-wrap {
-      background-color: #1a1a2e !important;
+      width: 44px !important;
+      height: 79px !important;
+      max-width: 44px !important;
+      border: 0 !important;
+      outline: none !important;
+      text-decoration: none !important;
+      -ms-interpolation-mode: bicubic;
     }
   </style>
   <title>Commande ${escapeHtml(orderRef)} — Confirmation billet – ${escapeHtml(brand.spectacleName)}</title>
@@ -262,11 +259,11 @@ export function buildTicketEmailHtml(data: TicketEmailData): string {
           <tr>
             <td style="padding: 44px 48px 48px; border-top: 1px solid #2a2a44; background-color: #1a1a2e;">
               ${
-                footerLogoUrl
+                footerLogoSrc
                   ? `<table role="presentation" cellpadding="0" cellspacing="0" align="center" class="email-footer-logo-wrap" style="margin: 0 auto 16px; background-color: #1a1a2e;">
                 <tr>
-                  <td align="center" style="background-color: #1a1a2e; line-height: 0; font-size: 0; mso-line-height-rule: exactly;">
-                    <img src="${escapeHtml(footerLogoUrl)}" width="44" height="79" class="email-footer-logo-img" alt="${escapeHtml(brand.spectacleName)}" style="display: block; width: 44px; height: auto; max-width: 44px; margin: 0 auto; border: 2px solid #1a1a2e; outline: none; text-decoration: none; background-color: #1a1a2e; -ms-interpolation-mode: bicubic;">
+                  <td align="center" bgcolor="#1a1a2e" style="background-color: #1a1a2e; line-height: 0; font-size: 0; mso-line-height-rule: exactly;">
+                    <img src="${escapeHtml(footerLogoSrc)}" width="44" height="79" border="0" class="email-footer-logo-img" alt="${escapeHtml(brand.spectacleName)}" style="display: block; width: 44px; height: 79px; max-width: 44px; margin: 0 auto; border: 0; outline: none; text-decoration: none; background-color: #1a1a2e; -ms-interpolation-mode: bicubic;">
                   </td>
                 </tr>
               </table>`
